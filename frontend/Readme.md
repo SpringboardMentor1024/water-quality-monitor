@@ -1,6 +1,6 @@
 # Water Quality Monitor Frontend - React Setup Guide
 
-This guide is for beginners (noobs) to set up a React frontend server for the Water Quality Monitor project. We'll use Tailwind CSS for styling. Follow these steps carefully!
+This guide is a beginner's guide to set up a React frontend server for the Water Quality Monitor project. We'll use Tailwind CSS for styling. Follow these steps carefully!
 
 ## Prerequisites
 Before starting, make sure you have these installed on your computer:
