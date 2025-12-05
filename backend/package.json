@@ -1,0 +1,13 @@
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "description": "Welcome! This guide will help you create a simple FastAPI backend server from scratch. FastAPI is a modern, fast web framework for building APIs with Python. It's perfect for beginners because it's easy to learn and very powerful.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs"
+}
