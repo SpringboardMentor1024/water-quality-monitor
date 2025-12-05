@@ -1,0 +1,30 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+@import url('https://unpkg.com/leaflet/dist/leaflet.css');
+@import url('https://unpkg.com/leaflet/dist/leaflet.css');
+
+/* Optional: body background */
+body {
+  background-color: #111827; /* dark background */
+  color: #fff;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+/* Optional: links */
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+/* Optional: scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background-color: #facc15;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-track {
+  background-color: #1e293b;
+}
