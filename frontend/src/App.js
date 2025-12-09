@@ -1,12 +1,12 @@
-import MyComponent from './components/MyComponent';
+import React from "react";
+import GoogleMapComponent from "./GoogleMapComponent";
 
-function Home() {
+function App() {
   return (
-    <div className="text-center mt-10">
-      <h1 className="text-3xl font-bold">Home Page</h1>
-      <MyComponent />
+    <div>
+      <GoogleMapComponent />
     </div>
   );
 }
 
-export default Home;
+export default App;
