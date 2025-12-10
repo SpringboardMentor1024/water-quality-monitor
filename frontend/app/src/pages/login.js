@@ -25,9 +25,11 @@ try {
   const data = await response.json();
 
   if (response.ok) {
-    localStorage.setItem("token", data.token);
+    // Quick fix: store a placeholder token
+    localStorage.setItem("token", "loggedin");  
     navigate("/dashboard");
-  } else {
+}
+ else {
     alert(data.message || "Login failed");
   }
 } catch (err) {
