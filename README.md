@@ -53,12 +53,9 @@ The backend team must ensure their API endpoints return data in these precise JS
   {"label": "Temperature", "value": "24°C", "status": "Normal"}
 ]
 
-### 2.Sensor location(basemap)
-
 Component,Integration Point,Payload Format (Example)
 MapComponent,src/components/MapComponent.js,Location data for map markers and site table rows.
 
-```json
 [
   {
     "id": 1,
@@ -71,12 +68,9 @@ MapComponent,src/components/MapComponent.js,Location data for map markers and si
   // ... more sensor objects
 ]
 
-### 3. Alert Thresholds(Settings Page)
-
 Component,Required Endpoint,Method,Payload Format (Example)
 Settings Save,/api/v1/config/thresholds,POST / PUT,"Keys are camelCase, matching state variables in Settings.js."
 
-```json
 {
   "phWarning": 7.8,
   "phCritical": 6.5,
@@ -85,11 +79,8 @@ Settings Save,/api/v1/config/thresholds,POST / PUT,"Keys are camelCase, matching
   "tempCritical": 30
 }
 
-### 4. Historical Chart Data (pH Trend)
-
 Component,Integration Point,Payload Format (Example)
 PH Chart,src/components/PhLineChart.js,```json
-
 [
 {""time"": ""00:00"", ""pH"": 7.2},
 {""time"": ""04:00"", ""pH"": 7.0},
