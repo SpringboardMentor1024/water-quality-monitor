@@ -1,4 +1,5 @@
 import { useState } from "react";
+import waterIcon from "../assets/water.png";
 import { Link, useNavigate } from "react-router-dom";
 
 function Register() {
@@ -7,7 +8,10 @@ function Register() {
     email: "",
     password: "",
     confirmPassword: "",
+    role: "",
+    location: "",
   });
+
   const [serverError, setServerError] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -17,113 +21,142 @@ function Register() {
     setServerError("");
   };
 
-  // Simple local validation for test purpose
   const simpleValidate = () => {
-    if (!form.name || !form.email || !form.password || !form.confirmPassword) {
+    if (!form.name || !form.email || !form.password || !form.confirmPassword || !form.role || !form.location)
       return "All fields are required.";
-    }
-    if (form.password.length < 6) return "Password must be at least 6 characters.";
-    if (form.password !== form.confirmPassword) return "Passwords do not match.";
+    if (form.password.length < 6)
+      return "Password must be at least 6 characters.";
+    if (form.password !== form.confirmPassword)
+      return "Passwords do not match.";
     return "";
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     const err = simpleValidate();
-    if (err) {
-      setServerError(err);
-      return;
-    }
+    if (err) return setServerError(err);
 
     setLoading(true);
-    try {
-      // Simulate API call delay
-      await new Promise((res) => setTimeout(res, 800));
-      console.log("✔ Registration simulated:", form);
-      // on success navigate to login (for test)
+    setTimeout(() => {
       navigate("/login");
-    } catch (error) {
-      setServerError("Registration failed (simulated).");
-    } finally {
       setLoading(false);
-    }
+    }, 800);
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-emerald-100">
-      <div className="bg-white rounded-lg shadow-xl p-8 w-full max-w-md">
-        <h1 className="text-3xl font-bold text-center text-gray-800 mb-2">Create Account</h1>
-        <p className="text-center text-gray-600 mb-6">Join Water Quality Monitor today</p>
+    <div className="min-h-screen flex items-center justify-center
+      bg-gradient-to-br from-gray-500 to-gray-500 p-4">
+
+      <div className="backdrop-blur-xl bg-white/20 border border-white/30
+       shadow-2xl p-6 md:p-10 rounded-3xl w-full max-w-sm md:max-w-md">
+
+        <div className="flex justify-center mb-6">
+          <div className="w-20 h-20 rounded-2xl bg-gradient-to-br
+           from-gray-300 to-green-100 flex items-center justify-center">
+            <img src={waterIcon} alt="logo" className="w-12 h-12" />
+          </div>
+        </div>
+
+        <h1 className="text-2xl md:text-3xl font-bold text-center text-black mb-1">
+          WaterWatch
+        </h1>
+
+        <p className="text-center text-black-200 text-sm md:text-base mb-6">
+          Access real-time water quality data
+        </p>
 
         {serverError && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">
+          <div className="bg-red-200/40 text-red-900 px-4 py-3 rounded mb-4 text-sm">
             {serverError}
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-            <input
-              name="name"
-              value={form.name}
-              onChange={handleChange}
-              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400 border-gray-300"
-              placeholder="Diwakar"
-            />
-          </div>
+        <form onSubmit={handleSubmit} className="space-y-3 md:space-y-4">
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-            <input
-              name="email"
-              type="email"
-              value={form.email}
-              onChange={handleChange}
-              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400 border-gray-300"
-              placeholder="you@example.com"
-            />
-          </div>
+          <input
+            name="name"
+            placeholder="Full Name"
+            value={form.name}
+            onChange={handleChange}
+            className="w-full px-4 py-3 rounded-xl bg-white/30 
+            placeholder-gray-100 text-black text-sm md:text-base
+            focus:outline-none focus:ring-2 focus:ring-black-300"
+          />
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
-            <input
-              name="password"
-              type="password"
-              value={form.password}
-              onChange={handleChange}
-              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400 border-gray-300"
-              placeholder="••••••"
-            />
-          </div>
+          <input
+            name="email"
+            type="email"
+            placeholder="Email"
+            value={form.email}
+            onChange={handleChange}
+            className="w-full px-4 py-3 rounded-xl bg-white/30 
+            placeholder-gray-100 text-black text-sm md:text-base
+            focus:outline-none focus:ring-2 focus:ring-black-300"
+          />
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Confirm Password</label>
-            <input
-              name="confirmPassword"
-              type="password"
-              value={form.confirmPassword}
-              onChange={handleChange}
-              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400 border-gray-300"
-              placeholder="••••••"
-            />
-          </div>
+          <input
+            name="password"
+            type="password"
+            placeholder="Password"
+            value={form.password}
+            onChange={handleChange}
+            className="w-full px-4 py-3 rounded-xl bg-white/30 
+            placeholder-gray-100 text-black text-sm md:text-base
+            focus:outline-none focus:ring-2 focus:ring-black-300"
+          />
+
+          <input
+            name="confirmPassword"
+            type="password"
+            placeholder="Confirm Password"
+            value={form.confirmPassword}
+            onChange={handleChange}
+            className="w-full px-4 py-3 rounded-xl bg-white/30 
+            placeholder-gray-100 text-black text-sm md:text-base
+            focus:outline-none focus:ring-2 focus:ring-black-300"
+          />
+
+          <select
+            name="role"
+            value={form.role}
+            onChange={handleChange}
+            className="w-full px-4 py-3 rounded-xl bg-white/30 
+            text-white text-sm md:text-base focus:outline-none 
+            focus:ring-2 focus:ring-black-300"
+          >
+            <option className="text-black">Select your role</option>
+            <option className="text-black">Student</option>
+            <option className="text-black">Researcher</option>
+            <option className="text-black">Admin</option>
+          </select>
+
+          <input
+            name="location"
+            placeholder="Location"
+            value={form.location}
+            onChange={handleChange}
+            className="w-full px-4 py-3 rounded-xl bg-white/30 
+            placeholder-gray-100 text-black text-sm md:text-base
+            focus:outline-none focus:ring-2 focus:ring-black-300"
+          />
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white font-bold py-2 px-4 rounded-lg transition"
+            className="w-full bg-gradient-to-br from-blue-400 to-blue-500
+            text-black font-semibold py-3 rounded-xl shadow-lg text-sm md:text-base 
+            hover:opacity-60 transition disabled:bg-gray-400 cursor-pointer"
           >
             {loading ? "Creating account..." : "Register"}
           </button>
         </form>
 
-        <p className="text-center text-gray-600 mt-4">
+        <div className="text-center text-black-100 text-sm md:text-base mt-4">
           Already have an account?{" "}
-          <Link to="/login" className="text-green-600 hover:text-green-700 font-semibold">
-            Login here
+          <Link to="/login" className="font-semibold text-blue-500 hover:underline">
+            Login
           </Link>
-        </p>
+        </div>
       </div>
     </div>
   );
