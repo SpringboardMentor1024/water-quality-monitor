@@ -53,8 +53,12 @@ The backend team must ensure their API endpoints return data in these precise JS
   {"label": "Temperature", "value": "24°C", "status": "Normal"}
 ]
 
-Component,Integration Point,Payload Format (Example)
-MapComponent,src/components/MapComponent.js,Location data for map markers and site table rows.
+2. Sensor Locations (Base Map & Table)
+Component: MapComponent
+
+Integration Point: src/components/MapComponent.js
+
+Payload Format: List of objects with keys: "id", "name", "lat", "lng", "status", "lastReading". Example: {"id": 1, "name": "Intake Site A", "lat": 34.05, "lng": -118.25, "status": "Warning", "lastReading": "7.2 pH"}
 
 [
   {
