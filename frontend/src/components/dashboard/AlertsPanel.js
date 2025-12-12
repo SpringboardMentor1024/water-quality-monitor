@@ -1,6 +1,6 @@
 import React from 'react';
 
-const AlertsPanel = ({ alerts }) => {
+const AlertsPanel = ({ alerts, onViewAll }) => {
   const getSeverityColor = (severity) => {
     const colors = {
       warning: 'bg-yellow-100 text-yellow-800 border-yellow-200',
@@ -57,7 +57,10 @@ const AlertsPanel = ({ alerts }) => {
       
       {alerts.length > 0 && (
         <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t">
-          <button className="w-full text-center text-xs sm:text-sm text-teal-600 hover:text-teal-700 font-medium">
+          <button 
+            onClick={onViewAll}
+            className="w-full text-center text-xs sm:text-sm text-teal-600 hover:text-teal-700 font-medium"
+          >
             View All Alerts
           </button>
         </div>
