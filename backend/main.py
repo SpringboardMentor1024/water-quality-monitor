@@ -36,6 +36,13 @@ class UserCreate(BaseModel):
     password: str
     role: UserRole
     location: Optional[str] = None
+class WaterStationCreate(BaseModel): 
+    name: str 
+    location: str
+    latitude: Optional[float] = None 
+    longitude: Optional[float] = None 
+    managed_by: Optional[str] = None 
+    status: Optional[str] = "active"
 
 class ForgotPasswordRequest(BaseModel):
     email: str
@@ -97,3 +104,49 @@ def reset_password(request: ResetPasswordRequest, db: Session = Depends(get_db))
     hashed = hash_password(request.new_password)
     update_user_password(db, email, hashed)
     return {"message": "Password updated successfully"}
+
+@app.get("/water-stations")
+def get_water_stations(db: Session = Depends(get_db)):
+    stations = db.query(WaterStation).all()
+    return stations  
+@app.get("/users") 
+def get_users(db: Session = Depends(get_db)): 
+    return db.query(Users).all() 
+
+@app.post("/water-stations")
+def create_water_station(station: WaterStationCreate, db: Session = Depends(get_db)):
+    db_station = WaterStation(
+        name=station.name,
+        location=station.location,
+        latitude=station.latitude,
+        longitude=station.longitude,
+        managed_by=station.managed_by,
+        status=station.status
+    )
+    db.add(db_station)
+    db.commit()
+    db.refresh(db_station)
+    return {"message": "Water station created", "station_id": db_station.id} 
+@app.post("/users") 
+def create_user(user: UserCreate, db: Session = Depends(get_db)): 
+    db_user = Users( 
+        name=user.name, 
+        email=user.email,
+        password=hash_password(user.password), 
+        role=user.role, 
+        location=user.location
+        ) 
+    db.add(db_user) 
+    db.commit() 
+    db.refresh(db_user) 
+    return db_user
+@app.post("/register")
+def register(user: UserCreate, db: Session = Depends(get_db)): 
+    existing_user = db.query(Users).filter(Users.email == user.email).first() 
+    if existing_user:
+        return {"message": "Email already registered"}, 400 
+    db_user = Users( name=user.name, email=user.email, password=hash_password(user.password), role=user.role, location=user.location ) 
+    db.add(db_user) 
+    db.commit() 
+    db.refresh(db_user) 
+    return {"message": "Registration successful", "user_id": db_user.id}
