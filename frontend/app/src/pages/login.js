@@ -21,14 +21,19 @@ function Login() {
         body: JSON.stringify({ email, password }),
       });
 
-      const data = await response.json();
-
       if (response.ok) {
-        // Store token or placeholder
-        localStorage.setItem("token", "loggedin");  
+        const data = await response.json();
+        localStorage.setItem("token", data.token);
+        localStorage.setItem("user_name", data.name);
+        localStorage.setItem("user_role", data.role);
         navigate("/dashboard");
       } else {
-        alert(data.message || "Login failed");
+        // Clear any old token
+        localStorage.removeItem("token");
+        localStorage.removeItem("user_name");
+        localStorage.removeItem("user_role");
+        const data = await response.json();
+        alert(data.detail || "Invalid credentials");
       }
     } catch (err) {
       console.error(err);

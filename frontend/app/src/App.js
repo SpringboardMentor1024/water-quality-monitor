@@ -10,12 +10,16 @@ import ResetPassword from "./pages/ResetPassword";
 import "./App.css";
 
 function App() {
-  const [isLoggedIn, setIsLoggedIn] = useState(!!localStorage.getItem("token"));
+  const [isLoggedIn, setIsLoggedIn] = useState(() => {
+    // Check for token on initial load
+    const token = localStorage.getItem("token");
+    return !!token;
+  });
 
-  // Optional: update state when token changes (after login/logout)
   useEffect(() => {
     const handleStorageChange = () => {
-      setIsLoggedIn(!!localStorage.getItem("token"));
+      const token = localStorage.getItem("token");
+      setIsLoggedIn(!!token);
     };
     window.addEventListener("storage", handleStorageChange);
     return () => window.removeEventListener("storage", handleStorageChange);
@@ -31,9 +35,9 @@ function App() {
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route
           path="/dashboard"
-          element={isLoggedIn ? <Dashboard /> : <Navigate to="/login" />}
+          element={isLoggedIn ? <Dashboard /> : <Navigate to="/login" replace />}
         />
-        <Route path="*" element={<Navigate to="/" />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Router>
   );

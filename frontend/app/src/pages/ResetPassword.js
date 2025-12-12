@@ -3,17 +3,26 @@ import { useSearchParams } from "react-router-dom";
 
 function ResetPassword() {
   const [searchParams] = useSearchParams();
-  const token = searchParams.get("token"); // ✅ use inside the component
+  const token = searchParams.get("token");
 
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleReset = async (e) => {
     e.preventDefault();
+
+    if (!newPassword || !confirmPassword) {
+      alert("Please fill both fields");
+      return;
+    }
+
     if (newPassword !== confirmPassword) {
       alert("Passwords do not match!");
       return;
     }
+
+    setLoading(true);
 
     try {
       const response = await fetch("http://127.0.0.1:8000/reset-password", {
@@ -23,8 +32,10 @@ function ResetPassword() {
       });
 
       const data = await response.json();
+
       if (response.ok) {
-        alert("Password reset successfully!");
+        alert(data.message || "Password reset successfully!");
+        window.location.href = "/login";
       } else {
         alert(data.message || "Reset failed");
       }
@@ -32,12 +43,15 @@ function ResetPassword() {
       console.error(err);
       alert("Server error. Try again later.");
     }
+
+    setLoading(false);
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-900 text-white">
       <form onSubmit={handleReset} className="bg-gray-800 p-8 rounded-lg w-full max-w-md">
         <h2 className="text-2xl font-bold mb-6 text-center">Reset Password</h2>
+
         <input
           type="password"
           placeholder="New Password"
@@ -46,6 +60,7 @@ function ResetPassword() {
           className="w-full px-4 py-3 mb-4 rounded bg-gray-700 text-white"
           required
         />
+
         <input
           type="password"
           placeholder="Confirm Password"
@@ -54,11 +69,13 @@ function ResetPassword() {
           className="w-full px-4 py-3 mb-4 rounded bg-gray-700 text-white"
           required
         />
+
         <button
           type="submit"
-          className="w-full py-3 bg-yellow-400 text-gray-900 font-bold rounded hover:bg-yellow-500"
+          disabled={loading}
+          className="w-full py-3 bg-yellow-400 text-gray-900 font-bold rounded hover:bg-yellow-500 disabled:opacity-50"
         >
-          Reset Password
+          {loading ? "Resetting..." : "Reset Password"}
         </button>
       </form>
     </div>
