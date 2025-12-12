@@ -18,6 +18,7 @@ def get_db():
 
 # ---------- Helper functions for forgot/reset password ----------
 # Import models here inside functions to avoid circular import
+
 def get_user_by_email(db: Session, email: str):
     from models import Users
     return db.query(Users).filter(Users.email == email).first()
@@ -28,3 +29,5 @@ def update_user_password(db: Session, email: str, new_hashed_password: str):
     if user:
         user.password = new_hashed_password
         db.commit()
+        db.refresh(user)   # ✅ important to update SQLAlchemy object
+    return user
