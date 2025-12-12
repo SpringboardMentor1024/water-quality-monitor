@@ -1,0 +1,13 @@
+# Environment variables
+.env
+
+# Python virtual environment
+venv/
+
+# Python generated files
+__pycache__/
+*.pyc
+
+# SQLite database files
+*.db
+*.db-journal
