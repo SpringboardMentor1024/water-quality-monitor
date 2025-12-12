@@ -4,11 +4,19 @@ from email.mime.multipart import MIMEMultipart
 import jwt
 from datetime import datetime, timedelta
 import bcrypt
+import os
+from dotenv import load_dotenv
+
+# Load .env file
+load_dotenv()
+
+MAIL_SENDER = os.getenv("MAIL_SENDER")
+MAIL_PASSWORD = os.getenv("MAIL_PASSWORD")
 
 # ----------------------
 # SECRET KEY FOR JWT
 # ----------------------
-SECRET_KEY = "supersecret123"  # Change to a more secure key in production
+SECRET_KEY = "supersecret123"
 
 # ----------------------
 # Create Reset Token
@@ -32,36 +40,31 @@ def verify_reset_token(token: str):
 # Send Password Reset Email
 # ----------------------
 def send_reset_email(to_email: str, token: str):
-    FROM_EMAIL = "YOUR_REAL_GMAIL@gmail.com"
-    APP_PASSWORD = "YOUR_16_CHAR_APP_PASSWORD"  # <-- Replace with actual app password
-
     reset_link = f"http://localhost:3000/reset-password?token={token}"
 
     subject = "Password Reset Request"
     body = f"""
-    Hello,
+Hello,
 
-    Click the link below to reset your password:
+Click the link below to reset your password:
 
-    {reset_link}
+{reset_link}
 
-    This link expires in 30 minutes.
+This link expires in 30 minutes.
 
-    If you did not request this, ignore this mail.
-    """
+If you did not request this, ignore this mail.
+"""
 
-    # Email format
     msg = MIMEMultipart()
-    msg["From"] = FROM_EMAIL
+    msg["From"] = MAIL_SENDER
     msg["To"] = to_email
     msg["Subject"] = subject
     msg.attach(MIMEText(body, "plain"))
 
-    # Send Email using SSL
     try:
         with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
-            smtp.login(FROM_EMAIL, APP_PASSWORD)
-            smtp.sendmail(FROM_EMAIL, to_email, msg.as_string())
+            smtp.login(MAIL_SENDER, MAIL_PASSWORD)
+            smtp.sendmail(MAIL_SENDER, to_email, msg.as_string())
         print(f"Password reset email sent to {to_email}")
     except Exception as e:
         print("Email error:", e)
