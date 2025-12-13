@@ -1,5 +1,5 @@
 import React from 'react';
-import CreateAccountForm from '../../components/auth/RegisterForm';
+import RegisterForm from '../../components/auth/RegisterForm';
 
 function RegisterPage() {
   return (
@@ -32,7 +32,7 @@ function RegisterPage() {
               <h2 className="text-3xl font-bold text-gray-800 mb-2">Create Account</h2>
               <p className="text-gray-500">Fill in your details to get started</p>
             </div>
-            <CreateAccountForm />
+            <RegisterForm />
           </div>
         </div>
       </section>

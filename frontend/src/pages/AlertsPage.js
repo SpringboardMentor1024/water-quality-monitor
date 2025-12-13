@@ -1,13 +1,23 @@
-import React from 'react';
+import React, { useState } from 'react';
 import Navigation from '../components/layout/Navigation';
 
 const AlertsPage = () => {
-  const allAlerts = [
+  const [allAlerts, setAllAlerts] = useState([
     { id: 1, location: 'Central Park Lake', message: 'High turbidity detected', severity: 'warning', timestamp: '2024-01-15 10:30', status: 'active' },
     { id: 2, location: 'Hudson River', message: 'Low dissolved oxygen levels', severity: 'critical', timestamp: '2024-01-15 09:15', status: 'active' },
     { id: 3, location: 'East River', message: 'pH levels slightly elevated', severity: 'warning', timestamp: '2024-01-14 15:20', status: 'resolved' },
     { id: 4, location: 'Bronx River', message: 'Temperature anomaly detected', severity: 'info', timestamp: '2024-01-14 12:45', status: 'investigating' },
-  ];
+  ]);
+
+  const handleViewDetails = (alertId) => {
+    alert(`Viewing details for alert ${alertId}`);
+  };
+
+  const handleMarkResolved = (alertId) => {
+    setAllAlerts(allAlerts.map(alert => 
+      alert.id === alertId ? { ...alert, status: 'resolved' } : alert
+    ));
+  };
 
   const getSeverityColor = (severity) => {
     const colors = {
@@ -54,14 +64,14 @@ const AlertsPage = () => {
                     </div>
                     <div className="flex space-x-2">
                       <button 
-                        onClick={() => alert(`Viewing details for ${alert.location}`)}
+                        onClick={() => handleViewDetails(alert.id)}
                         className="bg-teal-600 text-white px-3 py-1 rounded text-sm hover:bg-teal-700"
                       >
                         View Details
                       </button>
                       {alert.status === 'active' && (
                         <button 
-                          onClick={() => alert(`Marked ${alert.location} as resolved`)}
+                          onClick={() => handleMarkResolved(alert.id)}
                           className="bg-gray-600 text-white px-3 py-1 rounded text-sm hover:bg-gray-700"
                         >
                           Mark Resolved
