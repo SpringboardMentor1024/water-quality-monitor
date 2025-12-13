@@ -1,7 +1,7 @@
 import React from 'react';
 import SignInForm from '../../components/auth/LoginForm';
 
-function SignInPage() {
+function LoginPage() {
   return (
     <main className="signin-page min-h-screen flex flex-col">
       <section className="signin-section flex-grow flex items-center justify-center p-4">
@@ -35,4 +35,4 @@ function SignInPage() {
   );
 }
 
-export default SignInPage;
+export default LoginPage;
