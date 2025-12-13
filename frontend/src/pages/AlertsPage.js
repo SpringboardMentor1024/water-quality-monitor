@@ -53,11 +53,17 @@ const AlertsPage = () => {
                       <p className="text-xs opacity-75">{alert.timestamp}</p>
                     </div>
                     <div className="flex space-x-2">
-                      <button className="bg-teal-600 text-white px-3 py-1 rounded text-sm hover:bg-teal-700">
+                      <button 
+                        onClick={() => alert(`Viewing details for ${alert.location}`)}
+                        className="bg-teal-600 text-white px-3 py-1 rounded text-sm hover:bg-teal-700"
+                      >
                         View Details
                       </button>
                       {alert.status === 'active' && (
-                        <button className="bg-gray-600 text-white px-3 py-1 rounded text-sm hover:bg-gray-700">
+                        <button 
+                          onClick={() => alert(`Marked ${alert.location} as resolved`)}
+                          className="bg-gray-600 text-white px-3 py-1 rounded text-sm hover:bg-gray-700"
+                        >
                           Mark Resolved
                         </button>
                       )}
