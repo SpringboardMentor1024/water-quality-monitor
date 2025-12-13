@@ -1,6 +1,8 @@
 import React, { useReducer } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { authAPI } from '../../services/api';
 
+// Reducer function - MUST be defined OUTSIDE component
 const formReducer = (currentState, action) => {
   switch (action.operation) {
     case 'MODIFY_INPUT':
@@ -23,7 +25,7 @@ const formReducer = (currentState, action) => {
   }
 };
 
-const AuthenticationForm = () => {
+const LoginForm = () => {
   const navigateTo = useNavigate();
   const [formData, dispatchFormAction] = useReducer(formReducer, {
     userEmail: '',
@@ -32,6 +34,7 @@ const AuthenticationForm = () => {
     validationIssues: {}
   });
 
+  // Helper functions - defined INSIDE component
   const modifyFormValue = (inputIdentifier, newValue) => {
     dispatchFormAction({ 
       operation: 'MODIFY_INPUT', 
@@ -80,6 +83,33 @@ const AuthenticationForm = () => {
     return inputsAreValid;
   };
 
+  // Optional: Non-blocking toast notification
+  const showToast = (message, type = 'success') => {
+    const colors = {
+      success: 'bg-green-500',
+      error: 'bg-red-500',
+      info: 'bg-blue-500'
+    };
+    
+    const toast = document.createElement('div');
+    toast.className = `fixed top-4 right-4 ${colors[type]} text-white px-4 py-2 rounded shadow-lg z-50 transform transition-transform duration-300 translate-x-full`;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    
+    // Animate in
+    setTimeout(() => {
+      toast.classList.remove('translate-x-full');
+    }, 10);
+    
+    // Auto-remove after 3 seconds
+    setTimeout(() => {
+      toast.classList.add('translate-x-full');
+      setTimeout(() => {
+        toast.remove();
+      }, 300);
+    }, 3000);
+  };
+
   const initiateAuthentication = async (formEvent) => {
     formEvent.preventDefault();
     
@@ -92,23 +122,35 @@ const AuthenticationForm = () => {
       submitButton.textContent = 'Signing in...';
       submitButton.disabled = true;
 
-      await new Promise(resolve => setTimeout(resolve, 1300));
+      // 🚀 REAL API CALL
+      const result = await authAPI.login(formData.userEmail, formData.userPassword);
       
-      const authenticationPayload = {
-        email: formData.userEmail,
-        password: formData.userPassword,
-        rememberMe: formData.persistSession
-      };
+      console.log('Login successful:', result);
       
-      console.log('Login attempt:', authenticationPayload);
-      alert('Login successful!');
+      // Store the token
+      localStorage.setItem('authToken', result.access_token || result.token);
       
+      // Get user info
+      const userData = await authAPI.getCurrentUser();
+      if (userData) {
+        localStorage.setItem('user', JSON.stringify(userData));
+        // ✅ Non-blocking toast instead of alert
+        showToast(`Welcome ${userData.full_name || 'User'}!`);
+      }
+      
+      // Clear form
       modifyFormValue('userEmail', '');
       modifyFormValue('userPassword', '');
       
+      // ✅ AUTO-REDIRECT to dashboard WITHOUT clicking OK
+      navigateTo('/dashboard');
+      
     } catch (authenticationError) {
       console.warn('Login failed:', authenticationError);
-      alert('Login failed. Please check your credentials.');
+      showToast(
+        authenticationError.message || 'Login failed. Please check your credentials.',
+        'error'
+      );
     } finally {
       submitButton.textContent = defaultButtonText;
       submitButton.disabled = false;
@@ -197,4 +239,4 @@ const AuthenticationForm = () => {
   );
 };
 
-export default AuthenticationForm;
+export default LoginForm;

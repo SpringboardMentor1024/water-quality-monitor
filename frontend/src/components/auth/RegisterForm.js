@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom'; // Add useNavigate
+import { authAPI } from '../../services/api';
 
-function CreateAccountForm() {
+function RegisterForm() {
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -13,6 +14,8 @@ function CreateAccountForm() {
   });
 
   const [errors, setErrors] = useState({});
+  const [loading, setLoading] = useState(false); // Add loading state
+  const navigate = useNavigate(); // Add navigation hook
 
   const handleChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -61,24 +64,73 @@ function CreateAccountForm() {
     return Object.keys(newErrors).length === 0;
   };
 
+  // Non-blocking toast notification
+  const showToast = (message, type = 'success') => {
+    const colors = {
+      success: 'bg-green-500',
+      error: 'bg-red-500',
+      info: 'bg-blue-500'
+    };
+    
+    const toast = document.createElement('div');
+    toast.className = `fixed top-4 right-4 ${colors[type]} text-white px-4 py-2 rounded shadow-lg z-50 transform transition-transform duration-300 translate-x-full`;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    
+    // Animate in
+    setTimeout(() => {
+      toast.classList.remove('translate-x-full');
+    }, 10);
+    
+    // Auto-remove after 3 seconds
+    setTimeout(() => {
+      toast.classList.add('translate-x-full');
+      setTimeout(() => {
+        toast.remove();
+      }, 300);
+    }, 3000);
+  };
+
   const handleSubmit = async (event) => {
     event.preventDefault();
     
     if (!validateForm()) return;
     
-    const submitButton = event.target.querySelector('button[type="submit"]');
-    const originalText = submitButton.textContent;
+    setLoading(true);
     
     try {
-      submitButton.textContent = 'Creating account...';
-      submitButton.disabled = true;
+      // 🚀 REAL API CALL
+      const registrationData = {
+        email: formData.email,
+        password: formData.password,
+        full_name: `${formData.firstName} ${formData.lastName}`.trim(),
+        role: 'user'
+      };
       
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      console.log('🔄 Registering user:', registrationData.email);
       
-      alert('Account created successfully!');
+      // 1. Register the user
+      const result = await authAPI.register(registrationData);
       
-      // Reset form
+      console.log('✅ Registration successful:', result);
+      
+      // Show success toast (non-blocking)
+      showToast(`Account created successfully! Welcome ${result.full_name}`);
+      
+      // 2. Auto-login after successful registration
+      console.log('🔄 Auto-login after registration...');
+      const loginResult = await authAPI.login(formData.email, formData.password);
+      
+      // Store the token
+      localStorage.setItem('authToken', loginResult.access_token || loginResult.token);
+      
+      // 3. Get user info
+      const userData = await authAPI.getCurrentUser();
+      if (userData) {
+        localStorage.setItem('user', JSON.stringify(userData));
+      }
+      
+      // 4. Reset form
       setFormData({
         firstName: '',
         lastName: '',
@@ -89,11 +141,32 @@ function CreateAccountForm() {
         agreeTerms: false
       });
       
+      // 5. ✅ AUTO-REDIRECT to dashboard WITHOUT clicking OK
+      console.log('🚀 Redirecting to dashboard...');
+      navigate('/dashboard');
+      
     } catch (error) {
-      alert('Registration failed. Please try again.');
+      console.error('❌ Registration failed:', error);
+      
+      // Show specific error messages
+      let errorMessage = 'Registration failed. Please try again.';
+      
+      if (error.response?.data?.detail) {
+        errorMessage = error.response.data.detail;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      // Check for email already exists
+      if (errorMessage.includes('already registered') || errorMessage.includes('already exists')) {
+        setErrors(prev => ({ ...prev, email: 'This email is already registered' }));
+        errorMessage = 'Email already registered. Please use a different email.';
+      }
+      
+      showToast(errorMessage, 'error');
+      
     } finally {
-      submitButton.textContent = originalText;
-      submitButton.disabled = false;
+      setLoading(false);
     }
   };
 
@@ -117,6 +190,7 @@ function CreateAccountForm() {
                 errors.firstName ? 'border-red-500' : 'border-gray-300'
               }`}
               placeholder="First name"
+              disabled={loading}
             />
             {errors.firstName && (
               <div className="text-red-600 text-sm mt-1">{errors.firstName}</div>
@@ -133,6 +207,7 @@ function CreateAccountForm() {
                 errors.lastName ? 'border-red-500' : 'border-gray-300'
               }`}
               placeholder="Last name"
+              disabled={loading}
             />
             {errors.lastName && (
               <div className="text-red-600 text-sm mt-1">{errors.lastName}</div>
@@ -151,6 +226,7 @@ function CreateAccountForm() {
               errors.email ? 'border-red-500' : 'border-gray-300'
             }`}
             placeholder="your.email@example.com"
+            disabled={loading}
           />
           {errors.email && (
             <div className="text-red-600 text-sm mt-1">{errors.email}</div>
@@ -168,6 +244,7 @@ function CreateAccountForm() {
               errors.phone ? 'border-red-500' : 'border-gray-300'
             }`}
             placeholder="(123) 456-7890"
+            disabled={loading}
           />
           {errors.phone && (
             <div className="text-red-600 text-sm mt-1">{errors.phone}</div>
@@ -189,6 +266,7 @@ function CreateAccountForm() {
                 errors.password ? 'border-red-500' : 'border-gray-300'
               }`}
               placeholder="Create a password"
+              disabled={loading}
             />
             {errors.password && (
               <div className="text-red-600 text-sm mt-1">{errors.password}</div>
@@ -208,6 +286,7 @@ function CreateAccountForm() {
                 errors.confirmPassword ? 'border-red-500' : 'border-gray-300'
               }`}
               placeholder="Confirm your password"
+              disabled={loading}
             />
             {errors.confirmPassword && (
               <div className="text-red-600 text-sm mt-1">{errors.confirmPassword}</div>
@@ -223,6 +302,7 @@ function CreateAccountForm() {
               checked={formData.agreeTerms}
               onChange={(e) => handleChange('agreeTerms', e.target.checked)}
               className="w-4 h-4 mt-1 text-blue-600 rounded focus:ring-blue-500"
+              disabled={loading}
             />
             <span className="text-gray-600 text-sm">
               I agree to the{' '}
@@ -243,9 +323,10 @@ function CreateAccountForm() {
         {/* Submit Button */}
         <button 
           type="submit" 
-          className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg transition-colors duration-200 shadow-md hover:shadow-lg mt-4"
+          disabled={loading}
+          className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg transition-colors duration-200 shadow-md hover:shadow-lg mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Sign Up
+          {loading ? 'Creating account...' : 'Sign Up'}
         </button>
 
         {/* Navigation Link */}
@@ -260,4 +341,4 @@ function CreateAccountForm() {
   );
 }
 
-export default CreateAccountForm;
+export default RegisterForm;
