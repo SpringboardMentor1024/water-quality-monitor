@@ -5,6 +5,9 @@ import RegisterPage from './pages/auth/RegisterPage';
 import PasswordRecoveryPage from './pages/auth/PasswordRecovery';
 import ProfilePage from './pages/auth/ProfilePage'; // ← ADD THIS IMPORT
 import Dashboard from './pages/Dashboard';
+import AlertsPage from './pages/AlertsPage';
+import ReportsPage from './pages/ReportsPage';
+import NewReportPage from './pages/NewReportPage';
 
 function App() {
   return (
@@ -17,6 +20,9 @@ function App() {
           <Route path="/password-recovery" element={<PasswordRecoveryPage />} />
           <Route path="/profile" element={<ProfilePage />} /> {/* ← ADD THIS LINE */}
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/alerts" element={<AlertsPage />} />
+          <Route path="/reports" element={<ReportsPage />} />
+          <Route path="/new-report" element={<NewReportPage />} />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </div>

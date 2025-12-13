@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import Navigation from '../components/layout/Navigation';
 import WaterQualityMap from '../components/dashboard/WaterQualityMap';
 import MetricsCards from '../components/dashboard/MetricsCards';
@@ -9,6 +9,7 @@ import ReportsPanel from '../components/dashboard/ReportsPanel';
 import { authAPI } from '../services/api';
 
 const Dashboard = () => {
+  const navigate = useNavigate();
   const [selectedLocation, setSelectedLocation] = useState(null);
   const [waterQualityData, setWaterQualityData] = useState([]);
   const [alerts, setAlerts] = useState([]);
@@ -29,6 +30,12 @@ const Dashboard = () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
+
+  const handleRefreshData = () => {
+    // Simulate data refresh
+    alert('Data refreshed successfully!');
+    window.location.reload();
+  };
 
   useEffect(() => {
     // Fetch user data
@@ -126,7 +133,10 @@ const Dashboard = () => {
               </div>
               
               <span className="text-xs sm:text-sm text-gray-500">Last updated: {new Date().toLocaleString()}</span>
-              <button className="bg-teal-600 text-white px-3 py-2 sm:px-4 text-sm rounded-md hover:bg-teal-700 transition-colors">
+              <button 
+                onClick={handleRefreshData}
+                className="bg-teal-600 text-white px-3 py-2 sm:px-4 text-sm rounded-md hover:bg-teal-700 transition-colors"
+              >
                 Refresh Data
               </button>
             </div>
@@ -160,8 +170,8 @@ const Dashboard = () => {
 
         {/* Alerts and Reports */}
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6">
-          <AlertsPanel alerts={alerts} />
-          <ReportsPanel />
+          <AlertsPanel alerts={alerts} onViewAll={() => navigate('/alerts')} />
+          <ReportsPanel onViewAll={() => navigate('/reports')} onNewReport={() => navigate('/new-report')} />
         </div>
       </main>
     </div>

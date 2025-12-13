@@ -1,6 +1,6 @@
 import React from 'react';
 
-const ReportsPanel = () => {
+const ReportsPanel = ({ onViewAll, onNewReport }) => {
   const recentReports = [
     {
       id: 1,
@@ -42,7 +42,10 @@ const ReportsPanel = () => {
     <div className="bg-white rounded-lg shadow p-4 sm:p-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 sm:mb-4 space-y-2 sm:space-y-0">
         <h2 className="text-base sm:text-lg font-semibold text-gray-900">Recent Reports</h2>
-        <button className="bg-teal-600 text-white px-3 py-1 rounded-md text-xs sm:text-sm hover:bg-teal-700">
+        <button 
+          onClick={onNewReport}
+          className="bg-teal-600 text-white px-3 py-1 rounded-md text-xs sm:text-sm hover:bg-teal-700"
+        >
           New Report
         </button>
       </div>
@@ -71,7 +74,10 @@ const ReportsPanel = () => {
       </div>
       
       <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t">
-        <button className="w-full text-center text-xs sm:text-sm text-teal-600 hover:text-teal-700 font-medium">
+        <button 
+          onClick={onViewAll}
+          className="w-full text-center text-xs sm:text-sm text-teal-600 hover:text-teal-700 font-medium"
+        >
           View All Reports
         </button>
       </div>
