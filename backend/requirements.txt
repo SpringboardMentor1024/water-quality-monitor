@@ -6,4 +6,4 @@ python-dotenv
 pydantic[email]
 python-jose[cryptography]
 python-multipart
-emails
+passlib[bcrypt]
