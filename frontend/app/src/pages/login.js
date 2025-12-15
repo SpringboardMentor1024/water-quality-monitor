@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 function Login() {
   const navigate = useNavigate();
@@ -10,7 +12,7 @@ function Login() {
     e.preventDefault();
 
     if (!email || !password) {
-      alert("Please enter valid credentials");
+      toast.error("Please enter valid credentials");
       return;
     }
 
@@ -26,6 +28,7 @@ function Login() {
         localStorage.setItem("token", data.token);
         localStorage.setItem("user_name", data.name);
         localStorage.setItem("user_role", data.role);
+        toast.success("Login successful!");
         navigate("/dashboard");
       } else {
         // Clear any old token
@@ -33,16 +36,17 @@ function Login() {
         localStorage.removeItem("user_name");
         localStorage.removeItem("user_role");
         const data = await response.json();
-        alert(data.detail || "Invalid credentials");
+        toast.error(data.detail || "Invalid credentials");
       }
     } catch (err) {
       console.error(err);
-      alert("Server error. Try again later.");
+      toast.error("Server error. Try again later.");
     }
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-800 to-gray-900 font-sans">
+      <ToastContainer position="top-right" autoClose={3000} />
       <div className="bg-gray-800 p-10 rounded-2xl shadow-2xl w-full max-w-md text-white text-center">
         <div className="text-5xl mb-4">💧</div>
         <h1 className="text-2xl font-bold mb-6">Sign In</h1>
