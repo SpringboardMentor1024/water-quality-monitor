@@ -10,7 +10,7 @@ function RegisterForm() {
     phone: '',
     password: '',
     confirmPassword: '',
-    agreeTerms: false
+    agreeTerms: false 
   });
 
   const [errors, setErrors] = useState({});
@@ -104,7 +104,8 @@ function RegisterForm() {
         email: formData.email,
         password: formData.password,
         full_name: `${formData.firstName} ${formData.lastName}`.trim(),
-        role: 'user'
+        phone_number: formData.phone || null, // Send phone number to backend
+        role: 'user',
       };
       
       console.log('🔄 Registering user:', registrationData.email);
@@ -184,6 +185,7 @@ function RegisterForm() {
             <label className="block text-sm font-medium text-gray-700">First Name *</label>
             <input
               type="text"
+              autoComplete="given-name"
               value={formData.firstName}
               onChange={(e) => handleChange('firstName', e.target.value)}
               className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all ${
@@ -201,6 +203,7 @@ function RegisterForm() {
             <label className="block text-sm font-medium text-gray-700">Last Name *</label>
             <input
               type="text"
+              autoComplete="family-name"
               value={formData.lastName}
               onChange={(e) => handleChange('lastName', e.target.value)}
               className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all ${
@@ -220,6 +223,7 @@ function RegisterForm() {
           <label className="block text-sm font-medium text-gray-700">Email Address *</label>
           <input
             type="email"
+            autoComplete="email"
             value={formData.email}
             onChange={(e) => handleChange('email', e.target.value)}
             className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all ${
@@ -238,6 +242,7 @@ function RegisterForm() {
           <label className="block text-sm font-medium text-gray-700">Phone Number</label>
           <input
             type="tel"
+            autoComplete="tel"
             value={formData.phone}
             onChange={(e) => handleChange('phone', e.target.value)}
             className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all ${
@@ -260,6 +265,7 @@ function RegisterForm() {
             <label className="block text-sm font-medium text-gray-700">Password *</label>
             <input
               type="password"
+              autoComplete="new-password"
               value={formData.password}
               onChange={(e) => handleChange('password', e.target.value)}
               className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all ${
@@ -280,6 +286,7 @@ function RegisterForm() {
             <label className="block text-sm font-medium text-gray-700">Confirm Password *</label>
             <input
               type="password"
+              autoComplete="new-password"
               value={formData.confirmPassword}
               onChange={(e) => handleChange('confirmPassword', e.target.value)}
               className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all ${

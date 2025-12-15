@@ -109,7 +109,11 @@ def forgot_password(data: schemas.ForgotPassword, db: Session = Depends(get_db))
     password_reset = models.PasswordReset(email=data.email, token_hash=token_hash, expires_at=expires_at, used=False)
     db.add(password_reset)
     db.commit()
-    send_password_reset_email(data.email, reset_token)
+    
+    email_result = send_password_reset_email(data.email, reset_token)
+    if email_result.get("status") == "error":
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=email_result.get("detail", "Email service is currently unavailable."))
+        
     return generic_response
 
 @app.post("/api/auth/reset-password")
@@ -119,7 +123,9 @@ def reset_password(data: schemas.ResetPassword, db: Session = Depends(get_db)):
     reset_request = db.query(models.PasswordReset).filter(models.PasswordReset.token_hash == token_hash, models.PasswordReset.expires_at > datetime.utcnow(), models.PasswordReset.used == False).first()
     if not reset_request: raise HTTPException(status_code=400, detail="Invalid or expired reset token")
     user = db.query(models.User).filter(models.User.email == reset_request.email).first()
-    if not user: raise HTTPException(status_code=404, detail="User not found")
+    # If the user doesn't exist, treat it as an invalid token to prevent leaking information.
+    if not user:
+        raise HTTPException(status_code=400, detail="Invalid or expired reset token")
     user.hashed_password = auth.get_password_hash(data.new_password)
     reset_request.used = True
     db.commit()
