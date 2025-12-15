@@ -1,5 +1,5 @@
 import React from 'react';
-import SignInForm from '../../components/auth/LoginForm';
+import LoginForm from '../../components/auth/LoginForm';
 
 function LoginPage() {
   return (
@@ -21,7 +21,7 @@ function LoginPage() {
               <h2 className="welcome-text text-3xl font-bold text-gray-800 mb-2">Account Access</h2>
               <p className="instruction-text text-gray-500">Enter your email and password</p>
             </div>
-            <SignInForm />
+            <LoginForm />
           </div>
         </div>
       </section>

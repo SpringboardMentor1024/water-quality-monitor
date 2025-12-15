@@ -18,9 +18,9 @@ const TestAuth = () => {
     // Test 2: User Registration
     console.log('📝 Testing User Registration...');
     authAPI.register({
-      email: 'test@example.com',
-      password: 'password123',
-      full_name: 'Test User',
+      email: 'sandhya@gmail.com',
+      password: 'sandhya123',
+      full_name: 'sandhya',
       role: 'operator'
     })
     .then(data => {
@@ -28,7 +28,7 @@ const TestAuth = () => {
       
       // Test 3: User Login (after successful registration)
       console.log('🔑 Testing User Login...');
-      return authAPI.login('test@example.com', 'password123');
+      return authAPI.login('sandhya@gmail.com', 'sandhya123');
     })
     .then(loginData => {
       console.log('✅ User Login SUCCESS:', loginData);
@@ -38,7 +38,7 @@ const TestAuth = () => {
       // If registration fails, it might be because user already exists
       // Try login instead
       console.log('🔄 Trying login instead...');
-      authAPI.login('test@example.com', 'password123')
+      authAPI.login('sandhya@gmail.com', 'sandhya123')
         .then(data => console.log('✅ Login successful:', data))
         .catch(loginErr => console.error('❌ Login also failed:', loginErr.message || loginErr));
     });
