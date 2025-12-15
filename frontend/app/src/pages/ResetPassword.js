@@ -1,9 +1,12 @@
 import React, { useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 function ResetPassword() {
   const [searchParams] = useSearchParams();
   const token = searchParams.get("token");
+  const navigate = useNavigate();
 
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -13,12 +16,12 @@ function ResetPassword() {
     e.preventDefault();
 
     if (!newPassword || !confirmPassword) {
-      alert("Please fill both fields");
+      toast.error("Please fill both fields");
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      alert("Passwords do not match!");
+      toast.error("Passwords do not match!");
       return;
     }
 
@@ -34,14 +37,14 @@ function ResetPassword() {
       const data = await response.json();
 
       if (response.ok) {
-        alert(data.message || "Password reset successfully!");
-        window.location.href = "/login";
+        toast.success(data.message || "Password reset successfully!");
+        setTimeout(() => navigate("/login"), 1500);
       } else {
-        alert(data.message || "Reset failed");
+        toast.error(data.message || "Reset failed");
       }
     } catch (err) {
       console.error(err);
-      alert("Server error. Try again later.");
+      toast.error("Server error. Try again later.");
     }
 
     setLoading(false);
@@ -49,6 +52,7 @@ function ResetPassword() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-900 text-white">
+      <ToastContainer position="top-right" autoClose={3000} />
       <form onSubmit={handleReset} className="bg-gray-800 p-8 rounded-lg w-full max-w-md">
         <h2 className="text-2xl font-bold mb-6 text-center">Reset Password</h2>
 

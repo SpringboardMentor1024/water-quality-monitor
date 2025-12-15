@@ -5,13 +5,13 @@ import Home from "./pages/home";
 import Login from "./pages/login";
 import Register from "./pages/register";
 import Dashboard from "./pages/dashboard";
+import Profile from "./pages/profile"; 
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import "./App.css";
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(() => {
-    // Check for token on initial load
     const token = localStorage.getItem("token");
     return !!token;
   });
@@ -29,14 +29,24 @@ function App() {
     <Router>
       <Routes>
         <Route path="/" element={<Home />} />
+
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
+
+        {/* Protected Routes */}
         <Route
           path="/dashboard"
           element={isLoggedIn ? <Dashboard /> : <Navigate to="/login" replace />}
         />
+
+        <Route
+          path="/profile"
+          element={isLoggedIn ? <Profile /> : <Navigate to="/login" replace />}
+        />
+
+        {/* Fallback */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Router>

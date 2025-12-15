@@ -1,19 +1,23 @@
 import React, { useState } from "react";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import { useNavigate } from "react-router-dom";
 
 function ForgotPassword() {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
   const handleSendResetLink = async () => {
     if (!email) {
-      alert("Please enter your email");
+      toast.error("Please enter your email");
       return;
     }
 
     // Email format validation
     const validEmail = /\S+@\S+\.\S+/.test(email);
     if (!validEmail) {
-      alert("Please enter a valid email address");
+      toast.error("Please enter a valid email address");
       return;
     }
 
@@ -29,13 +33,14 @@ function ForgotPassword() {
       const data = await response.json();
 
       if (response.ok) {
-        alert(data.message || "Reset link sent! Check your email.");
+        toast.success(data.message || "Reset link sent! Check your email.");
+        setEmail("");
       } else {
-        alert(data.message || "Failed to send reset link");
+        toast.error(data.message || "Failed to send reset link");
       }
     } catch (err) {
       console.error(err);
-      alert("Server error. Try again later.");
+      toast.error("Server error. Try again later.");
     }
 
     setLoading(false);
@@ -43,6 +48,7 @@ function ForgotPassword() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-900 text-white">
+      <ToastContainer position="top-right" autoClose={3000} />
       <div className="bg-gray-800 p-8 rounded-lg w-full max-w-md">
         <h2 className="text-2xl font-bold mb-6 text-center">Forgot Password</h2>
 
@@ -64,9 +70,12 @@ function ForgotPassword() {
 
         <p className="text-gray-300 mt-4 text-sm text-center">
           Remembered your password?{" "}
-          <a href="/login" className="text-yellow-400 font-bold hover:underline">
+          <span
+            onClick={() => navigate("/login")}
+            className="text-yellow-400 font-bold hover:underline cursor-pointer"
+          >
             Sign in
-          </a>
+          </span>
         </p>
       </div>
     </div>
