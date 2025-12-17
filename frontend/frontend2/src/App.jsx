@@ -1,28 +1,31 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
-import Sidebar from './components/Sidebar.jsx'
-import Dashboard from './pages/Dashboard.jsx'
-import Reports from './pages/Reports.jsx'
-import Alerts from './pages/Alerts.jsx'
-import Stations from './pages/Stations.jsx'
-import Analytics from './pages/Analytics.jsx'
-import MapView from './pages/MapView.jsx'
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+
+import Login from "./pages/Login";
+import Dashboard from "./pages/Dashboard";
+import Reports from "./pages/Reports";
+import Alerts from "./pages/Alerts";
+import Stations from "./pages/Stations";
+import Analytics from "./pages/Analytics";
+import MapView from "./pages/MapView";
+
+import MainLayout from "./layouts/MainLayout";
 
 export default function App() {
   return (
     <Router>
-      <div className="flex">
-        <Sidebar />
-        <main className="flex-1 p-6">
-          <Routes>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/reports" element={<Reports />} />
-            <Route path="/alerts" element={<Alerts />} />
-            <Route path="/stations" element={<Stations />} />
-            <Route path="/analytics" element={<Analytics />} />
-            <Route path="/map" element={<MapView />} />
-          </Routes>
-        </main>
-      </div>
+      <Routes>
+        <Route path="/" element={<Login />} />
+        <Route path="/login" element={<Login />} />
+        <Route element={<MainLayout />}>
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/reports" element={<Reports />} />
+          <Route path="/alerts" element={<Alerts />} />
+          <Route path="/stations" element={<Stations />} />
+          <Route path="/analytics" element={<Analytics />} />
+          <Route path="/map" element={<MapView />} />
+        </Route>
+
+      </Routes>
     </Router>
-  )
+  );
 }
