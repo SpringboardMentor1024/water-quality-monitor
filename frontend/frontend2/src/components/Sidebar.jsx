@@ -1,6 +1,14 @@
 import { Link, useLocation } from "react-router-dom";
-import { 
-  MdDashboard, MdMap, MdAssessment, MdWarning, MdSensors, MdAnalytics
+import {
+  MdDashboard,
+  MdMap,
+  MdAssessment,
+  MdWarning,
+  MdSensors,
+  MdAnalytics,
+  MdSearch,
+  MdPerson,
+  MdSettings
 } from "react-icons/md";
 
 export default function Sidebar() {
@@ -12,7 +20,10 @@ export default function Sidebar() {
     { name: "Reports", path: "/reports", icon: <MdAssessment size={22} /> },
     { name: "Alerts", path: "/alerts", icon: <MdWarning size={22} /> },
     { name: "Stations", path: "/stations", icon: <MdSensors size={22} /> },
-    { name: "Analytics", path: "/analytics", icon: <MdAnalytics size={22} /> }
+    { name: "Analytics", path: "/analytics", icon: <MdAnalytics size={22} /> },
+    { name: "Search", path: "/search", icon: <MdSearch size={22} /> },
+    { name: "Profile", path: "/profile", icon: <MdPerson size={22} /> },
+    { name: "Settings", path: "/settings", icon: <MdSettings size={22} /> }
   ];
 
   return (
