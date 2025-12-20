@@ -2,7 +2,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
 
-DATABASE_URL = "postgresql://postgres:Awsdtf%409989@localhost:5432/water_quality_db"
+DATABASE_URL = "postgresql://postgres:Sowjanya%407@localhost:5432/water_quality_db"
 
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
