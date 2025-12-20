@@ -6,12 +6,15 @@ export default function Login() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [role, setRole] = useState(""); // ✅ NEW
 
   const handleSubmit = (e) => {
     e.preventDefault();
 
     // TEMP LOGIN (backend later)
-    if (email && password) {
+    if (email && password && role) {
+      // store role temporarily (for profile / sidebar)
+      localStorage.setItem("role", role);
       navigate("/dashboard");
     }
   };
@@ -54,6 +57,24 @@ export default function Login() {
               onChange={(e) => setPassword(e.target.value)}
               required
             />
+          </div>
+
+          {/* ROLE SELECT */}
+          <div>
+            <label className="text-sm font-medium text-gray-600">
+              Login as
+            </label>
+            <select
+              className="w-full mt-1 p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#7FC8D6]"
+              value={role}
+              onChange={(e) => setRole(e.target.value)}
+              required
+            >
+              <option value="">Select role</option>
+              <option value="admin">Admin</option>
+              <option value="ngo">NGO</option>
+              <option value="user">User</option>
+            </select>
           </div>
 
           {/* FORGOT PASSWORD */}
