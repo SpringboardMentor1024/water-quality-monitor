@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import axios from "axios";
+import StatCard from "../../components/StatCard";
 
 export default function Details() {
   const { stationId } = useParams();
@@ -76,7 +77,7 @@ export default function Details() {
           </div>
         </div>
 
-        {/* Current Readings */}
+        {/* Current Readings (Summary) */}
         <div className="bg-[#222831] p-6 rounded-xl">
           <h3 className="font-semibold mb-4">Current Readings</h3>
 
@@ -110,15 +111,20 @@ export default function Details() {
         {readings?.current ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {Object.entries(readings.current).map(([key, value]) => (
-              <div
+              <StatCard
                 key={key}
-                className="bg-[#222831] p-6 rounded-xl"
-              >
-                <p className="font-semibold capitalize mb-2">
-                  {key.replace("_", " ")}
-                </p>
-                <p className="text-3xl font-bold">{value}</p>
-              </div>
+                title={key.replace("_", " ")}
+                value={value}
+                unit={
+                  key === "ph" ? "" :
+                  key === "turbidity" ? "NTU" :
+                  key === "temperature" ? "°C" :
+                  key === "dissolved_oxygen" ? "mg/L" :
+                  ""
+                }
+                status="Normal"
+                updatedAt="Just now"
+              />
             ))}
           </div>
         ) : (
@@ -141,9 +147,14 @@ export default function Details() {
             {Object.keys(readings.history).map((metric) => (
               <div
                 key={metric}
-                className="bg-[#222831] p-6 rounded-xl h-40 flex items-center justify-center text-gray-400"
+                className="bg-[#222831] p-6 rounded-xl"
               >
-                {metric} trend chart
+                <h3 className="text-sm font-semibold mb-2 capitalize">
+                  {metric} Trend
+                </h3>
+                <div className="h-32 flex items-center justify-center text-gray-500 text-sm">
+                  Chart will be rendered here
+                </div>
               </div>
             ))}
           </div>
