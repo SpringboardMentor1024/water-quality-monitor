@@ -4,7 +4,9 @@ from typing import List
 
 from app.core.database import get_db
 from app.schemas.station_schema import StationCreate, StationResponse
+from app.schemas.reading_schema import ReadingResponse # 🟢 Import the new schema
 from app.services.station_service import StationService
+from app.models.readings import StationReading # 🟢 Import the Reading Model
 
 router = APIRouter(
     prefix="/stations",
@@ -24,7 +26,17 @@ def read_station(station_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Station not found")
     return db_station
 
-# 3. Create New Station
+# 3. Get Station Readings (For Charts 📊)
+# This endpoint fetches the last 50 readings for a specific station
+@router.get("/{station_id}/readings", response_model=List[ReadingResponse])
+def get_station_readings(station_id: int, db: Session = Depends(get_db)):
+    readings = db.query(StationReading).filter(
+        StationReading.station_id == station_id
+    ).order_by(StationReading.recorded_at.desc()).limit(50).all()
+    
+    return readings
+
+# 4. Create New Station
 @router.post("/", response_model=StationResponse, status_code=status.HTTP_201_CREATED)
 def create_station(station: StationCreate, db: Session = Depends(get_db)):
     return StationService.create_station(db=db, station=station)

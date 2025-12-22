@@ -1,45 +1,38 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
-from sqlalchemy import text
-import os
 
 from app.core.config import settings
-from app.core.database import engine
-from app.routers import auth, stations, users
+from app.core.database import engine, Base
 
-# 1. Database Setup Logic
-def init_db():
-    script_path = "database_setup.sql"
-    if os.path.exists(script_path):
-        try:
-            with open(script_path, "r") as file:
-                sql_script = file.read()
-            with engine.connect() as connection:
-                connection.execute(text(sql_script))
-                connection.commit()
-                print(f"✅ Startup: executed {script_path} successfully.")
-        except Exception as e:
-            print(f"❌ Startup Error: Could not run SQL script. Reason: {e}")
-    else:
-        print(f"⚠️ Startup: {script_path} not found.")
+# 🔴 IMPORTANT: Import ALL models so SQLAlchemy knows to create their tables
+# Update this line to include the new files we created (readings, reports, searches)
+from app.models import user, station, readings, reports, searches
 
-# 2. Lifespan (Startup/Shutdown)
+# 🔵 Import the new routers
+# Ensure you have created these files in 'app/routers/'
+from app.routers import auth, stations, users, reports, gov 
+
+# 🔹 Lifespan: create tables on startup
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     print(f"🚀 {settings.PROJECT_NAME} is starting...")
-    init_db()
+
+    # ✅ CREATE ALL TABLES (This will now create Reports, Readings, Searches too)
+    Base.metadata.create_all(bind=engine)
+
     yield
     print(f"🛑 {settings.PROJECT_NAME} is shutting down...")
 
-# 3. Initialize App
+
+# 🔹 Create FastAPI app
 app = FastAPI(
     title=settings.PROJECT_NAME,
     version=settings.PROJECT_VERSION,
     lifespan=lifespan
 )
 
-# 4. CORS Middleware
+# 🔹 CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -48,13 +41,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# 5. Include Routers (Check this section carefully!)
-# Ensure each router is listed exactly ONCE.
+# 🔹 Routers
 app.include_router(auth.router)
 app.include_router(users.router)
 app.include_router(stations.router)
 
-# 6. Root Endpoint
+# ✅ Register the new routers here
+app.include_router(reports.router)  # For User Reports
+app.include_router(gov.router)      # For External Government Data (EPA, WHO, CPCB)
+
+# 🔹 Root endpoint
 @app.get("/")
 def read_root():
     return {

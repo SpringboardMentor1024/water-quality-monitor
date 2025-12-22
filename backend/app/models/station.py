@@ -1,27 +1,22 @@
-from sqlalchemy import Column, Integer, String, Numeric, TIMESTAMP
+from sqlalchemy import Column, Integer, String, Numeric, DateTime
+from sqlalchemy.orm import relationship 
 from sqlalchemy.sql import func
 from app.core.database import Base
 
 class WaterStation(Base):
-    # This must match the table name in your database_setup.sql
-    __tablename__ = "WaterStations"
+    __tablename__ = "water_stations"
 
-    # Primary Key
     id = Column(Integer, primary_key=True, index=True)
-    
-    # Basic Details
     name = Column(String, nullable=False)
-    location = Column(String, nullable=True)
-    
-    # GPS Coordinates
-    # We use Numeric(10, 6) to match the precision in your SQL script
-    # Example: 12.123456 (6 decimal places is standard for GPS)
-    latitude = Column(Numeric(10, 6), nullable=True)
-    longitude = Column(Numeric(10, 6), nullable=True)
-    
-    # Ownership info
-    # In the PDF schema, this is a Varchar, not a Foreign Key
+    location = Column(String, nullable=False)
+    latitude = Column(Numeric, nullable=False)
+    longitude = Column(Numeric, nullable=False)
     managed_by = Column(String, nullable=True)
     
-    # Timestamp
-    created_at = Column(TIMESTAMP, server_default=func.now())
+    # 🟢 NEW: Added to match Frontend "Active" status
+    status = Column(String, default="Active") 
+
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    # Relationship to Readings
+    readings = relationship("StationReading", back_populates="station")

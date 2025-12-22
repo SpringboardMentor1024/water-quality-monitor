@@ -29,7 +29,8 @@ class UserService:
         db_user = User(
             name=user.name,
             email=user.email,
-            password=hashed_password, # Save the HASH, not the real password
+            # 🔴 FIX 1: The model field is 'hashed_password', NOT 'password'
+            hashed_password=hashed_password, 
             role=user.role,
             location=user.location
         )
@@ -50,7 +51,8 @@ class UserService:
             return None
         
         # Step B: Check if the password matches
-        if not Hasher.verify_password(password, user.password):
+        # 🔴 FIX 2: Access the correct field 'user.hashed_password'
+        if not Hasher.verify_password(password, user.hashed_password):
             return None
             
         return user

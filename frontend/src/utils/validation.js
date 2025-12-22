@@ -1,51 +1,64 @@
-// src/utils/validation.js
-
-// --- Constants ---
-export const MIN_PASSWORD_LENGTH = 6;
-export const EXACT_PHONE_LENGTH = 10;
-export const ROLE_OPTIONS = ['citizen', 'ngo', 'authority', 'admin'];
-
-// --- Validation Functions ---
-
-/**
- * Checks if a string is empty or just whitespace.
- * @param {string} value 
- */
-export const isRequired = (value) => {
-    return value && value.trim().length > 0;
+// Email validation
+export const validateEmail = (email) => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
 };
 
-/**
- * Checks for a basic email format.
- * @param {string} email 
- */
-export const isValidEmail = (email) => {
-    // Basic check for '@' and '.'
-    if (!email || typeof email !== 'string') return false;
-    return email.includes('@') && email.includes('.');
+// Password validation (minimum 6 characters)
+export const validatePassword = (password) => {
+  return password.length >= 6;
 };
 
-/**
- * Checks if the password meets the minimum length requirement.
- * @param {string} password 
- */
-export const isValidPassword = (password) => {
-    return password && password.length >= MIN_PASSWORD_LENGTH;
+// Password strength checker
+export const getPasswordStrength = (password) => {
+  if (password.length < 6) return 'Weak';
+  if (!/[A-Z]/.test(password) || !/[0-9]/.test(password)) return 'Medium';
+  return 'Strong';
 };
 
-/**
- * Checks if the phone number is exactly 10 digits and only contains numbers.
- * @param {string} phone 
- */
-export const isValidPhone = (phone) => {
-    if (!phone) return false;
-    return phone.length === EXACT_PHONE_LENGTH && /^\d{10}$/.test(phone);
+// Form validation for login
+export const validateLoginForm = (email, password) => {
+  const errors = {};
+
+  if (!email.trim()) {
+    errors.email = 'Email is required';
+  } else if (!validateEmail(email)) {
+    errors.email = 'Invalid email address';
+  }
+
+  if (!password.trim()) {
+    errors.password = 'Password is required';
+  }
+
+  return { isValid: Object.keys(errors).length === 0, errors };
 };
 
-/**
- * Checks if the role is one of the allowed options.
- * @param {string} role 
- */
-export const isValidRole = (role) => {
-    return ROLE_OPTIONS.includes(role);
+// Form validation for registration
+export const validateRegisterForm = (formData) => {
+  const { name, email, password, confirmPassword } = formData;
+  const errors = {};
+
+  if (!name.trim()) {
+    errors.name = 'Name is required';
+  }
+
+  if (!email.trim()) {
+    errors.email = 'Email is required';
+  } else if (!validateEmail(email)) {
+    errors.email = 'Invalid email address';
+  }
+
+  if (!password.trim()) {
+    errors.password = 'Password is required';
+  } else if (!validatePassword(password)) {
+    errors.password = 'Password must be at least 6 characters';
+  }
+
+  if (!confirmPassword.trim()) {
+    errors.confirmPassword = 'Please confirm your password';
+  } else if (password !== confirmPassword) {
+    errors.confirmPassword = 'Passwords do not match';
+  }
+
+  return { isValid: Object.keys(errors).length === 0, errors };
 };
