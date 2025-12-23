@@ -8,6 +8,8 @@ import Dashboard from './pages/Dashboard';
 import AlertsPage from './pages/AlertsPage';
 import ReportsPage from './pages/ReportsPage';
 import NewReportPage from './pages/NewReportPage';
+import SearchPage from './pages/SearchPage';
+import StationReadingsPage from './pages/StationReadingsPage';
 
 function App() {
   return (
@@ -23,6 +25,8 @@ function App() {
           <Route path="/alerts" element={<AlertsPage />} />
           <Route path="/reports" element={<ReportsPage />} />
           <Route path="/new-report" element={<NewReportPage />} />
+          <Route path="/search" element={<SearchPage />} />
+          <Route path="/stations/:stationId" element={<StationReadingsPage />} />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </div>

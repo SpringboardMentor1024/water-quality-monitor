@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
@@ -27,7 +27,67 @@ const createCustomIcon = (status) => {
   });
 };
 
-const WaterQualityMap = ({ data, onLocationSelect, selectedLocation }) => {
+const WaterQualityMap = ({ data, onLocationSelect, selectedLocation, showRealTimeData = true }) => {
+  const [stations, setStations] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const mockStations = [
+    {
+      id: 1,
+      name: 'Hudson River Station',
+      lat: 40.7589,
+      lng: -73.9851,
+      status: 'good',
+      ph: 7.2,
+      turbidity: 2.1,
+      dissolved_oxygen: 8.5,
+      temperature: 18.5,
+      lastUpdate: '2024-01-15T14:30:00Z',
+      managed_by: 'NYC Water Dept'
+    },
+    {
+      id: 2,
+      name: 'Central Park Lake',
+      lat: 40.7829,
+      lng: -73.9654,
+      status: 'warning',
+      ph: 6.8,
+      turbidity: 4.2,
+      dissolved_oxygen: 6.2,
+      temperature: 22.1,
+      lastUpdate: '2024-01-15T14:25:00Z',
+      managed_by: 'Parks Department'
+    },
+    {
+      id: 3,
+      name: 'Brooklyn Water Station',
+      lat: 40.6782,
+      lng: -73.9442,
+      status: 'critical',
+      ph: 8.9,
+      turbidity: 6.8,
+      dissolved_oxygen: 4.1,
+      temperature: 25.3,
+      lastUpdate: '2024-01-15T14:20:00Z',
+      managed_by: 'Brooklyn Water Works'
+    }
+  ];
+
+  useEffect(() => {
+    const loadStations = async () => {
+      try {
+        // Backend API integration pending
+        setStations(data || mockStations);
+      } catch (error) {
+        console.error('Failed to load stations:', error);
+        setStations(mockStations);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadStations();
+  }, [data, showRealTimeData]);
   const getStatusColor = (status) => {
     const colors = {
       good: 'text-green-600',
@@ -62,7 +122,7 @@ const WaterQualityMap = ({ data, onLocationSelect, selectedLocation }) => {
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         />
         
-        {data.map((location) => (
+        {stations.map((location) => (
           <Marker
             key={location.id}
             position={[location.lat, location.lng]}
@@ -72,33 +132,55 @@ const WaterQualityMap = ({ data, onLocationSelect, selectedLocation }) => {
             }}
           >
             <Popup>
-              <div className="p-2 min-w-48">
-                <h3 className="font-semibold text-gray-900 mb-2">
-                  Monitoring Station {location.id}
-                </h3>
-                <div className="space-y-1 text-sm">
-                  <div className="flex justify-between">
-                    <span>Status:</span>
-                    <span className={`font-medium ${getStatusColor(location.status)}`}>
-                      {getStatusText(location.status)}
-                    </span>
+              <div className="p-3 min-w-64">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="font-semibold text-gray-900">
+                    {location.name}
+                  </h3>
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(location.status)}`}>
+                    {getStatusText(location.status)}
+                  </span>
+                </div>
+                
+                <div className="space-y-2 text-sm mb-3">
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">pH:</span>
+                      <span className="font-medium">{location.ph}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Temp:</span>
+                      <span className="font-medium">{location.temperature}°C</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Turbidity:</span>
+                      <span className="font-medium">{location.turbidity} NTU</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">DO:</span>
+                      <span className="font-medium">{location.dissolved_oxygen} mg/L</span>
+                    </div>
                   </div>
-                  <div className="flex justify-between">
-                    <span>pH Level:</span>
-                    <span>{location.ph}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Turbidity:</span>
-                    <span>{location.turbidity} NTU</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Dissolved O₂:</span>
-                    <span>{location.dissolved_oxygen} mg/L</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Temperature:</span>
-                    <span>{location.temperature}°C</span>
-                  </div>
+                </div>
+                
+                <div className="text-xs text-gray-500 mb-3">
+                  <div>Managed by: {location.managed_by}</div>
+                  <div>Last update: {new Date(location.lastUpdate).toLocaleString()}</div>
+                </div>
+                
+                <div className="flex space-x-2">
+                  <button
+                    onClick={() => window.location.href = `/stations/${location.id}`}
+                    className="bg-blue-600 text-white px-3 py-1 rounded text-xs hover:bg-blue-700"
+                  >
+                    View Details
+                  </button>
+                  <button
+                    onClick={() => alert(`Real-time data for ${location.name}`)}
+                    className="bg-green-600 text-white px-3 py-1 rounded text-xs hover:bg-green-700"
+                  >
+                    Live Data
+                  </button>
                 </div>
               </div>
             </Popup>

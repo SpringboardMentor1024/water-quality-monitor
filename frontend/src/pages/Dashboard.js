@@ -214,6 +214,7 @@ const Dashboard = () => {
               data={waterQualityData} 
               onLocationSelect={setSelectedLocation}
               selectedLocation={selectedLocation}
+              showRealTimeData={true}
             />
           </div>
           <QualityChart data={waterQualityData} />

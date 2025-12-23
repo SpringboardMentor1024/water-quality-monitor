@@ -33,6 +33,120 @@ export const waterQualityAPI = {
         message: 'Failed to fetch water quality data' 
       };
     }
+  },
+
+  getStations: async () => {
+    try {
+      const response = await api.get('/api/stations');
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { 
+        message: 'Failed to fetch water stations' 
+      };
+    }
+  },
+
+  getStationById: async (stationId) => {
+    try {
+      const response = await api.get(`/api/stations/${stationId}`);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { 
+        message: 'Failed to fetch station details' 
+      };
+    }
+  },
+
+  getStationReadings: async (stationId, timeRange = 'daily') => {
+    try {
+      const response = await api.get(`/api/stations/${stationId}/readings?range=${timeRange}`);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { 
+        message: 'Failed to fetch station readings' 
+      };
+    }
+  },
+
+  searchStations: async (filters) => {
+    try {
+      const response = await api.post('/api/stations/search', filters);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { 
+        message: 'Failed to search stations' 
+      };
+    }
+  }
+};
+
+export const govAPI = {
+  getEPAData: async (params) => {
+    try {
+      const response = await api.get('/api/gov/epa', { params });
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { 
+        message: 'Failed to fetch EPA data' 
+      };
+    }
+  },
+
+  getWHOData: async (params) => {
+    try {
+      const response = await api.get('/api/gov/who', { params });
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { 
+        message: 'Failed to fetch WHO data' 
+      };
+    }
+  },
+
+  getCPCBData: async (params) => {
+    try {
+      const response = await api.get('/api/gov/cpcb', { params });
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { 
+        message: 'Failed to fetch CPCB data' 
+      };
+    }
+  }
+};
+
+export const reportsAPI = {
+  getUserReports: async () => {
+    try {
+      const response = await api.get('/api/reports/user');
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { 
+        message: 'Failed to fetch user reports' 
+      };
+    }
+  },
+
+  submitReport: async (reportData) => {
+    try {
+      const response = await api.post('/api/reports', reportData);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { 
+        message: 'Failed to submit report' 
+      };
+    }
+  },
+
+  getReportById: async (reportId) => {
+    try {
+      const response = await api.get(`/api/reports/${reportId}`);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { 
+        message: 'Failed to fetch report details' 
+      };
+    }
   }
 };
 
