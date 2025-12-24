@@ -1,73 +1,52 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 
 const Navigation = () => {
   const location = useLocation();
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
   
   const navItems = [
-    { path: '/dashboard', label: 'Dashboard', icon: '📊' },
-    { path: '/alerts', label: 'Alerts', icon: '🚨' },
-    { path: '/reports', label: 'Reports', icon: '📋' },
-    { path: '/new-report', label: 'New Report', icon: '➕' }
+    { path: '/dashboard', icon: '🏠', label: 'Dashboard' },
+    { path: '/alerts', icon: '⚠️', label: 'Alerts' },
+    { path: '/user-reports', icon: '📄', label: 'Reports' },
+    { path: '/map', icon: '🗺️', label: 'Map' },
+    { path: '/stations', icon: '📍', label: 'Stations' },
+    { path: '/analytics', icon: '📊', label: 'Analytics' },
+    { path: '/collaborations', icon: '👥', label: 'Collaborations' },
+    { path: '/settings', icon: '⚙️', label: 'Settings' },
+    { path: '/support', icon: '❓', label: 'Support' },
   ];
 
   return (
-    <nav className="bg-teal-600 text-white p-4">
-      <div className="max-w-7xl mx-auto">
-        <div className="flex justify-between items-center">
-          <div className="flex items-center space-x-2">
-            <span className="text-xl sm:text-2xl">💧</span>
-            <h1 className="text-lg sm:text-xl font-bold">Water Quality Monitor</h1>
-          </div>
-          
-          {/* Desktop Menu */}
-          <div className="hidden md:flex space-x-4">
-            {navItems.map((item) => (
+    <nav className="w-64 bg-white h-screen shadow-lg">
+      <div className="p-6 border-b">
+        <h1 className="text-xl font-bold text-teal-600">Water Quality Monitor</h1>
+        <p className="text-sm text-gray-500">Real-time monitoring system</p>
+      </div>
+      
+      <div className="p-4">
+        <ul className="space-y-2">
+          {navItems.map((item) => (
+            <li key={item.path}>
               <Link
-                key={item.path}
                 to={item.path}
-                className={`flex items-center space-x-2 px-3 py-2 rounded-md transition-colors ${
+                className={`flex items-center px-4 py-3 rounded-lg transition-colors ${
                   location.pathname === item.path
-                    ? 'bg-teal-700 text-white'
-                    : 'text-teal-100 hover:bg-teal-500 hover:text-white'
+                    ? 'bg-teal-50 text-teal-600 border-l-4 border-teal-600'
+                    : 'text-gray-700 hover:bg-gray-100'
                 }`}
               >
-                <span>{item.icon}</span>
-                <span>{item.label}</span>
+                <span className="mr-3 text-lg">{item.icon}</span>
+                {item.label}
               </Link>
-            ))}
-          </div>
-
-          {/* Mobile Menu Button */}
-          <button
-            className="md:hidden p-2 rounded-md hover:bg-teal-500"
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-          >
-            <span className="text-xl">{isMenuOpen ? '✕' : '☰'}</span>
-          </button>
+            </li>
+          ))}
+        </ul>
+      </div>
+      
+      <div className="absolute bottom-0 w-64 p-4 border-t">
+        <div className="text-center text-sm text-gray-500">
+          <p>Water Quality Monitor v1.0</p>
         </div>
-
-        {/* Mobile Menu */}
-        {isMenuOpen && (
-          <div className="md:hidden mt-4 space-y-2">
-            {navItems.map((item) => (
-              <Link
-                key={item.path}
-                to={item.path}
-                onClick={() => setIsMenuOpen(false)}
-                className={`flex items-center space-x-2 px-3 py-2 rounded-md transition-colors ${
-                  location.pathname === item.path
-                    ? 'bg-teal-700 text-white'
-                    : 'text-teal-100 hover:bg-teal-500 hover:text-white'
-                }`}
-              >
-                <span>{item.icon}</span>
-                <span>{item.label}</span>
-              </Link>
-            ))}
-          </div>
-        )}
       </div>
     </nav>
   );

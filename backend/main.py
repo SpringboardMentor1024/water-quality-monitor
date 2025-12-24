@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends, HTTPException, status
+﻿from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from typing import List
@@ -6,8 +6,8 @@ from datetime import datetime, timedelta
 import hashlib
 import secrets
 import os
-from . import models, schemas, auth, config
-from .database import engine, get_db
+import models, schemas, auth, config
+from database import engine, get_db
 from dotenv import load_dotenv
 import smtplib
 from email.mime.text import MIMEText
@@ -34,7 +34,7 @@ def send_password_reset_email(email: str, token: str) -> dict:
             html_template = f.read()
         html_content = html_template.replace("{{ reset_link }}", reset_link)
     except FileNotFoundError:
-        print(f"❌ Email template not found at {template_path}")
+        print(f"âŒ Email template not found at {template_path}")
         return {"status": "error", "detail": "Email template missing on server."}
     
     if config.SMTP_USERNAME and config.SMTP_PASSWORD and config.FROM_EMAIL:
@@ -49,13 +49,13 @@ def send_password_reset_email(email: str, token: str) -> dict:
                 server.starttls()
                 server.login(config.SMTP_USERNAME, config.SMTP_PASSWORD)
                 server.send_message(msg)
-            print(f"✅ Password reset email sent to {email}")
+            print(f"âœ… Password reset email sent to {email}")
             return {"status": "success"}
         except Exception as e:
-            print(f"❌ Email sending error: {str(e)}")
+            print(f"âŒ Email sending error: {str(e)}")
             return {"status": "error", "detail": "Email service temporarily unavailable"}
     else:
-        print(f"⚠️ Email not configured. Development mode active for {email}")
+        print(f"âš ï¸ Email not configured. Development mode active for {email}")
         print(f"DEV ONLY: Reset link for {email} is {reset_link}")
         return {"status": "dev_mode"}
 
