@@ -22,4 +22,14 @@ export const getStations = async () => {
   return res.data;
 };
 
+export const getReports = async () => {
+  const res = await apiClient.get("/reports");
+  return res.data;
+};
+
+export const getStationReadings = async (stationId) => {
+  const res = await apiClient.get(`/stations/${stationId}/readings`);
+  return res.data;
+};
+
 export default apiClient;
