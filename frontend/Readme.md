@@ -1,16 +1,29 @@
-# React + Vite
+# WaterWatch: Authority Monitoring Dashboard
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+## 🚀 Overview
 
-Currently, two official plugins are available:
+A professional React-based frontend designed for government authorities to monitor water quality telemetry in real-time. This system features geospatial mapping, analytical trend charts, and secure user management.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## 🛠 Backend Integration (Handoff Guide)
 
-## React Compiler
+The frontend is **API-ready** and decoupled from the UI:
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+* **Central API Hub**: All endpoints are managed in `src/utils/api.js`. Replace mock data with real `axios` calls here.
+* **Security**: A `ProtectedRoute` in `App.jsx` enforces authentication.
+* **JWT Interceptor**: Axios automatically attaches the `authToken` from `localStorage` to every request header.
+* **Environment Variables**: Set your API base URL in a `.env` file as `VITE_API_URL`.
 
-## Expanding the ESLint configuration
+## 📍 Key Features
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+* **Geospatial Inventory**: Interactive map of monitoring nodes with parameter popups.
+* **Authority Analytics**: Deep-dive telemetry pages with trend charts for pH, DO, and Arsenic.
+* **User Management**: Administrative interface to view registered monitoring agents.
+* **Responsive Design**: Sidebar-driven navigation optimized for desktop and mobile field use.
+
+## 📦 Setup
+
+1. **Install**: `npm install`
+2. **Env**: Create `.env` with `VITE_API_URL=http://your-api:8000`
+3. **Run**: `npm run dev`
+
+---
