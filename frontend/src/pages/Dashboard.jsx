@@ -1,25 +1,31 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { getStations, getReports, getStationReadings } from "../utils/api";
+import {
+  getStations,
+  getReports,
+  getStationReadings,
+  addStation,
+} from "../utils/api";
 import StationCard from "../components/StationCard";
 import MapComponent from "../components/MapComponent.jsx";
 import { exportCsv } from "../utils/export";
-
-console.log("Dashboard without mock data loaded");
+// import ChartPlaceholder from "../components/ChartPlaceholder";
+// import PhLineChart from "../components/PhLineChart";
 
 const Dashboard = () => {
   const [stations, setStations] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
 
   const [activeSection, setActiveSection] = useState("Overview");
   const [reports, setReports] = useState([]);
-  const [alerts, setAlerts] = useState([]); // expects backend alerts later
+  const [alerts, setAlerts] = useState([]); // backend alerts later
   const [reportsLoading, setReportsLoading] = useState(false);
   const [mapLoading, setMapLoading] = useState(false);
   const [stationsWithReadings, setStationsWithReadings] = useState([]);
+  const [error, setError] = useState(null);
 
-  // 1) Load stations from backend only
+  // Load stations from backend
   useEffect(() => {
     const fetchStations = async () => {
       try {
@@ -46,7 +52,7 @@ const Dashboard = () => {
     exportCsv(rows, "reports.csv");
   };
 
-  // 2) Load reports and map readings from backend when needed
+  // Load reports and map readings when needed
   useEffect(() => {
     const doFetch = async () => {
       if (activeSection === "Reports") {
@@ -93,7 +99,12 @@ const Dashboard = () => {
     doFetch();
   }, [activeSection, stations]);
 
-  // 3) Sections use only real data
+  const filteredStations = stations.filter(
+    (s) =>
+      s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      String(s.id).toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   const Overview = () => (
     <div className="max-w-6xl mx-auto">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
@@ -124,9 +135,27 @@ const Dashboard = () => {
 
   const StationsSection = () => (
     <div className="max-w-6xl mx-auto">
-      {!loading && stations.length > 0 ? (
+      <div className="flex flex-col lg:flex-row gap-4 items-center mb-6">
+        <div className="flex-1 relative group w-full">
+          <span className="absolute left-5 top-1/2 -translate-y-1/2 text-lg grayscale group-focus-within:grayscale-0 transition-all opacity-50">
+            🔍
+          </span>
+          <input
+            type="text"
+            placeholder="Search stations by name or ID..."
+            className="w-full bg-white border-2 border-blue-50 rounded-2xl py-3 px-6 pl-12 text-sm font-medium shadow-sm focus:border-blue-400 focus:ring-0 outline-none transition-all placeholder:text-gray-300"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+        <button className="w-full lg:w-auto bg-blue-700 text-white px-6 py-3 rounded-2xl font-semibold text-xs uppercase tracking-widest shadow hover:bg-blue-800 transition-all">
+          ＋ Add Monitoring Point
+        </button>
+      </div>
+
+      {!loading && filteredStations.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {stations.map((station) => (
+          {filteredStations.map((station) => (
             <StationCard key={station.id} station={station} />
           ))}
         </div>
@@ -229,6 +258,14 @@ const Dashboard = () => {
     </div>
   );
 
+  if (loading) {
+    return (
+      <div className="p-20 text-center font-black text-blue-800 animate-pulse">
+        SYNCING NETWORK...
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 p-6">
       {/* Header */}
@@ -261,7 +298,7 @@ const Dashboard = () => {
           ))}
         </div>
 
-        {/* Navigation to Search & Analysis pages */}
+        {/* Links to Search & Analysis */}
         <div className="mt-4 flex gap-3">
           <Link to="/search">
             <button className="bg-white text-blue-700 border border-blue-600 px-4 py-2 rounded-md">
@@ -276,14 +313,8 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Content area */}
+      {/* Content */}
       <div className="max-w-6xl mx-auto">
-        {loading && (
-          <p className="text-center text-lg text-blue-700 font-semibold animate-pulse">
-            Loading stations...
-          </p>
-        )}
-
         {error && (
           <div className="text-center bg-red-100 text-red-600 p-3 rounded-lg shadow-md max-w-xl mx-auto">
             {error}

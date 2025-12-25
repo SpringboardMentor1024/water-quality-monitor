@@ -33,3 +33,5 @@ frontend/.vite/
 *.ntvs*
 *.njsproj
 *.sln
+env/
+.env
