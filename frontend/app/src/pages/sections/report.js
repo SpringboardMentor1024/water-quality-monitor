@@ -1,247 +1,254 @@
-import React, { useRef, useState } from "react";
-import axios from "axios";
+import React, { useState } from "react";
 
-export default function Report() {
-  const fileInputRef = useRef(null);
-
-  /* =========================
-     FORM STATE (CONTROLLED)
-  ========================= */
-  const [subject, setSubject] = useState("");
-  const [latitude, setLatitude] = useState("");
-  const [longitude, setLongitude] = useState("");
-  const [waterSource, setWaterSource] = useState("");
-  const [description, setDescription] = useState("");
+export default function Reports() {
+  const [photo, setPhoto] = useState(null);
 
   /* =========================
-     FILE + AUTOFILL STATE
+     REPORT HISTORY (UI STATE)
   ========================= */
-  const [fileName, setFileName] = useState("");
-  const [autoFilledFields, setAutoFilledFields] = useState({});
-  const [loadingPdf, setLoadingPdf] = useState(false);
+  const [reports, setReports] = useState([
+    {
+      id: 1,
+      subject: "High turbidity observed",
+      status: "Pending",
+      date: "2025-02-10",
+    },
+    {
+      id: 2,
+      subject: "Unusual smell in water",
+      status: "Verified",
+      date: "2025-02-08",
+    },
+    {
+      id: 3,
+      subject: "Possible chemical discharge",
+      status: "Rejected",
+      date: "2025-02-06",
+    },
+  ]);
 
-  /* =========================
-     FILE HANDLERS
-  ========================= */
-  const handleFileChange = (e) => {
-    if (e.target.files && e.target.files[0]) {
-      handlePdfUpload(e.target.files[0]);
-    }
-  };
-
-  const handleDrop = (e) => {
-    e.preventDefault();
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      handlePdfUpload(e.dataTransfer.files[0]);
-    }
-  };
-
-  /* =========================
-     PDF → BACKEND → AUTOFILL
-  ========================= */
-  const handlePdfUpload = async (file) => {
-    setFileName(file.name);
-    setLoadingPdf(true);
-
-    const formData = new FormData();
-    formData.append("file", file);
-
-    try {
-      const res = await axios.post(
-        "http://127.0.0.1:8000/reports/parse-pdf",
-        formData,
-        { headers: { "Content-Type": "multipart/form-data" } }
-      );
-
-      autofillFromBackend(res.data);
-    } catch (err) {
-      console.error("PDF parsing failed", err);
-    } finally {
-      setLoadingPdf(false);
+  const getStatusBadge = (status) => {
+    switch (status) {
+      case "Verified":
+        return "bg-green-500 text-black";
+      case "Rejected":
+        return "bg-red-500 text-black";
+      default:
+        return "bg-yellow-500 text-black";
     }
   };
 
   /* =========================
-     AUTOFILL MAPPING
+     SUBMIT HANDLER (UI ONLY)
   ========================= */
-  const autofillFromBackend = (data) => {
-    const filled = {};
+  const handleSubmit = () => {
+    const newReport = {
+      id: reports.length + 1,
+      subject: "New Water Quality Report",
+      status: "Pending",
+      date: new Date().toISOString().split("T")[0],
+    };
 
-    if (data.subject) {
-      setSubject(data.subject);
-      filled.subject = true;
-    }
-    if (data.latitude) {
-      setLatitude(data.latitude);
-      filled.latitude = true;
-    }
-    if (data.longitude) {
-      setLongitude(data.longitude);
-      filled.longitude = true;
-    }
-    if (data.water_source) {
-      setWaterSource(data.water_source);
-      filled.waterSource = true;
-    }
-    if (data.description) {
-      setDescription(data.description);
-      filled.description = true;
-    }
-
-    setAutoFilledFields(filled);
+    setReports([newReport, ...reports]);
+    setPhoto(null);
   };
-
-  /* =========================
-     HELPER: AUTOFILL HIGHLIGHT
-  ========================= */
-  const autoFillClass = (field) =>
-    autoFilledFields[field]
-      ? "ring-2 ring-green-400"
-      : "";
 
   return (
-    <div className="p-6 text-white">
-      <div className="max-w-3xl mx-auto bg-[#222831] rounded-xl p-6 space-y-6">
+    <div className="p-4 md:p-8 text-white space-y-10">
 
-        <h1 className="text-xl font-bold">
+      {/* =========================
+          REPORT HISTORY
+      ========================= */}
+      <div>
+        <h1 className="text-2xl font-bold mb-4">
+          My Submitted Reports
+        </h1>
+
+        <div className="bg-[#222831] rounded-xl overflow-hidden">
+          <table className="w-full text-sm">
+            <thead className="bg-[#1b1f24] text-gray-400">
+              <tr>
+                <th className="px-4 py-3 text-left">Subject</th>
+                <th>Date</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {reports.map((report) => (
+                <tr
+                  key={report.id}
+                  className="border-t border-gray-700 hover:bg-[#1b1f24]"
+                >
+                  <td className="px-4 py-3">{report.subject}</td>
+                  <td>{report.date}</td>
+                  <td>
+                    <span
+                      className={`text-xs px-3 py-1 rounded-full ${getStatusBadge(
+                        report.status
+                      )}`}
+                    >
+                      {report.status}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          <p className="text-xs text-gray-400 px-4 py-3">
+            Reports are reviewed by NGO/Admin before updating official station readings.
+          </p>
+        </div>
+      </div>
+
+      {/* =========================
+          SUBMIT NEW REPORT
+      ========================= */}
+      <div>
+        <h1 className="text-2xl font-bold mb-6">
           Submit New Water Quality Report
         </h1>
 
-        {/* =========================
-            SUBJECT
-        ========================= */}
-        <div>
-          <label className="text-sm text-gray-400">Subject / Title</label>
-          <input
-            className={`w-full mt-1 p-2 bg-black rounded ${autoFillClass("subject")}`}
-            value={subject}
-            onChange={(e) => setSubject(e.target.value)}
-            placeholder="Unusual discoloration in local river"
-          />
-        </div>
+        <div className="max-w-3xl bg-[#222831] p-6 rounded-xl space-y-6">
 
-        {/* =========================
-            PDF UPLOAD
-        ========================= */}
-        <div>
-          <label className="text-sm text-gray-400">Upload PDF</label>
-
-          <div
-            onClick={() => fileInputRef.current.click()}
-            onDragOver={(e) => e.preventDefault()}
-            onDrop={handleDrop}
-            className="mt-2 border border-dashed border-gray-600 rounded-lg p-6 text-center cursor-pointer hover:border-blue-400 transition"
-          >
-            <p className="text-gray-300">
-              Drag & drop PDF here or click to upload
-            </p>
-            <p className="text-xs text-gray-400 mt-1">
-              PDF up to 10MB
-            </p>
-
-            {fileName && (
-              <p className="text-sm text-green-400 mt-2">
-                {loadingPdf ? "Parsing PDF…" : `Uploaded: ${fileName}`}
-              </p>
-            )}
-          </div>
-
-          <input
-            type="file"
-            accept="application/pdf"
-            ref={fileInputRef}
-            className="hidden"
-            onChange={handleFileChange}
-          />
-        </div>
-
-        {/* =========================
-            LOCATION
-        ========================= */}
-        <div>
-          <h3 className="font-semibold mb-2">Location Information</h3>
-
-          <div className="grid grid-cols-2 gap-4">
+          {/* SUBJECT */}
+          <div>
+            <label className="block text-sm mb-2">Subject / Title</label>
             <input
-              className={`p-2 bg-black rounded ${autoFillClass("latitude")}`}
-              value={latitude}
-              onChange={(e) => setLatitude(e.target.value)}
-              placeholder="Latitude"
-            />
-            <input
-              className={`p-2 bg-black rounded ${autoFillClass("longitude")}`}
-              value={longitude}
-              onChange={(e) => setLongitude(e.target.value)}
-              placeholder="Longitude"
+              type="text"
+              placeholder="Brief summary of the issue"
+              className="w-full bg-[#1b1f24] border border-gray-700 rounded-lg px-4 py-2 focus:outline-none"
             />
           </div>
+
+          {/* UPLOAD PHOTO */}
+          <div>
+            <label className="block text-sm mb-2">Upload Photo</label>
+
+            <label
+              htmlFor="upload"
+              className="flex flex-col items-center justify-center h-40 border-2 border-dashed border-gray-600 rounded-lg cursor-pointer hover:border-gray-400 transition"
+            >
+              {photo ? (
+                <p className="text-sm text-green-400">
+                  {photo.name} selected
+                </p>
+              ) : (
+                <>
+                  <span className="text-lg">⬆</span>
+                  <p className="text-sm text-gray-400">
+                    Drag & drop photo here or click to upload
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    PNG, JPG up to 10MB
+                  </p>
+                </>
+              )}
+            </label>
+
+            <input
+              id="upload"
+              type="file"
+              className="hidden"
+              onChange={(e) => setPhoto(e.target.files[0])}
+            />
+          </div>
+
+          {/* LOCATION INFO */}
+          <div>
+            <h3 className="text-lg font-semibold mb-3">
+              Location Information
+            </h3>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <input
+                type="text"
+                placeholder="Latitude"
+                className="bg-[#1b1f24] border border-gray-700 rounded-lg px-4 py-2"
+              />
+              <input
+                type="text"
+                placeholder="Longitude"
+                className="bg-[#1b1f24] border border-gray-700 rounded-lg px-4 py-2"
+              />
+            </div>
+
+            <div className="flex gap-3 mt-3">
+              <button className="bg-[#2c3440] px-4 py-2 rounded-lg text-sm">
+                Select on Map
+              </button>
+              <button className="bg-[#2c3440] px-4 py-2 rounded-lg text-sm">
+                Detect Current Location
+              </button>
+            </div>
+          </div>
+
+          {/* WATER SOURCE */}
+          <div>
+            <label className="block text-sm mb-2">
+              Water Source
+            </label>
+            <select className="w-full bg-[#1b1f24] border border-gray-700 rounded-lg px-4 py-2">
+              <option>Select water source</option>
+              <option>River</option>
+              <option>Lake</option>
+              <option>Reservoir</option>
+              <option>Groundwater</option>
+            </select>
+          </div>
+
+          {/* DESCRIPTION */}
+          <div>
+            <label className="block text-sm mb-2">
+              Detailed Description
+            </label>
+            <textarea
+              rows="4"
+              placeholder="Describe what you observed..."
+              className="w-full bg-[#1b1f24] border border-gray-700 rounded-lg px-4 py-2 resize-none"
+            />
+          </div>
+
+          {/* STATUS */}
+          <div>
+            <label className="block text-sm mb-2">
+              Current Status
+            </label>
+            <span className="inline-block bg-yellow-500 text-black text-xs px-3 py-1 rounded-full">
+              Pending Review
+            </span>
+          </div>
+
+          {/* MODERATION NOTES */}
+          <div>
+            <label className="block text-sm mb-2">
+              Moderation Notes (Read-only)
+            </label>
+            <textarea
+              rows="3"
+              readOnly
+              className="w-full bg-[#1b1f24] border border-gray-700 rounded-lg px-4 py-2 text-gray-400 resize-none"
+              value="Your report is currently being reviewed by our team."
+            />
+          </div>
+
+          {/* ACTION BUTTONS */}
+          <div className="flex justify-end gap-3">
+            <button className="px-5 py-2 rounded-lg bg-gray-600">
+              Cancel
+            </button>
+            <button
+              onClick={handleSubmit}
+              className="px-5 py-2 rounded-lg bg-yellow-500 text-black font-semibold"
+            >
+              Submit Report
+            </button>
+          </div>
+
         </div>
-
-        {/* =========================
-            WATER SOURCE
-        ========================= */}
-        <div>
-          <label className="text-sm text-gray-400">Water Source</label>
-          <select
-            className={`w-full mt-1 p-2 bg-black rounded ${autoFillClass("waterSource")}`}
-            value={waterSource}
-            onChange={(e) => setWaterSource(e.target.value)}
-          >
-            <option value="">Select water source</option>
-            <option value="River">River</option>
-            <option value="Lake">Lake</option>
-            <option value="Groundwater">Groundwater</option>
-          </select>
-        </div>
-
-        {/* =========================
-            DESCRIPTION
-        ========================= */}
-        <div>
-          <label className="text-sm text-gray-400">
-            Detailed Description
-          </label>
-          <textarea
-            rows="4"
-            className={`w-full mt-1 p-2 bg-black rounded ${autoFillClass("description")}`}
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="Describe what you observed..."
-          />
-        </div>
-
-        {/* =========================
-            STATUS
-        ========================= */}
-        <div>
-          <h3 className="font-semibold mb-2">
-            Report Status & Notes
-          </h3>
-
-          <span className="inline-block px-3 py-1 bg-yellow-500 text-black rounded-full text-xs">
-            Pending Review
-          </span>
-
-          <textarea
-            readOnly
-            className="w-full mt-3 p-3 bg-black rounded text-gray-400"
-            value="Your report is currently being reviewed."
-          />
-        </div>
-
-        {/* =========================
-            ACTIONS
-        ========================= */}
-        <div className="flex justify-end gap-4">
-          <button className="px-4 py-2 bg-gray-700 rounded">
-            Cancel
-          </button>
-          <button className="px-4 py-2 bg-yellow-400 text-black rounded font-semibold">
-            Submit Report
-          </button>
-        </div>
-
       </div>
+
     </div>
   );
 }
