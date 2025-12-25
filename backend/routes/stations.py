@@ -1,24 +1,23 @@
-from fastapi import APIRouter, Depends
-from sqlalchemy.orm import Session
-from database import get_db
-import models, schemas
+from fastapi import APIRouter, Query
+from typing import Optional
+from services.data_fallback_service import get_water_data
+import asyncio
 
 router = APIRouter(prefix="/stations", tags=["Water Stations"])
 
 
-# Create a new water station
-@router.post("/", response_model=schemas.WaterStationOut)
-def create_station(station: schemas.WaterStationCreate, db: Session = Depends(get_db)):
-    new_station = models.WaterStation(**station.dict())
-    db.add(new_station)
-    db.commit()
-    db.refresh(new_station)
-    return new_station
-
-
-# Get a station by ID
-@router.get("/{station_id}", response_model=schemas.WaterStationOut)
-def get_station(station_id: int, db: Session = Depends(get_db)):
-    station = db.query(models.WaterStation).filter(models.WaterStation.id == station_id).first()
-    return station
-
+@router.get("/")
+async def list_stations(
+    source: str = Query(..., description="Data source: epa | cpcb"),
+    state: Optional[str] = Query(None, description="US State code for EPA"),
+    location: Optional[str] = Query(None, description="Location filter for CPCB")
+):
+    """
+    Fetch stations for frontend map.
+    Priority: Government API / CSV > Local DB fallback
+    """
+    params = {"state": state, "location": location}
+    data = await get_water_data(source, params)
+    if not data:
+        return {"source": source, "mode": "unavailable", "count": 0, "data": []}
+    return data
