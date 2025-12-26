@@ -1,6 +1,8 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 
 import Login from "./pages/Login";
+import Register from "./pages/Register";
+import ForgotPassword from "./pages/ForgotPassword";
 import Dashboard from "./pages/Dashboard";
 import Reports from "./pages/Reports";
 import Alerts from "./pages/Alerts";
@@ -22,6 +24,8 @@ export default function App() {
         {/* LOGIN PAGE (NO SIDEBAR) */}
         <Route path="/" element={<Login />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
 
         {/* APP PAGES (WITH SIDEBAR) */}
         <Route element={<MainLayout />}>
