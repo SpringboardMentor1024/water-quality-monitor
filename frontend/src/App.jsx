@@ -1,8 +1,7 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 
 import Login from "./pages/Login";
 import Register from "./pages/Register";
-import ForgotPassword from "./pages/ForgotPassword";
 import Dashboard from "./pages/Dashboard";
 import Reports from "./pages/Reports";
 import Alerts from "./pages/Alerts";
@@ -13,28 +12,45 @@ import Profile from "./pages/Profile";
 import Search from "./pages/Search";
 import Settings from "./pages/Settings";
 
-
 import MainLayout from "./layouts/MainLayout";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 export default function App() {
+  const isLoggedIn = localStorage.getItem("isLoggedIn");
+
   return (
     <Router>
       <Routes>
 
-        {/* LOGIN PAGE (NO SIDEBAR) */}
-        <Route path="/" element={<Login />} />
+        {/* ROOT REDIRECT */}
+        <Route
+          path="/"
+          element={
+            isLoggedIn ? (
+              <Navigate to="/dashboard" replace />
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+
+        {/* PUBLIC AUTH PAGES */}
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
-        <Route path="/forgot-password" element={<ForgotPassword />} />
 
-        {/* APP PAGES (WITH SIDEBAR) */}
-        <Route element={<MainLayout />}>
+        {/* PROTECTED APP PAGES */}
+        <Route
+          element={
+            <ProtectedRoute>
+              <MainLayout />
+            </ProtectedRoute>
+          }
+        >
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/reports" element={<Reports />} />
           <Route path="/alerts" element={<Alerts />} />
           <Route path="/stations" element={<Stations />} />
           <Route path="/analytics" element={<Analytics />} />
-          <Route path="/profile" element={<Profile />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/map" element={<MapView />} />
           <Route path="/search" element={<Search />} />

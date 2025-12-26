@@ -1,0 +1,155 @@
+from fastapi import FastAPI, Depends
+from sqlalchemy.orm import Session
+from sqlalchemy import func
+from fastapi.middleware.cors import CORSMiddleware
+from auth import router as auth_router
+
+from database import engine, get_db
+import models
+import schemas
+
+# ---------------------------------
+# CREATE DATABASE TABLES
+# ---------------------------------
+models.Base.metadata.create_all(bind=engine)
+
+# ---------------------------------
+# APP INIT (ONLY ONCE)
+# ---------------------------------
+app = FastAPI(title="Water Quality Monitor API")
+app.include_router(auth_router)
+
+# ---------------------------------
+# CORS
+# ---------------------------------
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# ---------------------------------
+# ROOT
+# ---------------------------------
+@app.get("/")
+def root():
+    return {"message": "Water Quality Monitor backend is running"}
+
+# ---------------------------------
+# HELPER: AUTO ALERT CREATION
+# ---------------------------------
+def create_alert_if_needed(report, db: Session):
+    if report.status in ["Warning", "Unsafe"]:
+        message = (
+            f"{report.station_name} water quality is {report.status}. "
+            f"pH: {report.ph}, Turbidity: {report.turbidity}, "
+            f"Temperature: {report.temperature}°C"
+        )
+
+        alert = models.Alert(
+            station_name=report.station_name,
+            status=report.status,
+            message=message
+        )
+        db.add(alert)
+
+# ---------------------------------
+# STATIONS APIs
+# ---------------------------------
+@app.post("/api/stations", response_model=schemas.StationResponse)
+def create_station(
+    station: schemas.StationCreate,
+    db: Session = Depends(get_db)
+):
+    new_station = models.Station(**station.model_dump())
+    db.add(new_station)
+    db.commit()
+    db.refresh(new_station)
+    return new_station
+
+
+@app.get("/api/stations", response_model=list[schemas.StationResponse])
+def get_stations(
+    status: str | None = None,
+    db: Session = Depends(get_db)
+):
+    query = db.query(models.Station)
+    if status:
+        query = query.filter(models.Station.status == status)
+    return query.all()
+
+# ---------------------------------
+# REPORTS APIs
+# ---------------------------------
+@app.post("/api/reports", response_model=schemas.ReportResponse)
+def create_report(
+    report: schemas.ReportCreate,
+    db: Session = Depends(get_db)
+):
+    new_report = models.WaterReading(**report.model_dump())
+    db.add(new_report)
+    db.commit()
+    db.refresh(new_report)
+
+    create_alert_if_needed(new_report, db)
+    db.commit()
+
+    return new_report
+
+
+@app.get("/api/reports", response_model=list[schemas.ReportResponse])
+def get_reports(
+    station: str | None = None,
+    status: str | None = None,
+    db: Session = Depends(get_db)
+):
+    query = db.query(models.WaterReading)
+
+    if station:
+        query = query.filter(
+            models.WaterReading.station_name.ilike(f"%{station}%")
+        )
+
+    if status:
+        query = query.filter(models.WaterReading.status == status)
+
+    return query.order_by(
+        models.WaterReading.recorded_at.desc()
+    ).all()
+
+# ---------------------------------
+# ANALYTICS APIs
+# ---------------------------------
+@app.get("/api/analytics/stations")
+def get_station_analytics(db: Session = Depends(get_db)):
+    results = (
+        db.query(
+            models.WaterReading.station_name,
+            func.avg(models.WaterReading.ph).label("avg_ph"),
+            func.avg(models.WaterReading.turbidity).label("avg_turbidity"),
+            func.avg(models.WaterReading.temperature).label("avg_temperature"),
+        )
+        .group_by(models.WaterReading.station_name)
+        .all()
+    )
+
+    return [
+        {
+            "station_name": r.station_name,
+            "avg_ph": float(r.avg_ph or 0),
+            "avg_turbidity": float(r.avg_turbidity or 0),
+            "avg_temperature": float(r.avg_temperature or 0),
+        }
+        for r in results
+    ]
+
+# ---------------------------------
+# ALERTS APIs
+# ---------------------------------
+@app.get("/api/alerts", response_model=list[schemas.AlertResponse])
+def get_alerts(db: Session = Depends(get_db)):
+    return db.query(models.Alert).order_by(
+        models.Alert.created_at.desc()
+    ).all()

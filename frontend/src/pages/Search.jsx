@@ -1,63 +1,59 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { getStations } from "../services/api";
 
 export default function Search() {
   const [query, setQuery] = useState("");
-  const [region, setRegion] = useState("");
-  const [area, setArea] = useState("");
+  const [allStations, setAllStations] = useState([]);
   const [results, setResults] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  const handleSearch = () => {
-    setLoading(true);
-
-    const params = new URLSearchParams({
-      query,
-      region,
-      area,
-    });
-
-    fetch(`http://127.0.0.1:8000/api/stations/search?${params}`)
-      .then((res) => res.json())
-      .then((data) => {
-        setResults(data);
+  // LOAD STATIONS ON PAGE LOAD
+  useEffect(() => {
+    getStations()
+      .then((res) => {
+        setAllStations(res.data);
+        setResults(res.data); // ✅ show all initially
         setLoading(false);
       })
       .catch((err) => {
-        console.error("Search error:", err);
+        console.error("Stations fetch error:", err);
         setLoading(false);
       });
+  }, []);
+
+  // SEARCH HANDLER
+  const handleSearch = () => {
+    if (!query.trim()) {
+      setResults(allStations); // ✅ empty search → show all
+      return;
+    }
+
+    const q = query.toLowerCase();
+
+    const filtered = allStations.filter(
+      (s) =>
+        s.name.toLowerCase().includes(q) ||
+        String(s.id).includes(q)
+    );
+
+    setResults(filtered);
   };
 
   return (
     <div className="space-y-6">
 
-      {/* PAGE TITLE */}
-      <h1 className="text-2xl font-semibold">Search Water Stations</h1>
+      <h1 className="text-2xl font-semibold">
+        Search Water Stations
+      </h1>
 
-      {/* SEARCH FILTERS */}
-      <div className="bg-white p-6 rounded-xl shadow border border-[#C4E1E6] grid grid-cols-1 md:grid-cols-4 gap-4">
+      {/* SEARCH BAR */}
+      <div className="bg-white p-6 rounded-xl shadow border grid grid-cols-1 md:grid-cols-4 gap-4">
         <input
           type="text"
           placeholder="Station Name / ID"
           className="border p-2 rounded-lg"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-        />
-
-        <input
-          type="text"
-          placeholder="Region"
-          className="border p-2 rounded-lg"
-          value={region}
-          onChange={(e) => setRegion(e.target.value)}
-        />
-
-        <input
-          type="text"
-          placeholder="Area"
-          className="border p-2 rounded-lg"
-          value={area}
-          onChange={(e) => setArea(e.target.value)}
         />
 
         <button
@@ -69,12 +65,12 @@ export default function Search() {
       </div>
 
       {/* RESULTS */}
-      <div className="bg-white rounded-xl shadow border border-[#C4E1E6] overflow-x-auto">
+      <div className="bg-white rounded-xl shadow border overflow-x-auto">
         {loading ? (
-          <p className="p-6 text-center">Searching...</p>
+          <p className="p-6 text-center">Loading stations...</p>
         ) : results.length === 0 ? (
           <p className="p-6 text-center text-gray-500">
-            No results found
+            No matching stations found
           </p>
         ) : (
           <table className="w-full text-left">
@@ -82,8 +78,6 @@ export default function Search() {
               <tr>
                 <th className="p-3">Station ID</th>
                 <th className="p-3">Name</th>
-                <th className="p-3">Region</th>
-                <th className="p-3">Area</th>
                 <th className="p-3">Status</th>
               </tr>
             </thead>
@@ -95,9 +89,7 @@ export default function Search() {
                 >
                   <td className="p-3">{station.id}</td>
                   <td className="p-3">{station.name}</td>
-                  <td className="p-3">{station.region}</td>
-                  <td className="p-3">{station.area}</td>
-                  <td className="p-3 font-medium">
+                  <td className="p-3">
                     <span
                       className={`px-2 py-1 rounded text-sm ${
                         station.status === "Safe"

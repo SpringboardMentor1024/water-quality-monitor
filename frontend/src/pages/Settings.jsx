@@ -1,22 +1,88 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 export default function Settings() {
-  const [email, setEmail] = useState("user@example.com");
+  const navigate = useNavigate();
+  const userId = localStorage.getItem("userId");
+
+  // EMAIL STATE
+  const [email, setEmail] = useState("");
+  const [emailMsg, setEmailMsg] = useState("");
+  const [emailErr, setEmailErr] = useState("");
+
+  // PASSWORD STATE
   const [password, setPassword] = useState("");
+  const [passMsg, setPassMsg] = useState("");
+  const [passErr, setPassErr] = useState("");
 
-  const handleEmailUpdate = (e) => {
+  /* ------------------------
+     UPDATE EMAIL
+  ------------------------ */
+  const handleEmailUpdate = async (e) => {
     e.preventDefault();
-    alert("Email updated (temporary frontend)");
+    setEmailMsg("");
+    setEmailErr("");
+
+    try {
+      const res = await fetch(
+        "http://127.0.0.1:8000/api/auth/update-email",
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            user_id: Number(userId),
+            new_email: email,
+          }),
+        }
+      );
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || "Email update failed");
+
+      setEmailMsg("Email updated successfully");
+      setEmail("");
+    } catch (err) {
+      setEmailErr(err.message);
+    }
   };
 
-  const handlePasswordUpdate = (e) => {
+  /* ------------------------
+     UPDATE PASSWORD
+  ------------------------ */
+  const handlePasswordUpdate = async (e) => {
     e.preventDefault();
-    alert("Password updated (temporary frontend)");
+    setPassMsg("");
+    setPassErr("");
+
+    try {
+      const res = await fetch(
+        "http://127.0.0.1:8000/api/auth/update-password",
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            user_id: Number(userId),
+            new_password: password,
+          }),
+        }
+      );
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || "Password update failed");
+
+      setPassMsg("Password updated successfully");
+      setPassword("");
+    } catch (err) {
+      setPassErr(err.message);
+    }
   };
 
+  /* ------------------------
+     LOGOUT
+  ------------------------ */
   const handleLogout = () => {
     localStorage.clear();
-    window.location.href = "/login";
+    navigate("/login");
   };
 
   return (
@@ -26,10 +92,15 @@ export default function Settings() {
       {/* CHANGE EMAIL */}
       <div className="bg-white p-6 rounded-xl shadow">
         <h2 className="font-semibold mb-4">Change Email</h2>
+
+        {emailMsg && <p className="text-green-600 mb-2">{emailMsg}</p>}
+        {emailErr && <p className="text-red-600 mb-2">{emailErr}</p>}
+
         <form onSubmit={handleEmailUpdate} className="space-y-3">
           <input
             type="email"
             className="w-full p-2 border rounded-lg"
+            placeholder="New email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
@@ -43,6 +114,10 @@ export default function Settings() {
       {/* CHANGE PASSWORD */}
       <div className="bg-white p-6 rounded-xl shadow">
         <h2 className="font-semibold mb-4">Change Password</h2>
+
+        {passMsg && <p className="text-green-600 mb-2">{passMsg}</p>}
+        {passErr && <p className="text-red-600 mb-2">{passErr}</p>}
+
         <form onSubmit={handlePasswordUpdate} className="space-y-3">
           <input
             type="password"

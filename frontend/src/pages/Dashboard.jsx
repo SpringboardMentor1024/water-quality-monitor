@@ -1,45 +1,61 @@
-// ✅ IMPORTS
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import GoogleMapReact from "google-map-react";
+import DashboardMap from "../components/DashboardMap";
+import { getAlerts, getReports, getStations } from "../services/api";
 
-// ✅ MINI MAP COMPONENT — MUST BE ABOVE Dashboard()
-function MiniMap() {
-  const defaultProps = {
-    center: { lat: 12.9716, lng: 77.5946 },
-    zoom: 11,
-  };
-
-  return (
-    <div className="h-52 rounded-lg overflow-hidden border border-[#A4CCD9]">
-      <GoogleMapReact
-        bootstrapURLKeys={{ key: "AIzaSyAeMYcURw7ex-KyeHJ5_3ZJwF9ebKKio54" }}
-        defaultCenter={defaultProps.center}
-        defaultZoom={defaultProps.zoom}
-      />
-    </div>
-  );
-}
-
-// ✅ MAIN DASHBOARD COMPONENT
 export default function Dashboard() {
+  const [alerts, setAlerts] = useState([]);
+  const [reports, setReports] = useState([]);
+  const [stations, setStations] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // FETCH DASHBOARD DATA
+  useEffect(() => {
+    Promise.all([
+      getAlerts(),
+      getReports(),
+      getStations(),
+    ])
+      .then(([alertsRes, reportsRes, stationsRes]) => {
+        setAlerts(alertsRes.data);
+        setReports(reportsRes.data);
+        setStations(stationsRes.data);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error("Dashboard fetch error:", err);
+        setLoading(false);
+      });
+  }, []);
+
+  if (loading) {
+    return <p className="text-center mt-10">Loading dashboard...</p>;
+  }
+
   return (
     <div className="space-y-6">
-      
+
       {/* PAGE TITLE */}
-      <h2 className="text-2xl font-bold text-gray-700">Dashboard Overview</h2>
+      <h2 className="text-2xl font-bold text-gray-700">
+        Dashboard Overview
+      </h2>
 
       {/* STATS CARDS */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard title="Active Alerts" value="12" color="#8DBCC7" />
-        <StatCard title="Recent Reports" value="56" color="#A4CCD9" />
-        <StatCard title="Stations Online" value="18" color="#C4E1E6" />
-        <StatCard title="Water Quality Index" value="Good" color="#8DBCC7" />
+        <StatCard title="Active Alerts" value={alerts.length} color="#8DBCC7" />
+        <StatCard title="Recent Reports" value={reports.length} color="#A4CCD9" />
+        <StatCard title="Stations Online" value={stations.length} color="#C4E1E6" />
+        <StatCard title="Water Quality Index" value="Moderate" color="#8DBCC7" />
       </div>
 
-      {/* MAP PREVIEW */}
+      {/* MAP OVERVIEW */}
       <div className="bg-white p-5 rounded-xl shadow border border-[#C4E1E6]">
         <h2 className="text-xl font-semibold mb-3">Map Overview</h2>
-        <MiniMap />
+
+        <div className="rounded-lg overflow-hidden border border-[#A4CCD9]">
+          <DashboardMap stations={stations} />
+        </div>
+
         <Link
           to="/map"
           className="mt-3 inline-block text-blue-600 font-semibold hover:underline"
@@ -48,16 +64,29 @@ export default function Dashboard() {
         </Link>
       </div>
 
-      {/* GRID: ALERTS + REPORTS */}
+      {/* ALERTS + REPORTS */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
         {/* RECENT ALERTS */}
         <div className="bg-white p-5 rounded-xl shadow border border-[#A4CCD9]">
           <h2 className="text-xl font-semibold mb-4">Recent Alerts</h2>
-          <AlertItem location="Riverbank Station" status="Unsafe" color="red" />
-          <AlertItem location="City Tank" status="Warning" color="yellow" />
-          <AlertItem location="Borewell Area" status="Unsafe" color="red" />
-          <Link to="/alerts" className="text-blue-600 font-semibold mt-3 inline-block">
+
+          {alerts.slice(0, 3).map((alert) => (
+            <AlertItem
+              key={alert.id}
+              location={alert.station_name}
+              status={alert.status}
+            />
+          ))}
+
+          {alerts.length === 0 && (
+            <p className="text-gray-500">No alerts available</p>
+          )}
+
+          <Link
+            to="/alerts"
+            className="text-blue-600 font-semibold mt-3 inline-block"
+          >
             View All Alerts →
           </Link>
         </div>
@@ -65,10 +94,24 @@ export default function Dashboard() {
         {/* RECENT REPORTS */}
         <div className="bg-white p-5 rounded-xl shadow border border-[#A4CCD9]">
           <h2 className="text-xl font-semibold mb-4">Recent Reports</h2>
-          <ReportItem location="Lake View" ph="6.1" status="Warning" />
-          <ReportItem location="City Tank" ph="7.0" status="Safe" />
-          <ReportItem location="River Bank" ph="5.8" status="Unsafe" />
-          <Link to="/reports" className="text-blue-600 font-semibold mt-3 inline-block">
+
+          {reports.slice(0, 3).map((report) => (
+            <ReportItem
+              key={report.id}
+              location={report.station_name}
+              ph={report.ph}
+              status={report.status}
+            />
+          ))}
+
+          {reports.length === 0 && (
+            <p className="text-gray-500">No reports available</p>
+          )}
+
+          <Link
+            to="/reports"
+            className="text-blue-600 font-semibold mt-3 inline-block"
+          >
             View All Reports →
           </Link>
         </div>
@@ -78,7 +121,9 @@ export default function Dashboard() {
   );
 }
 
-/* ---- SUB COMPONENTS ---- */
+/* ---------------------------------
+   SUB COMPONENTS
+----------------------------------- */
 
 function StatCard({ title, value, color }) {
   return (
@@ -92,7 +137,12 @@ function StatCard({ title, value, color }) {
   );
 }
 
-function AlertItem({ location, status, color }) {
+function AlertItem({ location, status }) {
+  const color =
+    status === "Warning"
+      ? "bg-yellow-500"
+      : "bg-red-500";
+
   return (
     <div className="p-3 rounded-lg mb-3 border border-gray-200 flex justify-between items-center">
       <div>
@@ -101,10 +151,8 @@ function AlertItem({ location, status, color }) {
       </div>
 
       <span
-        className={`flex items-center justify-center px-4 py-1 rounded-full font-medium text-white text-sm tracking-wide ${
-          color === "red" ? "bg-red-500" : "bg-yellow-500"
-        }`}
-        style={{ minWidth: "100px" }}
+        className={`px-4 py-1 rounded-full text-white text-sm font-medium ${color}`}
+        style={{ minWidth: "100px", textAlign: "center" }}
       >
         {status}
       </span>
@@ -113,6 +161,13 @@ function AlertItem({ location, status, color }) {
 }
 
 function ReportItem({ location, ph, status }) {
+  const color =
+    status === "Safe"
+      ? "bg-green-500"
+      : status === "Warning"
+      ? "bg-yellow-500"
+      : "bg-red-500";
+
   return (
     <div className="p-3 rounded-lg mb-3 border border-gray-200 flex justify-between items-center">
       <div>
@@ -121,14 +176,8 @@ function ReportItem({ location, ph, status }) {
       </div>
 
       <span
-        className={`flex items-center justify-center px-4 py-1 rounded-full font-medium text-white text-sm tracking-wide ${
-          status === "Safe"
-            ? "bg-green-500"
-            : status === "Warning"
-            ? "bg-yellow-500"
-            : "bg-red-500"
-        }`}
-        style={{ minWidth: "100px" }}
+        className={`px-4 py-1 rounded-full text-white text-sm font-medium ${color}`}
+        style={{ minWidth: "100px", textAlign: "center" }}
       >
         {status}
       </span>
