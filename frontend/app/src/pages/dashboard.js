@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { FaBars, FaPlus, FaUserCircle } from "react-icons/fa";
+import { FaBars, FaUserCircle } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { ToastContainer, toast } from "react-toastify";
@@ -253,17 +253,6 @@ const Dashboard = () => {
             <StatsPanel stats={displayStats} onFilter={setFilter} />
           </div>
         </div>
-
-        <button
-          className="mt-4 bg-yellow-500 text-black p-2 rounded w-44"
-          onClick={() => toast.info("Quick report submitted!")}
-        >
-          Submit Quick Report
-        </button>
-
-        <button className="md:hidden fixed bottom-4 right-4 bg-yellow-500 text-black p-4 rounded-full shadow-lg">
-          <FaPlus />
-        </button>
       </div>
     </div>
   );
