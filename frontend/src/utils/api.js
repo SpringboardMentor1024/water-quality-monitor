@@ -105,11 +105,23 @@ export const getReports = async () => {
 
 /**
  * GET /stations/:id/readings
- * Fetch readings for a station.
+ * Fetch readings for a station (old time-series endpoint).
  */
 export const getStationReadings = async (stationId) => {
   const res = await api.get(`/stations/${stationId}/readings`);
   return res.data;
 };
 
+/**
+ * GET /stations/water-quality/2011/{station_name}
+ * Fetch 2011 summary data for a station by name.
+ */
+export const getStation2011 = async (stationName) => {
+  const res = await api.get(
+    `/stations/water-quality/2011/${encodeURIComponent(stationName)}`
+  );
+  return res.data;
+};
+
 export default api;
+
