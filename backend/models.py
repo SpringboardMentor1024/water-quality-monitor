@@ -3,6 +3,7 @@ from database import Base
 import enum
 from datetime import datetime
 
+
 # ------------------------
 # ENUMS
 # ------------------------
@@ -107,4 +108,3 @@ class Searches(Base):
     parameter = Column(Enum(SearchParamEnum))
     value = Column(String(255))
     created_at = Column(TIMESTAMP, default=datetime.utcnow)
-
