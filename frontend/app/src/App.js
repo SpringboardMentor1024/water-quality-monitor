@@ -5,9 +5,14 @@ import Home from "./pages/home";
 import Login from "./pages/login";
 import Register from "./pages/register";
 import Dashboard from "./pages/dashboard";
-import Profile from "./pages/profile"; 
+import Profile from "./pages/profile";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
+
+/* ✅ NEW IMPORTS */
+import Details from "./pages/sections/details";
+import Reports from "./pages/sections/report";
+
 import "./App.css";
 
 function App() {
@@ -35,7 +40,9 @@ function App() {
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
 
-        {/* Protected Routes */}
+        {/* =====================
+            PROTECTED ROUTES
+        ===================== */}
         <Route
           path="/dashboard"
           element={isLoggedIn ? <Dashboard /> : <Navigate to="/login" replace />}
@@ -44,6 +51,19 @@ function App() {
         <Route
           path="/profile"
           element={isLoggedIn ? <Profile /> : <Navigate to="/login" replace />}
+        />
+
+        {/* =====================
+            NEW ROUTES (SAFE)
+        ===================== */}
+        <Route
+          path="/details/:stationId"
+          element={isLoggedIn ? <Details /> : <Navigate to="/login" replace />}
+        />
+
+        <Route
+          path="/reports"
+          element={isLoggedIn ? <Reports /> : <Navigate to="/login" replace />}
         />
 
         {/* Fallback */}

@@ -1,23 +1,22 @@
 import React, { useEffect, useState } from "react";
 import { MapContainer, TileLayer, CircleMarker, Popup } from "react-leaflet";
-import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import "leaflet/dist/leaflet.css";
 
-const MapView = ({ filter, onHoverStation }) => {
+const MapView = ({ filter, onHoverStation, onViewDetails }) => {
   const [stations, setStations] = useState([]);
-  const navigate = useNavigate();
 
   useEffect(() => {
     axios
       .get("http://127.0.0.1:8000/water-stations")
       .then((res) => setStations(res.data || []))
-      .catch((err) => console.error("Failed to fetch water stations", err));
+      .catch((err) =>
+        console.error("Failed to fetch water stations", err)
+      );
   }, []);
 
   const filteredStations = stations.filter((station) => {
     if (!station.latitude || !station.longitude) return false;
-
     if (!filter) return true;
 
     switch (filter) {
@@ -42,7 +41,11 @@ const MapView = ({ filter, onHoverStation }) => {
 
   return (
     <div className="w-full h-full rounded-lg overflow-hidden">
-      <MapContainer center={[20.5937, 78.9629]} zoom={5} className="w-full h-full">
+      <MapContainer
+        center={[20.5937, 78.9629]}
+        zoom={5}
+        className="w-full h-full"
+      >
         <TileLayer
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           attribution="&copy; OpenStreetMap contributors"
@@ -53,24 +56,26 @@ const MapView = ({ filter, onHoverStation }) => {
             key={station.id}
             center={[station.latitude, station.longitude]}
             radius={8}
-            pathOptions={{ color: getMarkerColor(station), fillOpacity: 0.8 }}
+            pathOptions={{
+              color: getMarkerColor(station),
+              fillOpacity: 0.8,
+            }}
             eventHandlers={{
-              mouseover: () => onHoverStation(station),
-              mouseout: () => onHoverStation(null),
+              mouseover: () => onHoverStation?.(station),
+              mouseout: () => onHoverStation?.(null),
             }}
           >
             <Popup>
               <div className="text-sm space-y-1">
-                <p className="font-bold text-base">{station.name}</p>
+                <p className="font-bold">{station.name}</p>
                 <p><strong>Location:</strong> {station.location}</p>
 
-                {/* ✅ FIXED STATUS LINK */}
                 <p>
                   <strong>Status:</strong>{" "}
                   <button
                     onClick={(e) => {
-                      e.stopPropagation(); // 🔥 critical for Leaflet
-                      navigate(`/dashboard/details/${station.id}`);
+                      e.stopPropagation();
+                      onViewDetails(station.id);
                     }}
                     className="text-blue-400 underline hover:text-blue-300"
                   >
@@ -80,18 +85,6 @@ const MapView = ({ filter, onHoverStation }) => {
 
                 {station.managed_by && (
                   <p><strong>Managed By:</strong> {station.managed_by}</p>
-                )}
-                {station.water_quality_index !== undefined && (
-                  <p>
-                    <strong>Water Quality Index:</strong>{" "}
-                    {station.water_quality_index}
-                  </p>
-                )}
-                {station.contaminated !== undefined && (
-                  <p>
-                    <strong>Contaminated:</strong>{" "}
-                    {station.contaminated ? "Yes" : "No"}
-                  </p>
                 )}
               </div>
             </Popup>
