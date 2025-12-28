@@ -1,157 +1,100 @@
-import { useEffect, useState } from "react";
-import { getStations, getReports } from "../services/api";
+import React, { useEffect, useState } from "react";
+import axios from "axios";
+import { useNavigate } from "react-router-dom";
+import { Eye } from "lucide-react"; // 👁️ Eye icon
 
 export default function Stations() {
   const [stations, setStations] = useState([]);
-  const [reports, setReports] = useState([]);
-  const [search, setSearch] = useState("");
-  const [filterStatus, setFilterStatus] = useState("All");
+  const navigate = useNavigate();
 
   useEffect(() => {
-    Promise.all([getStations(), getReports()])
-      .then(([stationsRes, reportsRes]) => {
-        setStations(stationsRes.data);
-        setReports(reportsRes.data);
-      })
-      .catch((err) => console.error(err));
+    fetchStations();
   }, []);
 
-  // 🔥 attach latest report to each station
-  const stationsWithReadings = stations.map((station) => {
-    const stationReports = reports
-      .filter((r) => r.station_name === station.name)
-      .sort(
-        (a, b) => new Date(b.recorded_at) - new Date(a.recorded_at)
-      );
+  const fetchStations = async () => {
+    try {
+      const res = await axios.get("http://127.0.0.1:8000/api/stations");
+      setStations(res.data);
+    } catch (err) {
+      console.error(err);
+      alert("Failed to load stations");
+    }
+  };
 
-    const latest = stationReports[0];
-
-    return {
-      ...station,
-      sensors: latest
-        ? {
-            ph: latest.ph,
-            turbidity: latest.turbidity,
-            temp: `${latest.temperature}°C`,
-            status: latest.status,
-          }
-        : {
-            ph: "-",
-            turbidity: "-",
-            temp: "-",
-            status: "Online",
-          },
-    };
-  });
-
-  const filteredStations = stationsWithReadings.filter((station) => {
-    const matchesSearch = station.name
-      .toLowerCase()
-      .includes(search.toLowerCase());
-
-    const matchesStatus =
-      filterStatus === "All" ||
-      station.sensors.status === filterStatus;
-
-    return matchesSearch && matchesStatus;
-  });
+  const statusColor = (status) => {
+    switch (status) {
+      case "Safe":
+        return "bg-green-100 text-green-700 border-green-300";
+      case "Warning":
+        return "bg-yellow-100 text-yellow-700 border-yellow-300";
+      case "Unsafe":
+        return "bg-red-100 text-red-700 border-red-300";
+      default:
+        return "bg-gray-100 text-gray-700 border-gray-300";
+    }
+  };
 
   return (
-    <div className="space-y-6">
+    <div className="p-6 bg-[#F4FBFD] min-h-screen">
+      <h2 className="text-2xl font-bold mb-6 text-gray-700">All Water Stations</h2>
 
-      <h2 className="text-2xl font-bold text-gray-700">
-        Stations
-      </h2>
+      {stations.length === 0 ? (
+        <p className="text-gray-600 text-center">No stations available</p>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {stations.map((station) => (
+            <div
+              key={station.id}
+              className="bg-white border border-[#C4E1E6] rounded-xl shadow p-5 flex flex-col justify-between hover:shadow-lg transition"
+            >
+              <div>
+                <h3 className="text-lg font-semibold text-[#2C7A7B] mb-1">
+                  {station.name}
+                </h3>
+                <p className="text-sm text-gray-600 mb-1">
+                  Latitude: {station.latitude} | Longitude: {station.longitude}
+                </p>
+                <p
+                  className={`inline-block text-xs px-3 py-1 rounded-full border ${statusColor(
+                    station.status
+                  )}`}
+                >
+                  {station.status}
+                </p>
+              </div>
 
-      {/* SEARCH + FILTER */}
-      <div className="bg-white p-4 rounded-xl shadow border flex flex-col md:flex-row gap-4">
+              {/* Readings */}
+              <div className="mt-4 grid grid-cols-3 gap-2 text-center text-sm">
+                <div className="bg-gray-50 rounded-lg p-2">
+                  <p className="text-gray-600">pH</p>
+                  <p className="font-bold text-gray-800">{station.ph}</p>
+                </div>
+                <div className="bg-gray-50 rounded-lg p-2">
+                  <p className="text-gray-600">Turbidity</p>
+                  <p className="font-bold text-gray-800">{station.turbidity}</p>
+                </div>
+                <div className="bg-gray-50 rounded-lg p-2">
+                  <p className="text-gray-600">Temp (°C)</p>
+                  <p className="font-bold text-gray-800">
+                    {station.temperature}
+                  </p>
+                </div>
+              </div>
 
-        <div className="flex flex-col w-full md:w-1/3">
-          <label className="text-sm font-medium text-gray-600">
-            Search Station
-          </label>
-          <input
-            type="text"
-            placeholder="Search by station name..."
-            className="p-2 border rounded-lg mt-1"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
+              {/* Eye Button */}
+              <div className="mt-4 flex justify-end">
+                <button
+                  onClick={() => navigate(`/stations/${station.id}`)}
+                  className="flex items-center gap-1 bg-[#4FA3B5] hover:bg-[#3D91A3] text-white px-3 py-2 rounded-lg text-sm transition"
+                >
+                  <Eye size={16} />
+                  <span>View</span>
+                </button>
+              </div>
+            </div>
+          ))}
         </div>
-
-        <div className="flex flex-col w-full md:w-1/4">
-          <label className="text-sm font-medium text-gray-600">
-            Status
-          </label>
-          <select
-            className="p-2 border rounded-lg mt-1"
-            value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
-          >
-            <option value="All">All</option>
-            <option value="Safe">Safe</option>
-            <option value="Warning">Warning</option>
-            <option value="Unsafe">Unsafe</option>
-          </select>
-        </div>
-
-      </div>
-
-      {/* STATION CARDS */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-        {filteredStations.map((station) => (
-          <StationCard key={station.id} station={station} />
-        ))}
-      </div>
-
-    </div>
-  );
-}
-
-/* --------------------------------- */
-
-function StationCard({ station }) {
-  const badgeColor =
-    station.sensors.status === "Safe"
-      ? "bg-green-500"
-      : station.sensors.status === "Warning"
-      ? "bg-yellow-500"
-      : "bg-red-500";
-
-  return (
-    <div className="bg-white p-5 rounded-xl shadow border">
-
-      <div className="flex justify-between items-center">
-        <h3 className="text-lg font-semibold">
-          {station.name}
-        </h3>
-
-        <span
-          className={`px-4 py-1 rounded-full text-white text-sm ${badgeColor}`}
-        >
-          {station.sensors.status}
-        </span>
-      </div>
-
-      <p className="text-sm text-gray-500 mt-1">
-        Last updated: Just now
-      </p>
-
-      <div className="mt-4 grid grid-cols-3 gap-3 text-center">
-        <SensorBox label="pH" value={station.sensors.ph} />
-        <SensorBox label="Turbidity" value={station.sensors.turbidity} />
-        <SensorBox label="Temp" value={station.sensors.temp} />
-      </div>
-
-    </div>
-  );
-}
-
-function SensorBox({ label, value }) {
-  return (
-    <div className="border rounded-lg p-3 bg-[#F5FAFC]">
-      <p className="text-xs text-gray-500">{label}</p>
-      <p className="text-lg font-semibold mt-1">{value}</p>
+      )}
     </div>
   );
 }
