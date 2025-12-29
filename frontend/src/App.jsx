@@ -14,6 +14,8 @@ import Alerts from "./pages/Alerts";
 import Locations from "./pages/Locations";
 import Settings from "./pages/Settings";
 import BaseMap from "./pages/BaseMap";
+import Search from "./pages/Search";
+import Analysis from "./pages/Analysis";
 import Profile from "./pages/Profile";
 import AllUsers from "./pages/AllUsers";
 
@@ -34,12 +36,20 @@ export default function App() {
         <Route path="/" element={<MonitorProfile />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
-        
+
         {/* PROTECTED AUTHORITY DASHBOARD: Requires login token */}
-        <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
+        <Route
+          element={
+            <ProtectedRoute>
+              <Layout />
+            </ProtectedRoute>
+          }
+        >
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/locations" element={<Locations />} />
           <Route path="/map" element={<BaseMap />} />
+          <Route path="/search" element={<Search />} />
+          <Route path="/analysis" element={<Analysis />} />
           <Route path="/station/:id" element={<StationReadings />} />
           <Route path="/alerts" element={<Alerts />} />
           <Route path="/settings" element={<Settings />} />

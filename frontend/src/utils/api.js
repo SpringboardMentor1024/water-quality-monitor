@@ -1,8 +1,8 @@
 import axios from "axios";
 
-/** * BASE URL CONFIGURATION
- * This uses a Vite environment variable. The backend team will set this in a .env file.
- * If no .env is found, it defaults to the local development server.
+/**
+ * BASE URL CONFIGURATION
+ * Uses Vite env; falls back to local FastAPI.
  */
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
 
@@ -15,8 +15,7 @@ const api = axios.create({
 
 /**
  * SECURITY GATEKEEPER (INTERCEPTOR)
- * This logic automatically grabs the JWT token from localStorage and adds it to 
- * the 'Authorization' header of every outgoing request.
+ * Automatically adds JWT token to Authorization header.
  */
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem("authToken");
@@ -28,94 +27,101 @@ api.interceptors.request.use((config) => {
 
 // --- AUTHENTICATION MODULE ---
 
-/**
- * POST /auth/login
- * Standard login request that returns a JWT token and user details.
- */
 export const loginUser = async (email, password) => {
-  // BACKEND TEAM: Replace the mock promise with: return api.post("/auth/login", { email, password });
+  // BACKEND TEAM: replace with real API call
   return new Promise((resolve) => {
     setTimeout(() => {
-      resolve({ 
-        access_token: "secure-jwt-authority-token-12345", 
-        user: { name: "Authority Admin", email: email } 
+      resolve({
+        access_token: "secure-jwt-authority-token-12345",
+        user: { name: "Authority Admin", email },
       });
     }, 500);
   });
 };
 
-/**
- * POST /auth/register
- * Sends new user details to the server for account creation.
- */
 export const registerUser = async (userData) => {
-  // BACKEND TEAM: Replace with: return api.post("/auth/register", userData);
+  // BACKEND TEAM: replace with real API call
   return new Promise((resolve) => {
-    setTimeout(() => resolve({ status: "success", message: "Account Created" }), 500);
+    setTimeout(
+      () => resolve({ status: "success", message: "Account Created" }),
+      500
+    );
   });
 };
 
-/**
- * GET /auth/users
- * Fetches a list of all monitoring agents (Authority Access only).
- */
 export const getAllUsers = async () => {
-  // BACKEND TEAM: Replace with: return api.get("/auth/users");
+  // BACKEND TEAM: replace with real API call
   return new Promise((resolve) => {
-    setTimeout(() => resolve([
-      { id: 1, name: "Admin", email: "admin@gov.in", role: "authority", created_at: new Date() }
-    ]), 300);
+    setTimeout(
+      () =>
+        resolve([
+          {
+            id: 1,
+            name: "Admin",
+            email: "admin@gov.in",
+            role: "authority",
+            created_at: new Date(),
+          },
+        ]),
+      300
+    );
   });
 };
 
 // --- MONITORING & TELEMETRY MODULE ---
 
 /**
- * GET /api/stations
- * Retrieves all active water quality monitoring points for the map and dashboard.
+ * GET /stations
+ * Retrieves all active water quality monitoring points.
  */
 export const getStations = async () => {
-  // BACKEND TEAM: Replace with: return api.get("/api/stations");
-  return new Promise((resolve) => {
-    setTimeout(() => resolve([
-      { id: "STN-4829", name: "Riverbend Point A", location: "Sanath Nagar", latitude: 17.4523, longitude: 78.4412, managed_by: "TSPCB" },
-      { id: "STN-4830", name: "Riverbend Point B", location: "Errum Manzil", latitude: 17.4200, longitude: 78.4500, managed_by: "KRMB" }
-    ]), 300);
-  });
+  const res = await api.get("/stations/");
+  return res.data;
 };
 
 /**
- * POST /api/stations
- * Allows an authorized user to add a new monitoring location to the geospatial inventory.
+ * POST /stations
+ * Add a new monitoring location.
+ * (Currently mocked; backend can wire real endpoint.)
  */
 export const addStation = async (stationData) => {
-  // BACKEND TEAM: Replace with: return api.post("/api/stations", stationData);
+  // BACKEND TEAM: replace with real API call if needed
   return new Promise((resolve) => {
-    setTimeout(() => resolve({ status: "success", data: stationData }), 500);
+    setTimeout(
+      () => resolve({ status: "success", data: stationData }),
+      500
+    );
   });
 };
 
 /**
- * GET /api/stations/:id/readings
- * Fetches real-time sensor data (pH, DO, Temp) and historical trends for a specific node.
+ * GET /reports
+ * Fetch dashboard reports.
  */
-export const getStationReadings = async (id, timeframe) => {
-  // BACKEND TEAM: Replace with: return api.get(`/api/stations/${id}/readings?period=${timeframe}`);
-  return new Promise((resolve) => {
-    setTimeout(() => resolve({
-      id, 
-      name: "River Station Alpha", 
-      ph: "7.2", 
-      do: "8.1", 
-      temp: "22.5", 
-      status: "NORMAL",
-      charts: { 
-        ph: [40, 55, 90, 65, 80, 45], 
-        do: [70, 80, 75, 85, 90, 80], 
-        arsenic: [10, 15, 12, 18, 14, 16] 
-      }
-    }), 300);
-  });
+export const getReports = async () => {
+  const res = await api.get("/reports");
+  return res.data;
+};
+
+/**
+ * GET /stations/:id/readings
+ * Fetch readings for a station (old time-series endpoint).
+ */
+export const getStationReadings = async (stationId) => {
+  const res = await api.get(`/stations/${stationId}/readings`);
+  return res.data;
+};
+
+/**
+ * GET /stations/water-quality/2011/{station_name}
+ * Fetch 2011 summary data for a station by name.
+ */
+export const getStation2011 = async (stationName) => {
+  const res = await api.get(
+    `/stations/water-quality/2011/${encodeURIComponent(stationName)}`
+  );
+  return res.data;
 };
 
 export default api;
+
