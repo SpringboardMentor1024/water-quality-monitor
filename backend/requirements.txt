@@ -20,3 +20,4 @@ python-multipart         # Required to handle form data (like file uploads or lo
 python-dotenv            # Loads secret variables (like DB password) from the .env file
 
 httpx                    # For making async HTTP requests (useful for testing or external API calls)
+apscheduler            # For scheduling tasks (like periodic data cleanup or notifications)
