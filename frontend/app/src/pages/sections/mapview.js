@@ -1,43 +1,23 @@
 import React, { useEffect, useState } from "react";
 import { MapContainer, TileLayer, CircleMarker, Popup } from "react-leaflet";
-import axios from "axios";
 import "leaflet/dist/leaflet.css";
+
+import { fetchStations } from "../../services/api";
 
 const MapView = ({ filter, onHoverStation, onViewDetails }) => {
   const [stations, setStations] = useState([]);
 
   useEffect(() => {
-    axios
-      .get("http://127.0.0.1:8000/water-stations")
+    fetchStations()
       .then((res) => setStations(res.data || []))
-      .catch((err) =>
-        console.error("Failed to fetch water stations", err)
-      );
+      .catch((err) => console.error("Failed to fetch water stations", err));
   }, []);
 
-  const filteredStations = stations.filter((station) => {
-    if (!station.latitude || !station.longitude) return false;
-    if (!filter) return true;
+  const filteredStations = stations.filter(
+    (station) => station.latitude && station.longitude
+  );
 
-    switch (filter) {
-      case "alerts":
-        return station.active_alerts > 0;
-      case "reports":
-        return station.open_reports > 0;
-      case "contaminated":
-        return station.contaminated === true;
-      case "quality":
-        return station.water_quality_index < 7;
-      default:
-        return true;
-    }
-  });
-
-  const getMarkerColor = (station) => {
-    if (station.water_quality_index >= 8) return "green";
-    if (station.water_quality_index >= 5) return "orange";
-    return "red";
-  };
+  const getMarkerColor = () => "blue";
 
   return (
     <div className="w-full h-full rounded-lg overflow-hidden">
@@ -57,7 +37,7 @@ const MapView = ({ filter, onHoverStation, onViewDetails }) => {
             center={[station.latitude, station.longitude]}
             radius={8}
             pathOptions={{
-              color: getMarkerColor(station),
+              color: getMarkerColor(),
               fillOpacity: 0.8,
             }}
             eventHandlers={{
@@ -68,7 +48,9 @@ const MapView = ({ filter, onHoverStation, onViewDetails }) => {
             <Popup>
               <div className="text-sm space-y-1">
                 <p className="font-bold">{station.name}</p>
-                <p><strong>Location:</strong> {station.location}</p>
+                <p>
+                  <strong>Location:</strong> {station.location}
+                </p>
 
                 <p>
                   <strong>Status:</strong>{" "}
@@ -84,7 +66,9 @@ const MapView = ({ filter, onHoverStation, onViewDetails }) => {
                 </p>
 
                 {station.managed_by && (
-                  <p><strong>Managed By:</strong> {station.managed_by}</p>
+                  <p>
+                    <strong>Managed By:</strong> {station.managed_by}
+                  </p>
                 )}
               </div>
             </Popup>

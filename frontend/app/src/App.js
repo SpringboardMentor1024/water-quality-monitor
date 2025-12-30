@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+// frontend/app/src/App.js
+import React from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 
 import Home from "./pages/home";
@@ -12,24 +13,17 @@ import ResetPassword from "./pages/ResetPassword";
 /* ✅ NEW IMPORTS */
 import Details from "./pages/sections/details";
 import Reports from "./pages/sections/report";
+import CpcbDashboard from "./pages/CpcbDashboard"; // CPCB
+import WqpDashboard from "./pages/WqpDashboard";   // WQP
+import WhoDashboard from "./pages/WhoDashboard"; // NEW
+
 
 import "./App.css";
 
+// Utility function to check token
+const isAuthenticated = () => !!localStorage.getItem("token");
+
 function App() {
-  const [isLoggedIn, setIsLoggedIn] = useState(() => {
-    const token = localStorage.getItem("token");
-    return !!token;
-  });
-
-  useEffect(() => {
-    const handleStorageChange = () => {
-      const token = localStorage.getItem("token");
-      setIsLoggedIn(!!token);
-    };
-    window.addEventListener("storage", handleStorageChange);
-    return () => window.removeEventListener("storage", handleStorageChange);
-  }, []);
-
   return (
     <Router>
       <Routes>
@@ -45,12 +39,12 @@ function App() {
         ===================== */}
         <Route
           path="/dashboard"
-          element={isLoggedIn ? <Dashboard /> : <Navigate to="/login" replace />}
+          element={isAuthenticated() ? <Dashboard /> : <Navigate to="/login" replace />}
         />
 
         <Route
           path="/profile"
-          element={isLoggedIn ? <Profile /> : <Navigate to="/login" replace />}
+          element={isAuthenticated() ? <Profile /> : <Navigate to="/login" replace />}
         />
 
         {/* =====================
@@ -58,12 +52,29 @@ function App() {
         ===================== */}
         <Route
           path="/details/:stationId"
-          element={isLoggedIn ? <Details /> : <Navigate to="/login" replace />}
+          element={isAuthenticated() ? <Details /> : <Navigate to="/login" replace />}
         />
 
         <Route
           path="/reports"
-          element={isLoggedIn ? <Reports /> : <Navigate to="/login" replace />}
+          element={isAuthenticated() ? <Reports /> : <Navigate to="/login" replace />}
+        />
+
+        {/* =====================
+            CPCB & WQP DASHBOARDS
+        ===================== */}
+        <Route
+          path="/who"
+          element={isAuthenticated() ? <WhoDashboard /> : <Navigate to="/login" replace />}
+        />
+
+        <Route
+          path="/cpcb"
+          element={isAuthenticated() ? <CpcbDashboard /> : <Navigate to="/login" replace />}
+        />
+        <Route
+          path="/wqp"
+          element={isAuthenticated() ? <WqpDashboard /> : <Navigate to="/login" replace />}
         />
 
         {/* Fallback */}

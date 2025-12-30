@@ -1,5 +1,6 @@
+// frontend/app/src/pages/dashboard.js
 import React, { useState, useEffect } from "react";
-import { FaBars, FaUserCircle, FaTimes, FaWater, FaExclamationTriangle, FaClipboardList, FaFlask, FaChartLine, FaMapMarkerAlt, FaSignOutAlt, FaUser, FaKey, FaFilter } from "react-icons/fa";
+import { FaBars, FaUserCircle, FaTimes, FaWater, FaExclamationTriangle, FaClipboardList, FaFlask, FaChartLine, FaMapMarkerAlt, FaSignOutAlt, FaUser, FaKey, FaFilter, FaGlobe } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { ToastContainer, toast } from "react-toastify";
@@ -11,6 +12,13 @@ import Alerts from "./sections/alerts";
 import Details from "./sections/details";
 import Analytics from "./sections/analytics";
 import Stations from "./sections/stations";
+
+/* =========================
+   CPCB/WQP/WHO Dashboards
+========================= */
+import CpcbDashboard from "./CpcbDashboard";
+import WqpDashboard from "./WqpDashboard";
+import WhoDashboard from "./WhoDashboard";
 
 /* =========================
    Stats Panel - Ultra Compact White Theme
@@ -119,6 +127,9 @@ const Sidebar = ({ isOpen, toggle, setActiveSection, activeSection }) => {
     { name: "Details", icon: <FaWater /> },
     { name: "Analytics", icon: <FaChartLine /> },
     { name: "Stations", icon: <FaFlask /> },
+    { name: "CPCB", icon: <FaClipboardList /> },
+    { name: "WQP", icon: <FaFlask /> },
+    { name: "WHO", icon: <FaGlobe /> },
   ];
 
   return (
@@ -224,7 +235,7 @@ const Dashboard = () => {
   ========================= */
   useEffect(() => {
     axios
-      .get("http://localhost:8000/water-stations")
+      .get("http://localhost:8000/stations")
       .then((res) => {
         const activeAlerts = res.data.filter((s) => s.active_alerts > 0).length;
         const openReports = res.data.filter((s) => s.open_reports > 0).length;
@@ -255,7 +266,10 @@ const Dashboard = () => {
       "Alerts": "Alert System",
       "Details": "Station Details",
       "Analytics": "Analytics Dashboard",
-      "Stations": "Monitoring Stations"
+      "Stations": "Monitoring Stations",
+      "CPCB": "CPCB Dashboard",
+      "WQP": "WQP Dashboard",
+      "WHO": "WHO Water Data",
     };
 
     const sectionIcons = {
@@ -264,114 +278,24 @@ const Dashboard = () => {
       "Alerts": <FaExclamationTriangle />,
       "Details": <FaWater />,
       "Analytics": <FaChartLine />,
-      "Stations": <FaFlask />
+      "Stations": <FaFlask />,
+      "CPCB": <FaClipboardList />,
+      "WQP": <FaFlask />,
+      "WHO": <FaGlobe />,
     };
 
-    return (
-      <div className="h-full flex flex-col">
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-2">
-            <div className="p-1.5 bg-gradient-to-br from-blue-500/20 to-cyan-500/20 rounded-lg">
-              {sectionIcons[activeSection]}
-            </div>
-            <div>
-              <h2 className="text-base font-bold text-white">{sectionTitles[activeSection]}</h2>
-              <p className="text-gray-400 text-xs">Real-time monitoring</p>
-            </div>
-          </div>
-          
-          {filter && (
-            <div className="flex items-center gap-1 px-2 py-1 bg-blue-500/20 rounded-full">
-              <FaFilter className="text-blue-400 text-xs" />
-              <span className="text-xs text-blue-300">{filter}</span>
-              <button 
-                onClick={() => setFilter(null)}
-                className="ml-0.5 text-gray-400 hover:text-white"
-              >
-                <FaTimes size={8} />
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* Ultra Compact Stats Panel - REMOVED on Stations AND Analytics pages */}
-        {activeSection !== "Stations" && activeSection !== "Analytics" && (
-          <div className="mb-2">
-            <StatsPanel 
-              stats={hoveredStation
-                ? {
-                    activeAlerts: hoveredStation.active_alerts,
-                    openReports: hoveredStation.open_reports,
-                    contaminatedSites: hoveredStation.contaminated ? 1 : 0,
-                    waterQualityIndex: hoveredStation.water_quality_index || 0,
-                  }
-                : stats}
-              onFilter={setFilter}
-              hoveredStation={hoveredStation}
-            />
-          </div>
-        )}
-
-        {/* Map/Content Area - MAXIMUM SPACE (no minimum height constraint) */}
-        <div className="flex-1 bg-gradient-to-br from-gray-800/50 to-gray-900/50 rounded-lg border border-gray-700/50 overflow-hidden shadow-lg">
-          {(() => {
-            switch (activeSection) {
-              case "Map":
-                return (
-                  <div className="h-full w-full">
-                    <MapView
-                      filter={filter}
-                      onHoverStation={setHoveredStation}
-                      onViewDetails={(id) => {
-                        setSelectedStationId(id);
-                        setActiveSection("Details");
-                      }}
-                    />
-                  </div>
-                );
-
-              case "Details":
-                return (
-                  <div className="h-full">
-                    <Details
-                      stationId={selectedStationId}
-                      goToReports={() => setActiveSection("Reports")}
-                    />
-                  </div>
-                );
-
-              case "Reports":
-                return <div className="h-full"><Reports /></div>;
-
-              case "Alerts":
-                return <div className="h-full"><Alerts /></div>;
-
-              case "Analytics":
-                return <div className="h-full"><Analytics stationId={selectedStationId} /></div>;
-
-              case "Stations":
-                return (
-                  <div className="h-full">
-                    <Stations
-                      onViewStation={(id) => {
-                        setSelectedStationId(id);
-                        setActiveSection("Analytics");
-                      }}
-                    />
-                  </div>
-                );
-
-              default:
-                return (
-                  <div className="h-full w-full">
-                    <MapView filter={filter} onHoverStation={setHoveredStation} />
-                  </div>
-                );
-            }
-          })()}
-        </div>
-      </div>
-    );
+    switch (activeSection) {
+      case "Map": return <MapView filter={filter} onHoverStation={setHoveredStation} onViewDetails={(id)=>{setSelectedStationId(id); setActiveSection("Details");}} />;
+      case "Details": return <Details stationId={selectedStationId} goToReports={()=>setActiveSection("Reports")} />;
+      case "Reports": return <Reports />;
+      case "Alerts": return <Alerts />;
+      case "Analytics": return <Analytics stationId={selectedStationId} />;
+      case "Stations": return <Stations onViewStation={(id)=>{setSelectedStationId(id); setActiveSection("Analytics");}} />;
+      case "CPCB": return <CpcbDashboard />;
+      case "WQP": return <WqpDashboard />;
+      case "WHO": return <WhoDashboard />;
+      default: return <MapView filter={filter} onHoverStation={setHoveredStation} />;
+    }
   };
 
   const userName = localStorage.getItem("user_name") || "User";
@@ -402,7 +326,7 @@ const Dashboard = () => {
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col p-2 md:p-3 md:ml-0 overflow-hidden">
-        {/* Header - Very Compact */}
+        {/* Header */}
         <div className="flex justify-between items-center mb-1">
           <div className="hidden md:block">
             <h1 className="text-lg font-bold bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
@@ -411,7 +335,7 @@ const Dashboard = () => {
             <p className="text-gray-400 text-xs">Monitor water stations</p>
           </div>
           
-          {/* Profile Menu - Ultra Compact */}
+          {/* Profile Menu */}
           <div className="relative ml-auto">
             <button
               onClick={(e) => {
@@ -446,10 +370,7 @@ const Dashboard = () => {
                   
                   <div className="py-1">
                     <button
-                      onClick={() => {
-                        navigate("/profile?tab=profile");
-                        setProfileMenuOpen(false);
-                      }}
+                      onClick={() => { navigate("/profile?tab=profile"); setProfileMenuOpen(false); }}
                       className="w-full flex items-center gap-1.5 px-2 py-1.5 hover:bg-gray-700/50 transition-colors text-xs"
                     >
                       <FaUser className="text-gray-400 text-xs" />
@@ -457,10 +378,7 @@ const Dashboard = () => {
                     </button>
 
                     <button
-                      onClick={() => {
-                        navigate("/profile?tab=password");
-                        setProfileMenuOpen(false);
-                      }}
+                      onClick={() => { navigate("/profile?tab=password"); setProfileMenuOpen(false); }}
                       className="w-full flex items-center gap-1.5 px-2 py-1.5 hover:bg-gray-700/50 transition-colors text-xs"
                     >
                       <FaKey className="text-gray-400 text-xs" />
@@ -470,10 +388,7 @@ const Dashboard = () => {
                     <div className="my-1 border-t border-gray-700" />
 
                     <button
-                      onClick={() => {
-                        localStorage.clear();
-                        navigate("/login");
-                      }}
+                      onClick={() => { localStorage.clear(); navigate("/login"); }}
                       className="w-full flex items-center gap-1.5 px-2 py-1.5 text-red-400 hover:bg-red-500/10 transition-colors text-xs"
                     >
                       <FaSignOutAlt className="text-xs" />
@@ -486,18 +401,18 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Mobile Title - Very Compact */}
+        {/* Mobile Title */}
         <div className="md:hidden mb-1">
           <h1 className="text-sm font-bold">WaterWatch</h1>
           <p className="text-gray-400 text-xs">Monitoring system</p>
         </div>
 
-        {/* Main Content Area - MAXIMUM SPACE (reduced margins for more space) */}
+        {/* Main Content Area */}
         <div className="flex-1 flex flex-col overflow-hidden">
           {renderSection()}
         </div>
 
-        {/* Footer - Minimal */}
+        {/* Footer */}
         <div className="mt-1 pt-1 border-t border-gray-800">
           <div className="flex flex-col md:flex-row justify-between items-center text-[10px] text-gray-500">
             <p>WaterWatch v2.0</p>
