@@ -105,6 +105,6 @@ class Searches(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("Users.id"))
-    parameter = Column(Enum(SearchParamEnum))
+    parameter = Column(String(50))   # ✅ CHANGE HERE
     value = Column(String(255))
     created_at = Column(TIMESTAMP, default=datetime.utcnow)

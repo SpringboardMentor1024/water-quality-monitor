@@ -14,6 +14,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from routes import wqp
 from routes import who
+
 SECRET_KEY = "supersecret123"
 ALGORITHM = "HS256"
 

@@ -96,8 +96,10 @@ class ReportOut(ReportCreate):
 
 class SearchCreate(BaseModel):
     user_id: int
-    parameter: SearchParamEnum
+    parameter: str   # ✅ FIX
     value: str
+
+
 
 
 class SearchOut(SearchCreate):
