@@ -14,6 +14,9 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from routes import wqp
 from routes import who
+from routes import alerts
+
+
 
 SECRET_KEY = "supersecret123"
 ALGORITHM = "HS256"
@@ -110,6 +113,7 @@ app.include_router(searches.router)
 app.include_router(cpcb.router)
 app.include_router(wqp.router)
 app.include_router(who.router)
+app.include_router(alerts.router)
 # -------------------- Static files --------------------
 if not os.path.exists("avatars"):
     os.makedirs("avatars")

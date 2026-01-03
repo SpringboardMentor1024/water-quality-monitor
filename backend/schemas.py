@@ -108,3 +108,26 @@ class SearchOut(SearchCreate):
 
     class Config:
         orm_mode = True
+        
+
+# -------------------------
+# ALERTS
+# -------------------------
+
+
+class AlertTypeEnum(str, Enum):
+    boil_notice = "boil_notice"
+    contamination = "contamination"
+    outage = "outage"
+
+class AlertCreate(BaseModel):
+    type: AlertTypeEnum
+    message: str
+    location: str
+
+class AlertOut(AlertCreate):
+    id: int
+    issued_at: datetime
+
+    class Config:
+        orm_mode = True

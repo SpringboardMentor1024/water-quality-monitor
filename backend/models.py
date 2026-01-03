@@ -108,3 +108,21 @@ class Searches(Base):
     parameter = Column(String(50))   # ✅ CHANGE HERE
     value = Column(String(255))
     created_at = Column(TIMESTAMP, default=datetime.utcnow)
+
+
+# ------------------------
+# Alerts Table
+# ------------------------
+class AlertTypeEnum(enum.Enum):
+    boil_notice = "boil_notice"
+    contamination = "contamination"
+    outage = "outage"
+
+class Alerts(Base):
+    __tablename__ = "Alerts"
+
+    id = Column(Integer, primary_key=True, index=True)
+    type = Column(Enum(AlertTypeEnum), nullable=False)
+    message = Column(Text, nullable=False)
+    location = Column(String(255), nullable=False)
+    issued_at = Column(TIMESTAMP, default=datetime.utcnow)
