@@ -17,9 +17,9 @@ export default function Dashboard() {
       getStations(),
     ])
       .then(([alertsRes, reportsRes, stationsRes]) => {
-        setAlerts(alertsRes.data);
-        setReports(reportsRes.data);
-        setStations(stationsRes.data);
+        setAlerts(alertsRes.data || []);
+        setReports(reportsRes.data || []);
+        setStations(stationsRes.data || []);
         setLoading(false);
       })
       .catch((err) => {
@@ -34,7 +34,6 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6">
-
       {/* PAGE TITLE */}
       <h2 className="text-2xl font-bold text-gray-700">
         Dashboard Overview
@@ -52,7 +51,7 @@ export default function Dashboard() {
       <div className="bg-white p-5 rounded-xl shadow border border-[#C4E1E6]">
         <h2 className="text-xl font-semibold mb-3">Map Overview</h2>
 
-        <div className="rounded-lg overflow-hidden border border-[#A4CCD9]">
+        <div className="rounded-lg overflow-hidden border border-[#A4CCD9] h-[350px]">
           <DashboardMap stations={stations} />
         </div>
 
@@ -66,7 +65,6 @@ export default function Dashboard() {
 
       {/* ALERTS + REPORTS */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-
         {/* RECENT ALERTS */}
         <div className="bg-white p-5 rounded-xl shadow border border-[#A4CCD9]">
           <h2 className="text-xl font-semibold mb-4">Recent Alerts</h2>
@@ -115,7 +113,6 @@ export default function Dashboard() {
             View All Reports →
           </Link>
         </div>
-
       </div>
     </div>
   );
@@ -152,7 +149,6 @@ function AlertItem({ location, status }) {
 
       <span
         className={`px-4 py-1 rounded-full text-white text-sm font-medium ${color}`}
-        style={{ minWidth: "100px", textAlign: "center" }}
       >
         {status}
       </span>
@@ -177,7 +173,6 @@ function ReportItem({ location, ph, status }) {
 
       <span
         className={`px-4 py-1 rounded-full text-white text-sm font-medium ${color}`}
-        style={{ minWidth: "100px", textAlign: "center" }}
       >
         {status}
       </span>

@@ -99,36 +99,55 @@ def populate_india_data():
         },
     ]
 
-    # Clear existing data (optional)
-    db.query(models.Station).delete()
-    db.commit()
+    # ⚠️ IMPORTANT:
+    # We DO NOT delete existing data anymore.
+    # This allows manual + WQP data to coexist safely.
 
     for s in stations:
-        station = models.Station(
-            name=s["name"],
-            latitude=s["latitude"],
-            longitude=s["longitude"],
-            ph=s["ph"],
-            turbidity=s["turbidity"],
-            temperature=s["temperature"],
-            status=s["status"],
-            is_online=True,
-        )
-        db.add(station)
-        db.commit()
-        db.refresh(station)
 
+        # Check if station already exists
+        station = (
+            db.query(models.Station)
+            .filter(models.Station.name == s["name"])
+            .first()
+        )
+
+        if not station:
+            station = models.Station(
+                name=s["name"],
+                latitude=s["latitude"],
+                longitude=s["longitude"],
+                ph=s["ph"],
+                turbidity=s["turbidity"],
+                temperature=s["temperature"],
+                status=s["status"],
+                is_online=True,
+                source="india_api"   # ✅ NEW
+            )
+            db.add(station)
+            db.commit()
+            db.refresh(station)
+        else:
+            # Update latest snapshot
+            station.ph = s["ph"]
+            station.turbidity = s["turbidity"]
+            station.temperature = s["temperature"]
+            station.status = s["status"]
+
+        # Always add a new water reading (time-series)
         reading = models.WaterReading(
             station_name=s["name"],
             ph=s["ph"],
             turbidity=s["turbidity"],
             temperature=s["temperature"],
             status=s["status"],
+            source="india_api"     # ✅ NEW
         )
+
         db.add(reading)
 
     db.commit()
-    print("✅ Sample Indian water stations successfully added to database.")
+    print("✅ Indian water stations synced successfully (manual data preserved).")
 
 
 if __name__ == "__main__":

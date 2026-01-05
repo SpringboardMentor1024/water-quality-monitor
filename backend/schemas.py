@@ -1,6 +1,7 @@
 from pydantic import BaseModel, ConfigDict
 from datetime import datetime
 from decimal import Decimal
+from typing import Optional
 
 # -----------------------------
 # REPORTS SCHEMAS
@@ -12,6 +13,7 @@ class ReportCreate(BaseModel):
     turbidity: Decimal
     temperature: Decimal
     status: str
+    source: Optional[str] = "manual"   # NEW: manual | wqp | india_api
 
 
 class ReportResponse(ReportCreate):
@@ -26,17 +28,28 @@ class ReportResponse(ReportCreate):
 
 class StationCreate(BaseModel):
     name: str
-    latitude: float
-    longitude: float
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
     ph: Decimal
     turbidity: Decimal
     temperature: Decimal
     status: str
 
 
-class StationResponse(StationCreate):
+class StationResponse(BaseModel):
     id: int
+    name: str
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    ph: Decimal
+    turbidity: Decimal
+    temperature: Decimal
+    status: str
     is_online: bool
+    source: Optional[str] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -54,7 +67,7 @@ class AlertResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 # -----------------------------
-# AUTH SCHEMAS (ADDED BACK)
+# AUTH SCHEMAS
 # -----------------------------
 
 class LoginRequest(BaseModel):

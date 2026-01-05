@@ -1,15 +1,24 @@
-.env
-
-# Python
+# ---------------- Python / Backend ----------------
 venv/
 backend/venv/
+.env
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
 
-# Frontend
+# ---------------- Node / Frontend ----------------
 node_modules/
 frontend/node_modules/
 dist/
+build/
 
-# Editor
+# ---------------- Logs ----------------
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ---------------- Editor / OS ----------------
 .vscode/
+.DS_Store
+Thumbs.db

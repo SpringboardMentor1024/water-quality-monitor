@@ -1,15 +1,15 @@
 import { useEffect, useState } from "react";
-import { Eye } from "lucide-react"; // Eye icon
+import { Eye } from "lucide-react";
 import { Link } from "react-router-dom";
 import { getStations } from "../services/api";
 
 export default function Search() {
   const [query, setQuery] = useState("");
+  const [status, setStatus] = useState("All");
   const [allStations, setAllStations] = useState([]);
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Load stations on page load
   useEffect(() => {
     getStations()
       .then((res) => {
@@ -17,29 +17,28 @@ export default function Search() {
         setResults(res.data);
         setLoading(false);
       })
-      .catch((err) => {
-        console.error("Stations fetch error:", err);
-        setLoading(false);
-      });
+      .catch(() => setLoading(false));
   }, []);
 
-  // Search handler
-  const handleSearch = () => {
-    if (!query.trim()) {
-      setResults(allStations);
-      return;
+  // Auto filter whenever query/status changes
+  useEffect(() => {
+    let filtered = allStations;
+
+    if (query.trim()) {
+      const q = query.toLowerCase();
+      filtered = filtered.filter(
+        (s) =>
+          s.name.toLowerCase().includes(q) ||
+          String(s.id).includes(q)
+      );
     }
 
-    const q = query.toLowerCase();
-
-    const filtered = allStations.filter(
-      (s) =>
-        s.name.toLowerCase().includes(q) ||
-        String(s.id).includes(q)
-    );
+    if (status !== "All") {
+      filtered = filtered.filter((s) => s.status === status);
+    }
 
     setResults(filtered);
-  };
+  }, [query, status, allStations]);
 
   return (
     <div className="space-y-6 bg-[#F4FBFD] min-h-screen p-6">
@@ -47,7 +46,7 @@ export default function Search() {
         Search Water Stations
       </h1>
 
-      {/* Search Bar */}
+      {/* Filters */}
       <div className="bg-white p-6 rounded-xl shadow border grid grid-cols-1 md:grid-cols-4 gap-4">
         <input
           type="text"
@@ -56,13 +55,33 @@ export default function Search() {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
-        <button
-          onClick={handleSearch}
-          className="bg-[#4FA3B5] text-white rounded-lg px-4 py-2 hover:bg-[#3D91A3] transition"
+
+        <select
+          className="border p-2 rounded-lg"
+          value={status}
+          onChange={(e) => setStatus(e.target.value)}
         >
-          Search
+          <option value="All">All Status</option>
+          <option value="Safe">Safe</option>
+          <option value="Warning">Warning</option>
+          <option value="Unsafe">Unsafe</option>
+        </select>
+
+        <button
+          onClick={() => {
+            setQuery("");
+            setStatus("All");
+          }}
+          className="bg-gray-200 rounded-lg px-4 py-2 hover:bg-gray-300 transition"
+        >
+          Clear Filters
         </button>
       </div>
+
+      {/* Result Info */}
+      <p className="text-sm text-gray-600">
+        Showing {results.length} of {allStations.length} stations
+      </p>
 
       {/* Results Table */}
       <div className="bg-white rounded-xl shadow border overflow-x-auto">
@@ -70,13 +89,13 @@ export default function Search() {
           <p className="p-6 text-center">Loading stations...</p>
         ) : results.length === 0 ? (
           <p className="p-6 text-center text-gray-500">
-            No matching stations found
+            No stations match your filters
           </p>
         ) : (
           <table className="w-full text-left min-w-max">
             <thead className="bg-gray-100">
               <tr>
-                <th className="p-3">Station ID</th>
+                <th className="p-3">ID</th>
                 <th className="p-3">Name</th>
                 <th className="p-3">Status</th>
                 <th className="p-3 text-center">Action</th>
@@ -103,7 +122,7 @@ export default function Search() {
                   <td className="p-3 text-center">
                     <Link
                       to={`/stations/${station.id}`}
-                      className="inline-flex items-center justify-center w-8 h-8 bg-[#4FA3B5] text-white rounded-lg hover:bg-[#3D91A3] transition"
+                      className="inline-flex items-center justify-center w-8 h-8 bg-[#4FA3B5] text-white rounded-lg hover:bg-[#3D91A3]"
                     >
                       <Eye size={18} />
                     </Link>

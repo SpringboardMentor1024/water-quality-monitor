@@ -3,6 +3,9 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 from fastapi.middleware.cors import CORSMiddleware
 from auth import router as auth_router
+from fastapi.middleware.cors import CORSMiddleware
+from fetch_wqp_data import sync_wqp_data
+from fetch_wqp_live import sync_wqp_live_data
 
 from database import engine, get_db
 import models
@@ -14,7 +17,7 @@ import schemas
 models.Base.metadata.create_all(bind=engine)
 
 # ---------------------------------
-# APP INIT (ONLY ONCE)
+# APP INIT
 # ---------------------------------
 app = FastAPI(title="Water Quality Monitor API")
 app.include_router(auth_router)
@@ -24,7 +27,10 @@ app.include_router(auth_router)
 # ---------------------------------
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=[
+        "http://localhost:5173",
+        "http://127.0.0.1:5173"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -73,11 +79,17 @@ def create_station(
 @app.get("/api/stations", response_model=list[schemas.StationResponse])
 def get_stations(
     status: str | None = None,
+    source: str | None = None,
     db: Session = Depends(get_db)
 ):
     query = db.query(models.Station)
+
     if status:
         query = query.filter(models.Station.status == status)
+
+    if source:
+        query = query.filter(models.Station.source == source)
+
     return query.all()
 
 # ---------------------------------
@@ -96,6 +108,19 @@ def create_report(
     create_alert_if_needed(new_report, db)
     db.commit()
 
+    # 🔄 Update station latest snapshot
+    station = (
+        db.query(models.Station)
+        .filter(models.Station.name == new_report.station_name)
+        .first()
+    )
+    if station:
+        station.ph = new_report.ph
+        station.turbidity = new_report.turbidity
+        station.temperature = new_report.temperature
+        station.status = new_report.status
+        db.commit()
+
     return new_report
 
 
@@ -103,6 +128,7 @@ def create_report(
 def get_reports(
     station: str | None = None,
     status: str | None = None,
+    source: str | None = None,
     db: Session = Depends(get_db)
 ):
     query = db.query(models.WaterReading)
@@ -114,6 +140,9 @@ def get_reports(
 
     if status:
         query = query.filter(models.WaterReading.status == status)
+
+    if source:
+        query = query.filter(models.WaterReading.source == source)
 
     return query.order_by(
         models.WaterReading.recorded_at.desc()
@@ -153,3 +182,26 @@ def get_alerts(db: Session = Depends(get_db)):
     return db.query(models.Alert).order_by(
         models.Alert.created_at.desc()
     ).all()
+
+# ---------------------------------
+# EXTERNAL DATA SYNC APIs
+# ---------------------------------
+@app.post("/api/sync/india")
+def sync_india_data():
+    from fetch_india_data import populate_india_data
+    populate_india_data()
+    return {"message": "Indian water data synced successfully"}
+
+@app.post("/api/sync/wqp")
+def sync_wqp():
+    sync_wqp_data()
+    return {"message": "WQP data synced successfully"}
+
+@app.get("/api/stations", response_model=list[schemas.StationResponse])
+def get_stations(db: Session = Depends(get_db)):
+    return db.query(models.Station).all()
+
+@app.post("/api/sync/wqp/live")
+def sync_wqp_live():
+    sync_wqp_live_data()
+    return {"message": "WQP live data synced successfully"}
