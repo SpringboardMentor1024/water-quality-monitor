@@ -28,11 +28,17 @@ function ResetPassword() {
     setLoading(true);
 
     try {
-      const response = await fetch("http://127.0.0.1:8000/reset-password", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token, new_password: newPassword }),
-      });
+      const response = await fetch(
+        "http://127.0.0.1:8000/user/reset-password",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            token,
+            new_password: newPassword,
+          }),
+        }
+      );
 
       const data = await response.json();
 
@@ -40,7 +46,7 @@ function ResetPassword() {
         toast.success(data.message || "Password reset successfully!");
         setTimeout(() => navigate("/login"), 1500);
       } else {
-        toast.error(data.message || "Reset failed");
+        toast.error(data.detail || "Reset failed");
       }
     } catch (err) {
       console.error(err);
@@ -53,7 +59,10 @@ function ResetPassword() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-900 text-white">
       <ToastContainer position="top-right" autoClose={3000} />
-      <form onSubmit={handleReset} className="bg-gray-800 p-8 rounded-lg w-full max-w-md">
+      <form
+        onSubmit={handleReset}
+        className="bg-gray-800 p-8 rounded-lg w-full max-w-md"
+      >
         <h2 className="text-2xl font-bold mb-6 text-center">Reset Password</h2>
 
         <input

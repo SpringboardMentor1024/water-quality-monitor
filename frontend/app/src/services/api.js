@@ -26,10 +26,17 @@ export async function getWhoWaterData(indicator, country, limit) {
 }
 
 // -----------------------------
-// Station Readings
+// Station Readings (single)
 // -----------------------------
 export const fetchStationReadings = async (stationId) => {
   return axios.get(`${BASE_URL}/readings/${stationId}`);
+};
+
+// -----------------------------
+// Station Readings (BATCH) ✅ NEW
+// -----------------------------
+export const fetchBatchReadings = async (stationIds) => {
+  return axios.post(`${BASE_URL}/readings/batch`, stationIds);
 };
 
 // -----------------------------

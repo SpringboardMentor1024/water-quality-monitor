@@ -14,7 +14,6 @@ function ForgotPassword() {
       return;
     }
 
-    // Email format validation
     const validEmail = /\S+@\S+\.\S+/.test(email);
     if (!validEmail) {
       toast.error("Please enter a valid email address");
@@ -24,11 +23,14 @@ function ForgotPassword() {
     setLoading(true);
 
     try {
-      const response = await fetch("http://127.0.0.1:8000/forgot-password", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      });
+      const response = await fetch(
+        "http://127.0.0.1:8000/user/forgot-password",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email }),
+        }
+      );
 
       const data = await response.json();
 
@@ -36,7 +38,7 @@ function ForgotPassword() {
         toast.success(data.message || "Reset link sent! Check your email.");
         setEmail("");
       } else {
-        toast.error(data.message || "Failed to send reset link");
+        toast.error(data.detail || "Failed to send reset link");
       }
     } catch (err) {
       console.error(err);

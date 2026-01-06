@@ -301,7 +301,8 @@ const Dashboard = () => {
   const userName = localStorage.getItem("user_name") || "User";
 
   return (
-    <div className="flex h-screen bg-gradient-to-br from-gray-900 via-gray-900 to-gray-950 text-white overflow-hidden">
+    <div className="flex min-h-screen bg-gradient-to-br from-gray-900 via-gray-900 to-gray-950 text-white">
+
       <ToastContainer 
         position="top-right" 
         autoClose={3000}
@@ -327,7 +328,9 @@ const Dashboard = () => {
       {/* Main Content */}
       <div className="flex-1 flex flex-col p-2 md:p-3 md:ml-0 overflow-hidden">
         {/* Header */}
-        <div className="flex justify-between items-center mb-1">
+        {/* Header */}
+          <div className="flex justify-between items-center mb-1 relative z-[10000]">
+
           <div className="hidden md:block">
             <h1 className="text-lg font-bold bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
               Water Quality Dashboard
@@ -360,9 +363,10 @@ const Dashboard = () => {
                   onClick={() => setProfileMenuOpen(false)}
                 />
                 <div
-                  className="absolute right-0 top-10 bg-gray-800/95 backdrop-blur-lg rounded-lg shadow-2xl border border-gray-700 w-44 z-50 overflow-hidden"
+                  className="absolute right-0 top-10 bg-gray-800/95 backdrop-blur-lg rounded-lg shadow-2xl border border-gray-700 w-44 z-[9999] overflow-hidden"
                   onClick={(e) => e.stopPropagation()}
-                >
+            >
+
                   <div className="p-2 border-b border-gray-700">
                     <p className="font-medium text-xs">{userName}</p>
                     <p className="text-xs text-gray-400">waterwatch@admin.com</p>

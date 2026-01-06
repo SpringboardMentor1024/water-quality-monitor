@@ -30,6 +30,8 @@ class ParameterEnum(enum.Enum):
     arsenic = "arsenic"
     ecoli = "e.coli"
     iron = "iron"
+    unknown = "unknown"  # ✅ MUST MATCH schemas
+
 
 
 class SearchParamEnum(enum.Enum):
@@ -118,6 +120,11 @@ class AlertTypeEnum(enum.Enum):
     contamination = "contamination"
     outage = "outage"
 
+class AlertStatusEnum(enum.Enum):
+    active = "active"
+    resolved = "resolved"
+
+
 class Alerts(Base):
     __tablename__ = "Alerts"
 
@@ -126,3 +133,10 @@ class Alerts(Base):
     message = Column(Text, nullable=False)
     location = Column(String(255), nullable=False)
     issued_at = Column(TIMESTAMP, default=datetime.utcnow)
+
+    # ✅ NEW
+    status = Column(
+        Enum(AlertStatusEnum),
+        default=AlertStatusEnum.active,
+        nullable=False
+    )

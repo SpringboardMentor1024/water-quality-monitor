@@ -1,28 +1,83 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+from sqlalchemy import func, extract
 from database import get_db
-import models, schemas
+import models
 
-router = APIRouter(prefix="/reports", tags=["User Reports"])
+router = APIRouter(prefix="/readings", tags=["Station Readings"])
 
 
-# Create a new report
-@router.post("/", response_model=schemas.ReportOut)
-def create_report(report: schemas.ReportCreate, db: Session = Depends(get_db)):
-    new_report = models.Reports(**report.dict())
-    db.add(new_report)
+# ----------------------------
+# ADD NEW READING
+# ----------------------------
+@router.post("/")
+def add_reading(data: dict, db: Session = Depends(get_db)):
+    reading = models.StationReadings(**data)
+    db.add(reading)
     db.commit()
-    db.refresh(new_report)
-    return new_report
+    db.refresh(reading)
+    return reading
 
 
-# Get all reports
-@router.get("/")
-def get_reports(db: Session = Depends(get_db)):
-    return db.query(models.Reports).all()
+# ----------------------------
+# ✅ ANALYTICS (MUST BE ABOVE /{station_id})
+# ----------------------------
+@router.get("/analytics")
+def get_analytics(
+    parameter: str,
+    range: str = "daily",
+    db: Session = Depends(get_db)
+):
+    try:
+        param_enum = models.ParameterEnum(parameter)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid parameter")
+
+    query = db.query(
+        func.avg(models.StationReadings.value).label("value")
+    )
+
+    if range == "daily":
+        query = query.add_columns(
+            func.date(models.StationReadings.recorded_at).label("time")
+        ).group_by(func.date(models.StationReadings.recorded_at))
+
+    elif range == "monthly":
+        query = query.add_columns(
+            extract("month", models.StationReadings.recorded_at).label("time")
+        ).group_by(extract("month", models.StationReadings.recorded_at))
+
+    elif range == "yearly":
+        query = query.add_columns(
+            extract("year", models.StationReadings.recorded_at).label("time")
+        ).group_by(extract("year", models.StationReadings.recorded_at))
+    else:
+        raise HTTPException(status_code=400, detail="Invalid range")
+
+    results = (
+        query.filter(models.StationReadings.parameter == param_enum)
+        .order_by("time")
+        .all()
+    )
+
+    return [{"time": str(r.time), "value": float(r.value)} for r in results]
 
 
-# Get report by ID
-@router.get("/{report_id}", response_model=schemas.ReportOut)
-def get_report(report_id: int, db: Session = Depends(get_db)):
-    return db.query(models.Reports).filter(models.Reports.id == report_id).first()
+# ----------------------------
+# GET READINGS BY STATION
+# ----------------------------
+@router.get("/{station_id}")
+def get_station_readings(station_id: int, db: Session = Depends(get_db)):
+    readings = db.query(models.StationReadings).filter(
+        models.StationReadings.station_id == station_id
+    ).all()
+
+    return [
+        {
+            "id": r.id,
+            "parameter": r.parameter.value,
+            "value": float(r.value),
+            "recorded_at": r.recorded_at,
+        }
+        for r in readings
+    ]

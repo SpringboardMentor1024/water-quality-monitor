@@ -1,4 +1,7 @@
+from typing import Optional
+
 from pydantic import BaseModel
+
 from datetime import datetime
 from enum import Enum
 
@@ -21,6 +24,8 @@ class ParameterEnum(str, Enum):
     arsenic = "arsenic"
     ecoli = "e.coli"
     iron = "iron"
+    unknown = "unknown"  # ✅ VERY IMPORTANT
+
 
 
 class SearchParamEnum(str, Enum):
@@ -45,10 +50,11 @@ class WaterStationCreate(BaseModel):
 
 class WaterStationOut(WaterStationCreate):
     id: int
-    created_at: datetime
+    created_at: Optional[datetime] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
+
 
 
 # -------------------------
