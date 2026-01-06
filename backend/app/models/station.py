@@ -4,7 +4,6 @@ from sqlalchemy.sql import func
 
 from app.core.database import Base
 
-
 class WaterStation(Base):
     __tablename__ = "water_stations"
 
@@ -35,19 +34,15 @@ class WaterStation(Base):
     # --------------------
     # Relationships
     # --------------------
-    # Time-series sensor readings
+    # Time-series sensor readings (KEEP THIS)
     readings = relationship(
         "StationReading",
         back_populates="station",
         cascade="all, delete-orphan"
     )
 
-    # Alerts generated for this station
-    alerts = relationship(
-        "Alert",
-        back_populates="station",
-        cascade="all, delete-orphan"
-    )
+    # ❌ REMOVED: "alerts" relationship 
+    # (Alerts are now location strings like 'Chennai' and not linked to specific station IDs)
 
     # --------------------
     # Debug Helper
