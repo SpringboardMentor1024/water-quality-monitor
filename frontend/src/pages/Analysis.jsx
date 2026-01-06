@@ -1,50 +1,41 @@
 import React, { useEffect, useState } from "react";
-import { useLocation } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { Bar } from "react-chartjs-2";
 import {
   Chart as ChartJS,
   CategoryScale,
   LinearScale,
   BarElement,
-  Title,
   Tooltip,
   Legend,
 } from "chart.js";
-import { getStation2011 } from "../utils/api";
+
+import { getStationDetails, getStationSeries } from "../utils/api";
 
 ChartJS.register(
   CategoryScale,
   LinearScale,
   BarElement,
-  Title,
   Tooltip,
   Legend
 );
 
 export default function Analysis() {
-  const location = useLocation();
-  const { stationName, stationLocation } = location.state || {};
+  const { stationId } = useParams();
 
-  const [reading, setReading] = useState(null);
+  const [station, setStation] = useState(null);
+  const [series, setSeries] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (!stationName) {
-      setError("Station not selected");
-      setLoading(false);
-      return;
-    }
-
-    const loadReading = async () => {
+    const load = async () => {
       try {
-        const data = await getStation2011(stationName);
-        const rec = Array.isArray(data.water_quality_2011)
-          ? data.water_quality_2011[0]
-          : null;
+        const stationData = await getStationDetails(stationId);
+        const seriesData = await getStationSeries(stationId);
 
-        setReading(rec);
-        setError("");
+        setStation(stationData);
+        setSeries(seriesData);
       } catch (err) {
         console.error(err);
         setError("Failed to load station data");
@@ -53,76 +44,66 @@ export default function Analysis() {
       }
     };
 
-    loadReading();
-  }, [stationName]);
+    load();
+  }, [stationId]);
 
-  const buildTripleBar = (label, minKey, maxKey, meanKey, color) => ({
-    labels: ["Min", "Max", "Mean"],
+  if (loading) return <p className="p-6">Loading analysis…</p>;
+  if (error) return <p className="p-6 text-red-600">{error}</p>;
+
+  const buildChart = (label, data, color) => ({
+    labels: series.timestamps.map((t) =>
+      new Date(t).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+    ),
     datasets: [
       {
         label,
-        data: reading
-          ? [
-              reading[minKey] ?? 0,
-              reading[maxKey] ?? 0,
-              reading[meanKey] ?? 0,
-            ]
-          : [0, 0, 0],
+        data,
         backgroundColor: color,
       },
     ],
   });
 
-  const commonOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    scales: {
-      y: { beginAtZero: true },
-    },
-  };
-
-  if (loading) return <p className="p-6">Loading analysis…</p>;
-  if (error) return <p className="p-6 text-red-600">{error}</p>;
-
   return (
     <div className="p-6">
-      <h2 className="text-2xl font-semibold mb-1">
-        Water Quality Analysis (2011)
-      </h2>
-      <p className="text-sm text-gray-500 mb-4">
-        {stationName} — {stationLocation}
-      </p>
+      {/* HEADER */}
+      <h2 className="text-2xl font-bold mb-1">{station.name}</h2>
+      <p className="text-sm text-gray-500 mb-6">{station.location}</p>
 
+      {/* CHARTS */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div className="bg-white rounded shadow p-4 h-80">
-          <h3 className="font-semibold mb-2">pH</h3>
+        <div className="bg-white p-4 rounded shadow h-80">
+          <h3 className="font-semibold mb-2">pH Level</h3>
           <Bar
-            data={buildTripleBar(
+            data={buildChart(
               "pH",
-              "ph_min",
-              "ph_max",
-              "ph_mean",
-              "rgba(34,197,94,0.8)"
+              series.series.ph,
+              "rgba(34,197,94,0.7)"
             )}
-            options={commonOptions}
+            options={{ responsive: true, maintainAspectRatio: false }}
           />
         </div>
 
-        <div className="bg-white rounded shadow p-4 h-80 flex items-center justify-center text-gray-400">
-          Turbidity data not available (2011)
+        <div className="bg-white p-4 rounded shadow h-80">
+          <h3 className="font-semibold mb-2">Turbidity</h3>
+          <Bar
+            data={buildChart(
+              "Turbidity",
+              series.series.turbidity,
+              "rgba(251,146,60,0.7)"
+            )}
+            options={{ responsive: true, maintainAspectRatio: false }}
+          />
         </div>
 
-        <div className="bg-white rounded shadow p-4 h-80">
+        <div className="bg-white p-4 rounded shadow h-80">
           <h3 className="font-semibold mb-2">Dissolved Oxygen</h3>
           <Bar
-            data={buildTripleBar(
+            data={buildChart(
               "DO",
-              "do_min",
-              "do_max",
-              "do_mean",
-              "rgba(59,130,246,0.8)"
+              series.series.do,
+              "rgba(59,130,246,0.7)"
             )}
-            options={commonOptions}
+            options={{ responsive: true, maintainAspectRatio: false }}
           />
         </div>
       </div>

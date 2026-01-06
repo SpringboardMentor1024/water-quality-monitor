@@ -1,7 +1,6 @@
 import React from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
-// Layout & UI
 import Layout from "./components/Layout";
 
 // Pages
@@ -19,10 +18,6 @@ import Analysis from "./pages/Analysis";
 import Profile from "./pages/Profile";
 import AllUsers from "./pages/AllUsers";
 
-/**
- * PROTECTION GUARD: The gatekeeper for the Authority System.
- * Checks for a valid authToken in localStorage before allowing access.
- */
 const ProtectedRoute = ({ children }) => {
   const token = localStorage.getItem("authToken");
   return token ? children : <Navigate to="/login" replace />;
@@ -32,12 +27,12 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* PUBLIC PAGES: Accessible to everyone */}
+        {/* PUBLIC */}
         <Route path="/" element={<MonitorProfile />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
 
-        {/* PROTECTED AUTHORITY DASHBOARD: Requires login token */}
+        {/* PROTECTED */}
         <Route
           element={
             <ProtectedRoute>
@@ -49,7 +44,10 @@ export default function App() {
           <Route path="/locations" element={<Locations />} />
           <Route path="/map" element={<BaseMap />} />
           <Route path="/search" element={<Search />} />
-          <Route path="/analysis" element={<Analysis />} />
+
+          {/* 🔴 FIXED: stationId via URL */}
+          <Route path="/analysis/:stationId" element={<Analysis />} />
+
           <Route path="/station/:id" element={<StationReadings />} />
           <Route path="/alerts" element={<Alerts />} />
           <Route path="/settings" element={<Settings />} />
@@ -57,7 +55,6 @@ export default function App() {
           <Route path="/users" element={<AllUsers />} />
         </Route>
 
-        {/* CATCH-ALL REDIRECT */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>

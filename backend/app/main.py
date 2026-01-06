@@ -6,7 +6,7 @@ from app.core.config import settings
 from app.core.database import engine, Base
 
 # 🔴 IMPORTANT: Import ALL models so SQLAlchemy knows to create their tables
-from app.models import user, station, readings, reports, searches
+from app.models import user, station, readings, reports, searches, alert
 
 # 🔵 Import Routers
 from app.routers import auth, stations, users, reports, gov 
