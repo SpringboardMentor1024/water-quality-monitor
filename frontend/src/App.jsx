@@ -1,7 +1,9 @@
 import React from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
+
 import Layout from "./components/Layout";
+
 
 // Pages
 import MonitorProfile from "./pages/MonitorProfile";
@@ -18,10 +20,12 @@ import Analysis from "./pages/Analysis";
 import Profile from "./pages/Profile";
 import AllUsers from "./pages/AllUsers";
 
+
 const ProtectedRoute = ({ children }) => {
   const token = localStorage.getItem("authToken");
   return token ? children : <Navigate to="/login" replace />;
 };
+
 
 export default function App() {
   return (
@@ -31,6 +35,7 @@ export default function App() {
         <Route path="/" element={<MonitorProfile />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+
 
         {/* PROTECTED */}
         <Route
@@ -45,15 +50,21 @@ export default function App() {
           <Route path="/map" element={<BaseMap />} />
           <Route path="/search" element={<Search />} />
 
-          {/* 🔴 FIXED: stationId via URL */}
+
+          {/* Station Analysis */}
           <Route path="/analysis/:stationId" element={<Analysis />} />
 
-          <Route path="/station/:id" element={<StationReadings />} />
+
+          {/* ✅ FIXED: View Details */}
+          <Route path="/station/:id" element={<StationReadings/>} />
+
+
           <Route path="/alerts" element={<Alerts />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/users" element={<AllUsers />} />
         </Route>
+
 
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
