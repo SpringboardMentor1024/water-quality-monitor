@@ -225,7 +225,7 @@ export default function Reports() {
                 value={form.subject}
                 onChange={(e) => setForm({ ...form, subject: e.target.value })}
                 placeholder="Brief summary of the issue"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-gray-800"
               />
             </div>
 
@@ -272,16 +272,18 @@ export default function Reports() {
                   <label className="block text-sm text-gray-600 mb-1">Latitude</label>
                   <input
                     value={form.latitude}
+                    onChange={(e) => setForm({ ...form, latitude: e.target.value })}
                     placeholder="e.g., 12.345678"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-gray-800"
                   />
                 </div>
                 <div>
                   <label className="block text-sm text-gray-600 mb-1">Longitude</label>
                   <input
                     value={form.longitude}
+                    onChange={(e) => setForm({ ...form, longitude: e.target.value })}
                     placeholder="e.g., 98.765432"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-gray-800"
                   />
                 </div>
               </div>
@@ -305,7 +307,7 @@ export default function Reports() {
               <select
                 value={form.waterSource}
                 onChange={(e) => setForm({ ...form, waterSource: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white text-gray-800"
               >
                 <option value="">Select water source</option>
                 <option value="River">River</option>
@@ -323,7 +325,7 @@ export default function Reports() {
                 value={form.description}
                 onChange={(e) => setForm({ ...form, description: e.target.value })}
                 placeholder="Describe what you observed..."
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none resize-none"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none resize-none text-gray-800"
               />
             </div>
 
