@@ -6,7 +6,8 @@ import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import Reports from "./pages/Reports";
 import MyReports from "./pages/MyReports";
-import Alerts from "./pages/Alerts";
+import Alerts from "./pages/AlertsPage";
+import AlertTrendsPage from "./pages/AlertTrendsPage";
 import Stations from "./pages/Stations";
 import Analytics from "./pages/Analytics";
 import StationDetails from "./pages/StationDetails";
@@ -55,6 +56,7 @@ export default function App() {
           <Route path="/reports" element={<Reports />} />
           <Route path="/my-reports" element={<MyReports />} />
           <Route path="/alerts" element={<Alerts />} />
+          <Route path="/alert-trends" element={<AlertTrendsPage />} />
           <Route path="/stations" element={<Stations />} />
           <Route path="/analytics" element={<Analytics />} />
           <Route path="/stations/:id" element={<StationDetails />} />
