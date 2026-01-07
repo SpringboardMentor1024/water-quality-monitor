@@ -19,6 +19,8 @@ import Search from "./pages/Search";
 import Analysis from "./pages/Analysis";
 import Profile from "./pages/Profile";
 import AllUsers from "./pages/AllUsers";
+import AlertDetails from "./pages/AlertDetails";
+
 
 
 const ProtectedRoute = ({ children }) => {
@@ -60,6 +62,7 @@ export default function App() {
 
 
           <Route path="/alerts" element={<Alerts />} />
+          <Route path="/alerts/:id" element={<AlertDetails />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/users" element={<AllUsers />} />
