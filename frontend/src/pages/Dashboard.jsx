@@ -160,7 +160,9 @@ const Dashboard = () => {
                 {mapLoading ? 'Refreshing...' : 'Refresh Data'}
               </button>
 
-              <button className="relative p-2 text-gray-600 hover:text-gray-900">
+              <button className="relative p-2 text-gray-600 hover:text-gray-900"
+                onClick={() => alert('🔔 Notifications\n\nYou have ' + alerts.length + ' active alerts.\nClick "View All Alerts" to see details.')}
+              >
                 <span>🔔</span>
                 {alerts.length > 0 && (
                   <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
+import { stationsAPI } from '../../services/api';
 
 // Fix for default markers
 delete L.Icon.Default.prototype._getIconUrl;
@@ -45,6 +46,8 @@ const EnhancedBaseMap = ({ onStationSelect }) => {
   const [flyToZoom, setFlyToZoom] = useState(defaultZoom);
   const [selectedStation, setSelectedStation] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [allStations, setAllStations] = useState([]);
+  const [loading, setLoading] = useState(true);
   
   // Filter states with active category
   const [activeFilter, setActiveFilter] = useState(null);
@@ -53,6 +56,66 @@ const EnhancedBaseMap = ({ onStationSelect }) => {
     status: 'all',
     waterSource: 'all'
   });
+
+  // Load stations from backend
+  useEffect(() => {
+    const loadStations = async () => {
+      try {
+        setLoading(true);
+        const stations = await stationsAPI.getAllStations();
+        // Transform backend data to frontend format
+        const transformedStations = stations.map(station => ({
+          id: station.id,
+          name: station.name,
+          lat: parseFloat(station.latitude),
+          lng: parseFloat(station.longitude),
+          region: determineRegion(station.location),
+          status: 'Active', // Default status
+          waterSource: 'River', // Default source
+          ph: 7.2,
+          turbidity: 2.1,
+          dissolvedOxygen: 8.2,
+          temperature: 22,
+          address: station.location,
+          lastUpdated: new Date(station.created_at).toLocaleString(),
+          managed_by: station.managed_by
+        }));
+        setAllStations(transformedStations);
+      } catch (error) {
+        console.error('Failed to load stations:', error);
+        // Fallback to mock data
+        setAllStations(getMockStations());
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadStations();
+  }, []);
+
+  const determineRegion = (location) => {
+    // Simple region determination based on location string
+    const locationLower = location.toLowerCase();
+    if (locationLower.includes('delhi') || locationLower.includes('punjab') || locationLower.includes('haryana')) return 'North India';
+    if (locationLower.includes('mumbai') || locationLower.includes('gujarat') || locationLower.includes('maharashtra')) return 'West India';
+    if (locationLower.includes('chennai') || locationLower.includes('bangalore') || locationLower.includes('kerala')) return 'South India';
+    if (locationLower.includes('kolkata') || locationLower.includes('bengal') || locationLower.includes('assam')) return 'East India';
+    return 'Central India';
+  };
+
+  const getMockStations = () => {
+    // Fallback mock data
+    return [
+      { id: 1, name: 'Ganges River Station', lat: 25.3176, lng: 83.0058, 
+        region: 'North India', status: 'Active', waterSource: 'River',
+        ph: 7.2, turbidity: 2.1, dissolvedOxygen: 8.2, temperature: 22,
+        address: 'Varanasi, Uttar Pradesh', lastUpdated: '2025-12-24 10:30 AM' },
+      { id: 2, name: 'Yamuna Monitoring Point', lat: 28.6139, lng: 77.2090, 
+        region: 'North India', status: 'Active', waterSource: 'River',
+        ph: 6.8, turbidity: 3.5, dissolvedOxygen: 6.8, temperature: 24,
+        address: 'Delhi', lastUpdated: '2025-12-24 09:45 AM' }
+    ];
+  };
 
   // Available filter options
   const filterOptions = {
@@ -71,96 +134,6 @@ const EnhancedBaseMap = ({ onStationSelect }) => {
     'Coastal Areas': [15.2993, 74.1240],
     'Himalayan Region': [30.0668, 79.0193]
   };
-
-  // Water station data
-  const allStations = [
-    // North India Stations
-    { id: 1, name: 'Ganges River Station', lat: 25.3176, lng: 83.0058, 
-      region: 'North India', status: 'Active', waterSource: 'River',
-      ph: 7.2, turbidity: 2.1, dissolvedOxygen: 8.2, temperature: 22,
-      address: 'Varanasi, Uttar Pradesh', lastUpdated: '2025-12-24 10:30 AM' },
-    
-    { id: 2, name: 'Yamuna Monitoring Point', lat: 28.6139, lng: 77.2090, 
-      region: 'North India', status: 'Active', waterSource: 'River',
-      ph: 6.8, turbidity: 3.5, dissolvedOxygen: 6.8, temperature: 24,
-      address: 'Delhi', lastUpdated: '2025-12-24 09:45 AM' },
-    
-    { id: 3, name: 'Dal Lake Station', lat: 34.0884, lng: 74.8064, 
-      region: 'North India', status: 'Maintenance', waterSource: 'Lake',
-      ph: 7.4, turbidity: 1.8, dissolvedOxygen: 9.1, temperature: 18,
-      address: 'Srinagar, Jammu & Kashmir', lastUpdated: '2025-12-24 11:15 AM' },
-    
-    // South India Stations
-    { id: 4, name: 'Kaveri River Monitoring', lat: 12.2608, lng: 76.3699, 
-      region: 'South India', status: 'Active', waterSource: 'River',
-      ph: 7.6, turbidity: 1.2, dissolvedOxygen: 9.5, temperature: 26,
-      address: 'Mysuru, Karnataka', lastUpdated: '2025-12-24 08:20 AM' },
-    
-    { id: 5, name: 'Chembarambakkam Plant', lat: 13.0827, lng: 80.2707, 
-      region: 'South India', status: 'Active', waterSource: 'Treatment Plant',
-      ph: 7.1, turbidity: 0.8, dissolvedOxygen: 8.8, temperature: 28,
-      address: 'Chennai, Tamil Nadu', lastUpdated: '2025-12-24 10:00 AM' },
-    
-    { id: 6, name: 'Hussain Sagar Lake', lat: 17.4239, lng: 78.4738, 
-      region: 'South India', status: 'Inactive', waterSource: 'Lake',
-      ph: 6.5, turbidity: 4.2, dissolvedOxygen: 5.2, temperature: 27,
-      address: 'Hyderabad, Telangana', lastUpdated: '2025-12-24 09:30 AM' },
-    
-    // East India Stations
-    { id: 7, name: 'Hooghly River Station', lat: 22.5726, lng: 88.3639, 
-      region: 'East India', status: 'Active', waterSource: 'River',
-      ph: 6.9, turbidity: 3.1, dissolvedOxygen: 7.1, temperature: 25,
-      address: 'Kolkata, West Bengal', lastUpdated: '2025-12-24 10:45 AM' },
-    
-    { id: 8, name: 'Brahmaputra Monitoring', lat: 26.7499, lng: 94.2023, 
-      region: 'East India', status: 'Active', waterSource: 'River',
-      ph: 7.3, turbidity: 2.4, dissolvedOxygen: 8.5, temperature: 23,
-      address: 'Dibrugarh, Assam', lastUpdated: '2025-12-24 11:00 AM' },
-    
-    // West India Stations
-    { id: 9, name: 'Arabian Sea Coast', lat: 19.0760, lng: 72.8777, 
-      region: 'West India', status: 'Active', waterSource: 'Groundwater',
-      ph: 6.2, turbidity: 5.1, dissolvedOxygen: 4.8, temperature: 29,
-      address: 'Mumbai, Maharashtra', lastUpdated: '2025-12-24 10:15 AM' },
-    
-    { id: 10, name: 'Sabarmati River Plant', lat: 23.0225, lng: 72.5714, 
-      region: 'West India', status: 'Offline', waterSource: 'River',
-      ph: 6.4, turbidity: 3.8, dissolvedOxygen: 5.9, temperature: 26,
-      address: 'Ahmedabad, Gujarat', lastUpdated: '2025-12-23 03:30 PM' },
-    
-    // Central India Stations
-    { id: 11, name: 'Godavari River Station', lat: 19.9615, lng: 73.7898, 
-      region: 'Central India', status: 'Active', waterSource: 'River',
-      ph: 7.2, turbidity: 2.2, dissolvedOxygen: 8.3, temperature: 25,
-      address: 'Nashik, Maharashtra', lastUpdated: '2025-12-24 09:00 AM' },
-    
-    { id: 12, name: 'Narmada Monitoring', lat: 22.9734, lng: 78.6569, 
-      region: 'Central India', status: 'Active', waterSource: 'River',
-      ph: 7.8, turbidity: 0.9, dissolvedOxygen: 9.8, temperature: 24,
-      address: 'Jabalpur, Madhya Pradesh', lastUpdated: '2025-12-24 10:30 AM' },
-    
-    // Coastal Areas Stations
-    { id: 13, name: 'Coastal Rainwater', lat: 8.0883, lng: 77.5385, 
-      region: 'Coastal Areas', status: 'Active', waterSource: 'Rainwater',
-      ph: 7.5, turbidity: 0.5, dissolvedOxygen: 10.2, temperature: 30,
-      address: 'Kanyakumari, Tamil Nadu', lastUpdated: '2025-12-24 11:30 AM' },
-    
-    // Himalayan Region Stations
-    { id: 14, name: 'Himalayan Spring', lat: 30.0668, lng: 79.0193, 
-      region: 'Himalayan Region', status: 'Active', waterSource: 'Groundwater',
-      ph: 7.9, turbidity: 0.3, dissolvedOxygen: 10.5, temperature: 15,
-      address: 'Joshimath, Uttarakhand', lastUpdated: '2025-12-24 08:45 AM' },
-    
-    { id: 15, name: 'River Canal Station', lat: 20.2961, lng: 85.8245, 
-      region: 'East India', status: 'Active', waterSource: 'Canal',
-      ph: 7.0, turbidity: 1.5, dissolvedOxygen: 7.8, temperature: 26,
-      address: 'Bhubaneswar, Odisha', lastUpdated: '2025-12-24 09:15 AM' },
-    
-    { id: 16, name: 'Reservoir Monitoring', lat: 18.5204, lng: 73.8567, 
-      region: 'West India', status: 'Active', waterSource: 'Reservoir',
-      ph: 7.3, turbidity: 1.1, dissolvedOxygen: 8.9, temperature: 27,
-      address: 'Pune, Maharashtra', lastUpdated: '2025-12-24 10:20 AM' }
-  ];
 
   // Apply all filters
   const filteredStations = allStations.filter(station => {

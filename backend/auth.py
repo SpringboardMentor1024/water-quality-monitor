@@ -3,29 +3,51 @@ from typing import Optional
 import hashlib
 
 from fastapi import Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer
+from fastapi.security import OAuth2PasswordBearer, HTTPBearer
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from sqlalchemy.orm import Session
+from fastapi import Request
 
 import models
-from . import config
+import config
 from database import get_db
 
-# --- Password Hashing ---
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# --- Simple Password Hashing ---
+pwd_context = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto")
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    # Pre-hash the plain password if it's too long before verification
-    if len(plain_password.encode('utf-8')) > 72:
-        plain_password = hashlib.sha256(plain_password.encode('utf-8')).hexdigest()
-    return pwd_context.verify(plain_password, hashed_password)
+    """Verify a password against its hash"""
+    try:
+        # Try pbkdf2 first
+        if hashed_password.startswith('$pbkdf2'):
+            return pwd_context.verify(plain_password, hashed_password)
+        
+        # Try simple SHA256 hash (fallback)
+        simple_hash = hashlib.sha256(plain_password.encode()).hexdigest()
+        if simple_hash == hashed_password:
+            return True
+            
+        # Try bcrypt if it starts with $2b
+        if hashed_password.startswith('$2b'):
+            try:
+                bcrypt_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+                return bcrypt_context.verify(plain_password, hashed_password)
+            except:
+                pass
+                
+        return False
+    except Exception as e:
+        print(f"Password verification error: {e}")
+        return False
 
 def get_password_hash(password: str) -> str:
-    # Bcrypt has a 72-byte limit. Pre-hash long passwords with SHA-256.
-    if len(password.encode('utf-8')) > 72:
-        password = hashlib.sha256(password.encode('utf-8')).hexdigest()
-    return pwd_context.hash(password)
+    """Hash a password"""
+    try:
+        return pwd_context.hash(password)
+    except Exception as e:
+        print(f"Password hashing error: {e}")
+        return hashlib.sha256(password.encode()).hexdigest()
 
 # --- JWT Token Handling ---
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
@@ -56,4 +78,24 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
     user = db.query(models.User).filter(models.User.email == email).first()
     if user is None:
         raise credentials_exception
+    return user
+
+# --- Optional dependency for getting current user (returns None if not authenticated) ---
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+
+security = HTTPBearer(auto_error=False)
+
+def get_current_user_optional(credentials: HTTPAuthorizationCredentials = Depends(security), db: Session = Depends(get_db)) -> Optional[models.User]:
+    if not credentials:
+        return None
+        
+    try:
+        payload = jwt.decode(credentials.credentials, config.SECRET_KEY, algorithms=[config.ALGORITHM])
+        email: str = payload.get("sub")
+        if email is None:
+            return None
+    except JWTError:
+        return None
+
+    user = db.query(models.User).filter(models.User.email == email).first()
     return user

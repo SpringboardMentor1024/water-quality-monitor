@@ -1,0 +1,58 @@
+REGISTRATION "FAILED TO FETCH" FIX
+===================================
+
+ISSUE IDENTIFIED:
+- CORS configuration was too restrictive
+- Internal server error in registration endpoint
+
+FIXES APPLIED:
+==============
+
+1. CORS FIX:
+   - Changed from: allow_origins=[config.FRONTEND_URL]
+   - Changed to: allow_origins=["http://localhost:3000", "*"]
+   - This allows frontend to connect to backend
+
+2. REGISTRATION ENDPOINT FIX:
+   - Added better error handling
+   - Added try-catch blocks
+   - Added database rollback on errors
+
+3. REMOVED DUPLICATE ENDPOINTS:
+   - Removed conflicting /api/readings endpoints
+   - Kept only station-specific readings
+
+HOW TO APPLY THE FIX:
+====================
+
+1. RESTART BACKEND:
+   - Stop current backend (Ctrl+C)
+   - cd backend
+   - python -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+
+2. TEST REGISTRATION:
+   - Open: test_registration_fix.html in browser
+   - Click "Test Registration" button
+   - Should work without "failed to fetch" error
+
+3. TEST IN FRONTEND:
+   - cd frontend && npm start
+   - Go to registration page
+   - Fill form and submit
+   - Should work without errors
+
+VERIFICATION:
+============
+- Backend CORS now allows frontend connections
+- Registration endpoint has better error handling
+- All API conflicts resolved
+
+The "failed to fetch" error should now be fixed!
+
+QUICK TEST:
+==========
+curl -X POST http://localhost:8000/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"email":"test@example.com","password":"test123","full_name":"Test User"}'
+
+Should return user data instead of "Internal Server Error"

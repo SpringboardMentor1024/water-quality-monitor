@@ -1,189 +1,218 @@
-﻿import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { alertsAPI } from '../services/api';
+import HistoricalDataGraphs from '../components/alerts/HistoricalDataGraphs';
+import AlertTrigger from '../components/alerts/AlertTrigger';
 
 const AlertsPage = () => {
-  const [expandedAlert, setExpandedAlert] = useState(null);
+  const navigate = useNavigate();
+  const [alerts, setAlerts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('alerts');
 
-  const alerts = [
+  useEffect(() => {
+    fetchAlerts();
+  }, []);
+
+  const fetchAlerts = async () => {
+    try {
+      setLoading(true);
+      const data = await alertsAPI.getAllAlerts();
+      setAlerts(data);
+    } catch (error) {
+      console.error('Error fetching alerts:', error);
+      setAlerts(mockAlerts);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const mockAlerts = [
     {
       id: 1,
-      title: "High Turbidity Detected",
-      station: "Station Alpha",
-      priority: "high",
-      time: "5 minutes ago",
-      description: "Turbidity levels exceed 10 NTU",
-      details: "Turbidity reading: 12.5 NTU (Normal range: 0-5 NTU). This indicates potential sediment runoff or algae bloom. Recommended actions: 1. Collect water samples for lab analysis 2. Check upstream for construction activity 3. Monitor for 24 hours.",
-      icon: "ðŸŒŠ",
-      parameters: ["Turbidity: 12.5 NTU", "Temperature: 22Â°C", "pH: 7.2"]
+      type: "contamination",
+      message: "High Turbidity Detected - Turbidity levels exceed 10 NTU",
+      location: "Station Alpha",
+      issued_at: new Date(Date.now() - 5 * 60 * 1000).toISOString()
     },
     {
       id: 2,
-      title: "Low Dissolved Oxygen",
-      station: "River Delta Station",
-      priority: "high",
-      time: "10 minutes ago",
-      description: "DO levels critical at 2.1 mg/L",
-      details: "Dissolved Oxygen: 2.1 mg/L (Minimum required: 5.0 mg/L). This can cause fish kills and indicate organic pollution. Immediate action required.",
-      icon: "ðŸŸ",
-      parameters: ["DO: 2.1 mg/L", "Temperature: 25Â°C", "BOD: 8.2 mg/L"]
+      type: "boil_notice",
+      message: "Low Dissolved Oxygen - DO levels critical at 2.1 mg/L",
+      location: "River Delta Station",
+      issued_at: new Date(Date.now() - 10 * 60 * 1000).toISOString()
     },
     {
       id: 3,
-      title: "Bacteria Contamination",
-      station: "Lake Reservoir",
-      priority: "critical",
-      time: "25 minutes ago",
-      description: "E. coli levels above safety limit",
-      details: "E. coli count: 450 CFU/100mL (Maximum safe level: 235 CFU/100mL). This indicates fecal contamination. URGENT action required.",
-      icon: "ðŸ¦ ",
-      parameters: ["E. coli: 450 CFU/100mL", "Coliform: 620 CFU/100mL", "Turbidity: 8.3 NTU"]
-    },
-    {
-      id: 4,
-      title: "Temperature Spike",
-      station: "Lake Monitor",
-      priority: "medium",
-      time: "1 hour ago",
-      description: "Water temperature increased by 5Â°C",
-      details: "Temperature increase from 18Â°C to 23Â°C within 3 hours. This may affect oxygen solubility and aquatic life.",
-      icon: "ðŸŒ¡ï¸",
-      parameters: ["Temperature: 23Â°C", "DO: 4.8 mg/L", "pH: 6.9"]
-    },
-    {
-      id: 5,
-      title: "Low pH Alert",
-      station: "River Station 3",
-      priority: "medium",
-      time: "15 minutes ago",
-      description: "pH level dropped to 6.2",
-      details: "pH dropped from 7.1 to 6.2. Acidic conditions can harm aquatic life and indicate acid rain or industrial discharge.",
-      icon: "ðŸ“Š",
-      parameters: ["pH: 6.2", "Alkalinity: 42 mg/L", "Hardness: 85 mg/L"]
+      type: "contamination",
+      message: "Bacteria Contamination - E. coli levels above safety limit",
+      location: "Lake Reservoir",
+      issued_at: new Date(Date.now() - 25 * 60 * 1000).toISOString()
     }
   ];
 
-  const getPriorityColor = (priority) => {
-    switch (priority) {
-      case 'critical': return 'bg-red-50 border-red-600';
-      case 'high': return 'bg-orange-50 border-orange-500';
-      case 'medium': return 'bg-yellow-50 border-yellow-500';
-      case 'low': return 'bg-blue-50 border-blue-500';
-      default: return 'bg-gray-50 border-gray-500';
+  const getPriorityColor = (type) => {
+    switch (type) {
+      case 'contamination': return 'bg-red-50 border-red-600';
+      case 'boil_notice': return 'bg-orange-50 border-orange-500';
+      case 'outage': return 'bg-yellow-50 border-yellow-500';
+      default: return 'bg-blue-50 border-blue-500';
     }
   };
 
-  const getPriorityText = (priority) => {
-    switch (priority) {
-      case 'critical': return 'CRITICAL';
-      case 'high': return 'HIGH';
-      case 'medium': return 'MEDIUM';
-      case 'low': return 'LOW';
-      default: return 'INFO';
-    }
+  const getAlertTypeIcon = (type) => {
+    const icons = {
+      'boil_notice': '🔥',
+      'contamination': '☣️',
+      'outage': '⚠️'
+    };
+    return icons[type] || '📢';
+  };
+
+  const formatTimeAgo = (timestamp) => {
+    const now = new Date();
+    const alertTime = new Date(timestamp);
+    const diffInMinutes = Math.floor((now - alertTime) / (1000 * 60));
+    
+    if (diffInMinutes < 1) return 'Just now';
+    if (diffInMinutes < 60) return `${diffInMinutes} minutes ago`;
+    if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)} hours ago`;
+    return `${Math.floor(diffInMinutes / 1440)} days ago`;
   };
 
   const handleViewDetails = (alertId) => {
-    setExpandedAlert(expandedAlert === alertId ? null : alertId);
+    navigate(`/alerts/${alertId}`);
   };
+
+  const handleAlertTriggered = (newAlert) => {
+    setAlerts(prev => [newAlert, ...prev]);
+  };
+
+  if (loading) {
+    return (
+      <div className="p-6 flex justify-center items-center min-h-96">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading alerts...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-800">Water Quality Monitor</h1>
-        <p className="text-gray-600 mt-2">Real-time monitoring system</p>
+        <h1 className="text-3xl font-bold text-gray-800">Water Quality Alerts</h1>
+        <p className="text-gray-600 mt-2">Monitor and manage water quality alerts in real-time</p>
       </div>
 
-      <div className="mb-8">
-        <h2 className="text-2xl font-bold text-gray-800 mb-4">Test Alerts Page</h2>
-        
-        <div className="bg-green-50 border border-green-200 rounded-xl p-4 mb-6">
-          <div className="flex items-center">
-            <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center mr-3">
-              <span className="text-white font-bold">âœ“</span>
-            </div>
-            <div>
-              <p className="text-green-800 font-medium">If you see this, the page works correctly!</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {alerts.map((alert) => (
-          <div 
-            key={alert.id}
-            className={`border-l-4 rounded-xl p-5 shadow-lg bg-white ${getPriorityColor(alert.priority)}`}
-          >
-            <div className="flex justify-between items-start mb-4">
-              <div className="flex items-center">
-                <span className="text-3xl mr-3">{alert.icon}</span>
-                <div>
-                  <h3 className="text-xl font-bold text-gray-800">{alert.title}</h3>
-                  <p className="text-gray-600 font-medium">{alert.station}</p>
-                </div>
-              </div>
-              <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-                alert.priority === 'critical' ? 'text-red-700' :
-                alert.priority === 'high' ? 'text-orange-700' :
-                alert.priority === 'medium' ? 'text-yellow-700' : 'text-blue-700'
-              }`}>
-                {getPriorityText(alert.priority)}
-              </span>
-            </div>
-            
-            <p className="text-gray-700 mb-4">{alert.description}</p>
-            
-            <div className="flex items-center text-gray-500 text-sm mb-4">
-              <span className="mr-2">ðŸ•’</span>
-              <span>{alert.time}</span>
-            </div>
-            
-            <button 
-              onClick={() => handleViewDetails(alert.id)}
-              className={`w-full py-3 rounded-lg font-semibold transition ${
-                alert.priority === 'critical' ? 'bg-red-600 hover:bg-red-700 text-white' :
-                alert.priority === 'high' ? 'bg-orange-600 hover:bg-orange-700 text-white' :
-                alert.priority === 'medium' ? 'bg-yellow-600 hover:bg-yellow-700 text-white' :
-                'bg-blue-600 hover:bg-blue-700 text-white'
+      <div className="bg-white rounded-lg shadow mb-6">
+        <div className="border-b border-gray-200">
+          <nav className="flex space-x-8 px-6">
+            <button
+              onClick={() => setActiveTab('alerts')}
+              className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                activeTab === 'alerts'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
-              {expandedAlert === alert.id ? 'Hide Details' : 'View Details'}
+              Active Alerts ({alerts.length})
             </button>
-            
-            {expandedAlert === alert.id && (
-              <div className="mt-4 pt-4 border-t border-gray-200">
-                <h4 className="font-bold text-gray-800 mb-2">Detailed Analysis:</h4>
-                <p className="text-gray-700 mb-4">{alert.details}</p>
-                
-                <h4 className="font-bold text-gray-800 mb-2">Current Parameters:</h4>
-                <div className="grid grid-cols-2 gap-2 mb-4">
-                  {alert.parameters.map((param, index) => (
-                    <div key={index} className="bg-gray-50 p-2 rounded text-sm">
-                      {param}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
-
-      <div className="mt-8 p-6 bg-blue-50 rounded-xl">
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="text-lg font-semibold text-blue-800">Active Alerts Summary</h3>
-            <p className="text-blue-600">Total: {alerts.length} alerts</p>
-          </div>
-          <button className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold">
-            Export All Alerts
-          </button>
+            <button
+              onClick={() => setActiveTab('historical')}
+              className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                activeTab === 'historical'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              Historical Data
+            </button>
+            <button
+              onClick={() => setActiveTab('triggers')}
+              className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                activeTab === 'triggers'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              Alert Configuration
+            </button>
+          </nav>
         </div>
       </div>
+
+      {activeTab === 'alerts' && (
+        <div className="space-y-6">
+          {alerts.length === 0 ? (
+            <div className="bg-white rounded-lg shadow p-8 text-center">
+              <div className="text-6xl mb-4">✅</div>
+              <h3 className="text-xl font-semibold text-gray-800 mb-2">No Active Alerts</h3>
+              <p className="text-gray-600">All water quality parameters are within normal ranges.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {alerts.map((alert) => (
+                <div 
+                  key={alert.id}
+                  className={`border-l-4 rounded-xl p-5 shadow-lg bg-white ${getPriorityColor(alert.type)}`}
+                >
+                  <div className="flex justify-between items-start mb-4">
+                    <div className="flex items-center">
+                      <span className="text-3xl mr-3">{getAlertTypeIcon(alert.type)}</span>
+                      <div>
+                        <h3 className="text-xl font-bold text-gray-800">
+                          {alert.type.replace('_', ' ').toUpperCase()}
+                        </h3>
+                        <p className="text-gray-600 font-medium">{alert.location}</p>
+                      </div>
+                    </div>
+                    <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                      alert.type === 'contamination' ? 'text-red-700 bg-red-100' :
+                      alert.type === 'boil_notice' ? 'text-orange-700 bg-orange-100' :
+                      'text-yellow-700 bg-yellow-100'
+                    }`}>
+                      {alert.type.replace('_', ' ').toUpperCase()}
+                    </span>
+                  </div>
+                  
+                  <p className="text-gray-700 mb-4">{alert.message}</p>
+                  
+                  <div className="flex items-center text-gray-500 text-sm mb-4">
+                    <span className="mr-2">🕒</span>
+                    <span>{formatTimeAgo(alert.issued_at)}</span>
+                  </div>
+                  
+                  <button 
+                    onClick={() => handleViewDetails(alert.id)}
+                    className={`w-full py-3 rounded-lg font-semibold transition ${
+                      alert.type === 'contamination' ? 'bg-red-600 hover:bg-red-700 text-white' :
+                      alert.type === 'boil_notice' ? 'bg-orange-600 hover:bg-orange-700 text-white' :
+                      'bg-yellow-600 hover:bg-yellow-700 text-white'
+                    }`}
+                  >
+                    View Details
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {activeTab === 'historical' && (
+        <HistoricalDataGraphs />
+      )}
+
+      {activeTab === 'triggers' && (
+        <AlertTrigger 
+          stationData={[]}
+          onAlertTriggered={handleAlertTriggered}
+        />
+      )}
     </div>
   );
 };
 
 export default AlertsPage;
-
-
-

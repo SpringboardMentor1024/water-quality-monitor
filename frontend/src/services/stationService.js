@@ -1,5 +1,5 @@
 // src/services/stationService.js
-export default {
+const stationService = {
   getStationById: async (stationId) => {
     // Return mock station data for development
     const mockStations = [
@@ -150,3 +150,4 @@ export default {
   }
 };
 
+export default stationService;

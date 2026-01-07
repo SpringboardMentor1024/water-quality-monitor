@@ -99,57 +99,60 @@ function RegisterForm() {
     setLoading(true);
     
     try {
-      // 🚀 REAL API CALL
+      // Registration data
       const registrationData = {
         email: formData.email,
         password: formData.password,
         full_name: `${formData.firstName} ${formData.lastName}`.trim(),
-        phone_number: formData.phone || null, // Send phone number to backend
+        phone_number: formData.phone || null,
         role: 'user',
       };
       
       console.log('🔄 Registering user:', registrationData.email);
       
-      // 1. Register the user
+      // Register the user
       const result = await authAPI.register(registrationData);
-      
       console.log('✅ Registration successful:', result);
       
-      // Show success toast (non-blocking)
-      showToast(`Account created successfully! Welcome ${result.full_name}`);
+      // Show success and auto-login
+      showToast(`Account created! Logging you in...`);
       
-      // 2. Auto-login after successful registration
-      console.log('🔄 Auto-login after registration...');
-      const loginResult = await authAPI.login(formData.email, formData.password);
-      
-      // Store the token
-      localStorage.setItem('authToken', loginResult.access_token || loginResult.token);
-      
-      // 3. Get user info
-      const userData = await authAPI.getCurrentUser();
-      if (userData) {
-        localStorage.setItem('user', JSON.stringify(userData));
+      // Auto-login after registration
+      try {
+        const loginResult = await authAPI.login(formData.email, formData.password);
+        localStorage.setItem('authToken', loginResult.access_token);
+        
+        // Get user info
+        const userData = await authAPI.getCurrentUser();
+        if (userData) {
+          localStorage.setItem('user', JSON.stringify(userData));
+        }
+        
+        // Reset form and redirect to dashboard
+        setFormData({
+          firstName: '',
+          lastName: '',
+          email: '',
+          phone: '',
+          password: '',
+          confirmPassword: '',
+          agreeTerms: false
+        });
+        
+        // Direct redirect to dashboard
+        navigate('/dashboard');
+        
+      } catch (loginError) {
+        console.error('Auto-login failed:', loginError);
+        showToast('Account created! Please login manually.');
+        setTimeout(() => {
+          navigate('/login');
+        }, 1500);
       }
-      
-      // 4. Reset form
-      setFormData({
-        firstName: '',
-        lastName: '',
-        email: '',
-        phone: '',
-        password: '',
-        confirmPassword: '',
-        agreeTerms: false
-      });
-      
-      // 5. ✅ AUTO-REDIRECT to dashboard WITHOUT clicking OK
-      console.log('🚀 Redirecting to dashboard...');
-      navigate('/dashboard');
       
     } catch (error) {
       console.error('❌ Registration failed:', error);
       
-      // Show specific error messages
       let errorMessage = 'Registration failed. Please try again.';
       
       if (error.response?.data?.detail) {
@@ -158,7 +161,6 @@ function RegisterForm() {
         errorMessage = error.message;
       }
       
-      // Check for email already exists
       if (errorMessage.includes('already registered') || errorMessage.includes('already exists')) {
         setErrors(prev => ({ ...prev, email: 'This email is already registered' }));
         errorMessage = 'Email already registered. Please use a different email.';

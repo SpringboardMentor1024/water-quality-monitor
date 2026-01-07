@@ -1,7 +1,7 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from . import config
+import config
 
 # For SQLite, we need to use connect_args to allow multithreading, which is
 # necessary for FastAPI's background tasks.

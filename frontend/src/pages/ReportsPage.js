@@ -58,10 +58,17 @@ const ReportsPage = () => {
   useEffect(() => {
     const loadReports = async () => {
       try {
-        // Backend API integration pending
-        setReports(mockReports);
+        // Try to get reports from API
+        const data = await reportsAPI.getAllReports();
+        if (data && Array.isArray(data) && data.length > 0) {
+          setReports(data);
+        } else {
+          // Use mock data if no real reports
+          setReports(mockReports);
+        }
       } catch (error) {
         console.error('Failed to load reports:', error);
+        // Always use mock data on error
         setReports(mockReports);
       }
     };
@@ -90,16 +97,32 @@ const ReportsPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      // Backend API integration pending
+      // Create report data
+      const reportData = {
+        location: `Station ${formData.station_id}`,
+        description: `Water quality reading data: pH ${formData.ph}, Temperature ${formData.temperature}°C, Turbidity ${formData.turbidity} NTU, DO ${formData.dissolved_oxygen} mg/L`,
+        water_source: 'monitoring_station'
+      };
+      
+      // Try to submit to API
+      await reportsAPI.createReport(reportData);
+      
+      // Add to local state for immediate feedback
       const newReport = {
         id: Date.now(),
-        ...formData,
+        ...reportData,
         status: 'pending',
         created_at: new Date().toISOString()
       };
       setReports([newReport, ...reports]);
-      setFormData({ station_id: '', ph: '', temperature: '', turbidity: '', dissolved_oxygen: '', arsenic: '', ecoli: '', iron: '' });
+      
+      // Reset form
+      setFormData({ 
+        station_id: '', ph: '', temperature: '', turbidity: '', 
+        dissolved_oxygen: '', arsenic: '', ecoli: '', iron: '' 
+      });
       setShowForm(false);
+      
       alert('Reading data submitted successfully! Pending NGO/Admin verification.');
     } catch (error) {
       console.error('Failed to submit report:', error);

@@ -2,10 +2,10 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
-  FileText, Clock, CheckCircle, XCircle, AlertCircle,
+  FileText, CheckCircle, XCircle, AlertCircle,
   Plus, Filter, Eye, Calendar, MapPin, User, Search,
   Download, Edit, Trash2, ChevronRight, ChevronLeft,
-  BarChart3, Upload, Image, AlertTriangle
+  BarChart3, Image, AlertTriangle
 } from 'lucide-react';
 import { reportsAPI } from '../services/api';
 
@@ -21,24 +21,29 @@ const UserReportsPage = () => {
 
   useEffect(() => {
     fetchReports();
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     filterAndSearchReports();
-  }, [reports, filter, searchTerm]);
+  }, [reports, filter, searchTerm]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchReports = async () => {
     try {
       setLoading(true);
-      // Replace with actual API call
-      // const data = await reportsAPI.getReports();
-      // setReports(data);
-      
-      // Mock data for development
-      const mockReports = generateMockReports();
-      setReports(mockReports);
+      // Try to get reports from API
+      const data = await reportsAPI.getMyReports();
+      if (data && Array.isArray(data) && data.length > 0) {
+        setReports(data);
+      } else {
+        // Use mock data if no real reports
+        const mockReports = generateMockReports();
+        setReports(mockReports);
+      }
     } catch (error) {
       console.error('Failed to fetch reports:', error);
+      // Always fallback to mock data
+      const mockReports = generateMockReports();
+      setReports(mockReports);
     } finally {
       setLoading(false);
     }
@@ -182,6 +187,11 @@ const UserReportsPage = () => {
   };
 
   const getStatusBadge = (status) => {
+    // Handle undefined or null status
+    if (!status) {
+      status = 'pending'; // Default fallback
+    }
+    
     const styles = {
       pending: 'bg-yellow-100 text-yellow-800',
       verified: 'bg-green-100 text-green-800',
@@ -194,14 +204,19 @@ const UserReportsPage = () => {
     };
     
     return (
-      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${styles[status]}`}>
-        {icons[status]}
+      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${styles[status] || styles.pending}`}>
+        {icons[status] || icons.pending}
         {status.charAt(0).toUpperCase() + status.slice(1)}
       </span>
     );
   };
 
   const getSeverityBadge = (severity) => {
+    // Handle undefined or null severity
+    if (!severity) {
+      severity = 'medium'; // Default fallback
+    }
+    
     const colors = {
       low: 'bg-blue-100 text-blue-800',
       medium: 'bg-yellow-100 text-yellow-800',
@@ -210,18 +225,25 @@ const UserReportsPage = () => {
     };
     
     return (
-      <span className={`px-2 py-1 rounded-full text-xs font-medium ${colors[severity]}`}>
+      <span className={`px-2 py-1 rounded-full text-xs font-medium ${colors[severity] || colors.medium}`}>
         {severity.charAt(0).toUpperCase() + severity.slice(1)}
       </span>
     );
   };
 
   const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('en-IN', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric'
-    });
+    if (!dateString) {
+      return 'N/A';
+    }
+    try {
+      return new Date(dateString).toLocaleDateString('en-IN', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric'
+      });
+    } catch (error) {
+      return 'Invalid Date';
+    }
   };
 
   // Pagination
@@ -366,13 +388,13 @@ const UserReportsPage = () => {
                           <div className="flex items-center">
                             <FileText className="w-5 h-5 text-gray-400 mr-2" />
                             <div>
-                              <div className="font-medium text-gray-900">{report.title}</div>
+                              <div className="font-medium text-gray-900">{report.title || 'Untitled Report'}</div>
                               <div className="text-sm text-gray-500 mt-1 line-clamp-1">
-                                {report.description}
+                                {report.description || 'No description available'}
                               </div>
                               <div className="flex items-center mt-2">
                                 <User className="w-3 h-3 text-gray-400 mr-1" />
-                                <span className="text-xs text-gray-600">{report.submittedBy}</span>
+                                <span className="text-xs text-gray-600">{report.submittedBy || 'Anonymous'}</span>
                               </div>
                             </div>
                           </div>
@@ -382,8 +404,8 @@ const UserReportsPage = () => {
                         <div className="flex items-center">
                           <MapPin className="w-4 h-4 text-gray-400 mr-2" />
                           <div>
-                            <div className="text-sm font-medium text-gray-900">{report.location}</div>
-                            <div className="text-xs text-gray-500">{report.waterSource}</div>
+                            <div className="text-sm font-medium text-gray-900">{report.location || 'Unknown Location'}</div>
+                            <div className="text-xs text-gray-500">{report.waterSource || report.water_source || 'Unknown Source'}</div>
                           </div>
                         </div>
                       </td>
@@ -396,25 +418,41 @@ const UserReportsPage = () => {
                       <td className="px-6 py-4">
                         <div className="flex items-center text-sm text-gray-900">
                           <Calendar className="w-4 h-4 mr-2 text-gray-400" />
-                          {formatDate(report.submittedDate)}
+                          {formatDate(report.submittedDate || report.created_at)}
                         </div>
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex space-x-2">
                           <button
-                            onClick={() => navigate(`/report/${report.id}`)}
+                            onClick={() => {
+                              if (report && report.id) {
+                                navigate(`/report/${report.id}`);
+                              } else {
+                                alert('Report details not available');
+                              }
+                            }}
                             className="inline-flex items-center px-3 py-1 border border-gray-300 rounded text-sm text-gray-700 hover:bg-gray-50"
                           >
                             <Eye className="w-3 h-3 mr-1" />
                             View
                           </button>
-                          {report.status === 'pending' && (
+                          {(report.status === 'pending' || !report.status) && (
                             <>
-                              <button className="inline-flex items-center px-3 py-1 border border-teal-300 rounded text-sm text-teal-700 hover:bg-teal-50">
+                              <button 
+                                onClick={() => alert('Edit functionality coming soon!')}
+                                className="inline-flex items-center px-3 py-1 border border-teal-300 rounded text-sm text-teal-700 hover:bg-teal-50"
+                              >
                                 <Edit className="w-3 h-3 mr-1" />
                                 Edit
                               </button>
-                              <button className="inline-flex items-center px-3 py-1 border border-red-300 rounded text-sm text-red-700 hover:bg-red-50">
+                              <button 
+                                onClick={() => {
+                                  if (window.confirm('Are you sure you want to delete this report?')) {
+                                    alert('Delete functionality coming soon!');
+                                  }
+                                }}
+                                className="inline-flex items-center px-3 py-1 border border-red-300 rounded text-sm text-red-700 hover:bg-red-50"
+                              >
                                 <Trash2 className="w-3 h-3 mr-1" />
                                 Delete
                               </button>

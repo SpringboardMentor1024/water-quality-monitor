@@ -1,4 +1,3 @@
-﻿
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Navigation from './components/layout/Navigation';
@@ -8,6 +7,8 @@ import PasswordRecoveryPage from './pages/auth/PasswordRecovery';
 import ProfilePage from './pages/auth/ProfilePage';
 import Dashboard from './pages/Dashboard.jsx';
 import AlertsPage from './pages/AlertsPage';
+import AlertDetailsPage from './pages/AlertDetailsPage';
+import AlertHistoricalPage from './pages/AlertHistoricalPage';
 import NewReportPage from './pages/NewReportPage';
 import StationDetailsPage from './pages/StationDetailsPage';
 import StationsPage from './pages/StationsPage';
@@ -102,6 +103,18 @@ function App() {
         <Route path="/alerts" element={
           <MainLayout>
             <AlertsPage />
+          </MainLayout>
+        } />
+
+        <Route path="/alerts/:alertId" element={
+          <MainLayout>
+            <AlertDetailsPage />
+          </MainLayout>
+        } />
+
+        <Route path="/alerts-history" element={
+          <MainLayout>
+            <AlertHistoricalPage />
           </MainLayout>
         } />
 
