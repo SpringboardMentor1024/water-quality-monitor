@@ -38,12 +38,11 @@ security = HTTPBearer()
 # -------------------- CORS --------------------
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["http://localhost:3000"],  # frontend URL
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
 
 
 # -------------------- Database --------------------
@@ -280,3 +279,13 @@ if not os.path.exists("avatars"):
     os.makedirs("avatars")
 
 app.mount("/avatars", StaticFiles(directory="avatars"), name="avatars")
+print("STEP 1: main.py loaded")
+
+
+print("STEP 2: database imported")
+
+
+print("STEP 3: models imported")
+
+Base.metadata.create_all(bind=engine)
+print("STEP 4: tables created")

@@ -1,7 +1,144 @@
+# from typing import Optional
+
+# from pydantic import BaseModel
+
+# from datetime import datetime
+# from enum import Enum
+
+
+# # -------------------------
+# # ENUMS
+# # -------------------------
+
+# class ReportStatusEnum(str, Enum):
+#     pending = "pending"
+#     verified = "verified"
+#     rejected = "rejected"
+
+
+# class ParameterEnum(str, Enum):
+#     pH = "pH"
+#     turbidity = "turbidity"
+#     DO = "DO"
+#     lead = "lead"
+#     arsenic = "arsenic"
+#     ecoli = "e.coli"
+#     iron = "iron"
+#     unknown = "unknown"  # ✅ VERY IMPORTANT
+
+
+
+# class SearchParamEnum(str, Enum):
+#     region = "Region"
+#     country = "Country"
+#     state = "State"
+#     station_name = "Water Station Name"
+#     station_id = "Water Station ID"
+
+
+# # -------------------------
+# # WATER STATIONS
+# # -------------------------
+
+# class WaterStationCreate(BaseModel):
+#     name: str
+#     location: str
+#     latitude: float
+#     longitude: float
+#     managed_by: str
+
+
+# class WaterStationOut(WaterStationCreate):
+#     id: int
+#     created_at: Optional[datetime] = None
+
+#     class Config:
+#         from_attributes = True
+
+
+
+# # -------------------------
+# # STATION READINGS
+# # -------------------------
+
+# class StationReadingCreate(BaseModel):
+#     station_id: int
+#     parameter: ParameterEnum
+#     value: float
+
+
+# class StationReadingOut(StationReadingCreate):
+#     id: int
+#     recorded_at: datetime
+
+#     class Config:
+#         orm_mode = True
+
+
+# # -------------------------
+# # REPORTS
+# # -------------------------
+
+# class ReportCreate(BaseModel):
+#     user_id: int
+#     photo_url: str
+#     location: str
+#     description: str
+#     water_source: str
+
+
+# class ReportOut(ReportCreate):
+#     id: int
+#     status: ReportStatusEnum
+#     created_at: datetime
+
+#     class Config:
+#         orm_mode = True
+
+
+# # -------------------------
+# # SEARCH LOGS
+# # -------------------------
+
+# class SearchCreate(BaseModel):
+#     user_id: int
+#     parameter: str   # ✅ FIX
+#     value: str
+
+
+
+
+# class SearchOut(SearchCreate):
+#     id: int
+#     created_at: datetime
+
+#     class Config:
+#         orm_mode = True
+        
+
+# # -------------------------
+# # ALERTS
+# # -------------------------
+
+
+# class AlertTypeEnum(str, Enum):
+#     boil_notice = "boil_notice"
+#     contamination = "contamination"
+#     outage = "outage"
+
+# class AlertCreate(BaseModel):
+#     type: AlertTypeEnum
+#     message: str
+#     location: str
+
+# class AlertOut(AlertCreate):
+#     id: int
+#     issued_at: datetime
+
+#     class Config:
+#         orm_mode = True
 from typing import Optional
-
 from pydantic import BaseModel
-
 from datetime import datetime
 from enum import Enum
 
@@ -24,8 +161,7 @@ class ParameterEnum(str, Enum):
     arsenic = "arsenic"
     ecoli = "e.coli"
     iron = "iron"
-    unknown = "unknown"  # ✅ VERY IMPORTANT
-
+    unknown = "unknown"
 
 
 class SearchParamEnum(str, Enum):
@@ -54,7 +190,6 @@ class WaterStationOut(WaterStationCreate):
 
     class Config:
         from_attributes = True
-
 
 
 # -------------------------
@@ -102,10 +237,8 @@ class ReportOut(ReportCreate):
 
 class SearchCreate(BaseModel):
     user_id: int
-    parameter: str   # ✅ FIX
+    parameter: str
     value: str
-
-
 
 
 class SearchOut(SearchCreate):
@@ -114,26 +247,34 @@ class SearchOut(SearchCreate):
 
     class Config:
         orm_mode = True
-        
+
 
 # -------------------------
 # ALERTS
 # -------------------------
-
 
 class AlertTypeEnum(str, Enum):
     boil_notice = "boil_notice"
     contamination = "contamination"
     outage = "outage"
 
+
+class AlertStatusEnum(str, Enum):
+    active = "active"
+    resolved = "resolved"
+
+
 class AlertCreate(BaseModel):
     type: AlertTypeEnum
     message: str
     location: str
+    status: AlertStatusEnum = AlertStatusEnum.active
+
 
 class AlertOut(AlertCreate):
     id: int
     issued_at: datetime
+    status: AlertStatusEnum
 
     class Config:
         orm_mode = True
