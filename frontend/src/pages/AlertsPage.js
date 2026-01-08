@@ -1,7 +1,9 @@
 ﻿import React, { useState } from 'react';
+import HistoricalDataGraphs from '../components/alerts/HistoricalDataGraphs';
 
 const AlertsPage = () => {
   const [expandedAlerts, setExpandedAlerts] = useState(new Set());
+  const [activeTab, setActiveTab] = useState('alerts');
 
   const alerts = [
     {
@@ -166,11 +168,36 @@ const AlertsPage = () => {
         <p className="text-gray-600 mt-2">Real-time monitoring system</p>
       </div>
 
-      <div className="mb-8">
-        <h2 className="text-2xl font-bold text-gray-800 mb-4">Test Alerts Page</h2>
+      {/* Tab Navigation */}
+      <div className="bg-white rounded-lg shadow mb-6">
+        <div className="border-b border-gray-200">
+          <nav className="flex space-x-8 px-6">
+            <button
+              onClick={() => setActiveTab('alerts')}
+              className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                activeTab === 'alerts'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              Active Alerts ({alerts.length})
+            </button>
+            <button
+              onClick={() => setActiveTab('historical')}
+              className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                activeTab === 'historical'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              Historical Charts
+            </button>
+          </nav>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {activeTab === 'alerts' && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {alerts.map((alert) => (
           <div 
             key={alert.id}
@@ -228,9 +255,15 @@ const AlertsPage = () => {
             )}
           </div>
         ))}
-      </div>
+        </div>
+      )}
 
-      <div className="mt-8 p-6 bg-blue-50 rounded-xl">
+      {activeTab === 'historical' && (
+        <HistoricalDataGraphs />
+      )}
+
+      {activeTab === 'alerts' && (
+        <div className="mt-8 p-6 bg-blue-50 rounded-xl">
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-lg font-semibold text-blue-800">Active Alerts Summary</h3>
@@ -250,8 +283,9 @@ const AlertsPage = () => {
               Export All Alerts
             </button>
           </div>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };
