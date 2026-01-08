@@ -291,17 +291,23 @@ function AlertTrends() {
 
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={trendData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="date" />
-              <YAxis />
+              <CartesianGrid stroke="#334155" strokeDasharray="3 3" />
+              <XAxis
+                dataKey="date"
+                tick={{ fill: "#0f172a", fontWeight: 600 }}
+              />
+              <YAxis
+                tick={{ fill: "#0f172a", fontWeight: 600 }}
+                 />
               <Tooltip />
               <Line
                 type="monotone"
                 dataKey="count"
-                stroke="#1d4ed8"
+                stroke="#0f172a"
                 strokeWidth={3}
               />
             </LineChart>
+
           </ResponsiveContainer>
         </div>
 
@@ -313,7 +319,7 @@ function AlertTrends() {
 
           <ResponsiveContainer width="100%" height={300}>
             <PieChart>
-              <Pie
+             <Pie
                 data={pieData}
                 dataKey="value"
                 nameKey="name"
@@ -323,6 +329,8 @@ function AlertTrends() {
                 fill="#2563eb"
                 label
               />
+
+
               <Tooltip />
             </PieChart>
           </ResponsiveContainer>
@@ -336,20 +344,27 @@ function AlertTrends() {
         </h2>
 
         <ResponsiveContainer width="100%" height={350}>
-          <RadarChart data={radarData}>
-            <PolarGrid />
-            <PolarAngleAxis dataKey="parameter" />
-            <PolarRadiusAxis allowDecimals={false} />
+            <RadarChart data={radarData}>
+            <PolarGrid stroke="#334155" />
+            <PolarAngleAxis
+              dataKey="parameter"
+              tick={{ fill: "#0f172a", fontWeight: 600 }}
+            />
+            <PolarRadiusAxis
+              allowDecimals={false}
+              tick={{ fill: "#0f172a", fontWeight: 600 }}
+            />
             <Radar
               name="Alert Count"
               dataKey="alerts"
-              stroke="#2563eb"
-              fill="#2563eb"
-              fillOpacity={0.6}
+              stroke="#5b21b6"
+              fill="#5b21b6"
+              fillOpacity={0.8}
             />
             <Tooltip />
             <Legend />
           </RadarChart>
+
         </ResponsiveContainer>
       </div>
     </>
