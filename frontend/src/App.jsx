@@ -20,6 +20,9 @@ import Analysis from "./pages/Analysis";
 import Profile from "./pages/Profile";
 import AllUsers from "./pages/AllUsers";
 import AlertDetails from "./pages/AlertDetails";
+import Analytics from "./pages/Analytics";
+import Collaborations from "./pages/Collaborations";
+import PredictionDetails from "./pages/PredictionDetails";
 
 
 
@@ -63,6 +66,9 @@ export default function App() {
 
           <Route path="/alerts" element={<Alerts />} />
           <Route path="/alerts/:id" element={<AlertDetails />} />
+          <Route path="/analytics/:id?" element={<Analytics />} />
+          <Route path="/prediction-details/:id/:parameter" element={<PredictionDetails />} />
+          <Route path="/collaborations" element={<Collaborations />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/users" element={<AllUsers />} />
