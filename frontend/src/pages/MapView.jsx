@@ -4,6 +4,7 @@ import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import "../utils/fixLeafletIcons";
 import { getStations } from "../services/api";
+import { useNavigate } from "react-router-dom"; // ✅ import this
 
 /* ---------------------------------
    CUSTOM MARKER ICON
@@ -31,6 +32,7 @@ const getMarkerIcon = (status) =>
 export default function MapView() {
   const [stations, setStations] = useState([]);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate(); // ✅ initialize useNavigate
 
   useEffect(() => {
     getStations()
@@ -95,6 +97,14 @@ export default function MapView() {
                 <p>pH: {station.ph}</p>
                 <p>Turbidity: {station.turbidity}</p>
                 <p>Temperature: {station.temperature} °C</p>
+
+                {/* ✅ VIEW BUTTON */}
+                <button
+                  onClick={() => navigate(`/stations/${station.id}`)}
+                  className="mt-2 px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
+                >
+                  View
+                </button>
               </div>
             </Popup>
           </Marker>

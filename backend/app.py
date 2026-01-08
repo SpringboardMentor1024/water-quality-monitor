@@ -1,3 +1,4 @@
+from alert import router as alert_router
 from fastapi import FastAPI, Depends
 from sqlalchemy.orm import Session
 from sqlalchemy import func
@@ -6,6 +7,7 @@ from auth import router as auth_router
 from fastapi.middleware.cors import CORSMiddleware
 from fetch_wqp_data import sync_wqp_data
 from fetch_wqp_live import sync_wqp_live_data
+
 
 from database import engine, get_db
 import models
@@ -21,6 +23,8 @@ models.Base.metadata.create_all(bind=engine)
 # ---------------------------------
 app = FastAPI(title="Water Quality Monitor API")
 app.include_router(auth_router)
+app.include_router(alert_router)
+
 
 # ---------------------------------
 # CORS
