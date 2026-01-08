@@ -13,9 +13,11 @@ const Layout = () => {
     { name: "Map View", path: "/map", icon: "🗺️" },
     { name: "Alerts", path: "/alerts", icon: "🔔" },
     { name: "Locations", path: "/locations", icon: "📍" },
+    { name: "User Reports", path: "/userreports", icon: "📋" },  // ✅ NEW
     { name: "Profile", path: "/profile", icon: "👤" },
     { name: "Settings", path: "/settings", icon: "⚙️" },
-  ];
+];
+
 
   // Secure Logout Logic
   const handleLogout = () => {

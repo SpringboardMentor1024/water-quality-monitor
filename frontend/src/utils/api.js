@@ -14,6 +14,7 @@ export const getAllUsers = async () => {
   return res.data;
 };
 
+/* ================= AUTH TOKEN ================= */
 
 // Attach JWT token automatically
 api.interceptors.request.use((config) => {
@@ -27,6 +28,7 @@ api.interceptors.request.use((config) => {
 /* =====================
    AUTH
 ===================== */
+
 export const loginUser = async (email, password) => {
   const res = await api.post("/auth/login", { email, password });
   return res.data;
@@ -40,6 +42,7 @@ export const registerUser = async (data) => {
 /* =====================
    STATIONS
 ===================== */
+
 export const getStations = async () => {
   const res = await api.get("/stations/");
   return res.data;
@@ -54,5 +57,27 @@ export const getStationSeries = async (stationId, points = 12) => {
   const res = await api.get(`/stations/${stationId}/series?points=${points}`);
   return res.data;
 };
+
+/* =====================
+   USER REPORTS (NEW – SAFE ADDITION)
+===================== */
+
+export const getMyReports = async () => {
+  const res = await api.get("/reports/my-reports/");
+  return res.data;
+};
+
+export const createReport = async (data) => {
+  const res = await api.post("/reports/", data, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
+  return res.data;
+};
+
+/* =====================
+   DEFAULT EXPORT
+===================== */
 
 export default api;
