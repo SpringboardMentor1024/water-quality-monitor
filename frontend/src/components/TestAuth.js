@@ -1,66 +1,41 @@
-import React, { useEffect } from 'react';
-import { authAPI, waterQualityAPI } from '../services/api';
+import React, { useEffect, useState } from 'react';
+import { authAPI, stationsAPI } from '../services/api';
 
 const TestAuth = () => {
-  useEffect(() => {
-    console.log('🧪 Starting API Connection Tests...');
-    
-    // Test 1: Water Quality API
-    console.log('📊 Testing Water Quality API...');
-    waterQualityAPI.getReadings()
-      .then(data => {
-        console.log('✅ Water Quality API SUCCESS:', data);
-      })
-      .catch(err => {
-        console.error('❌ Water Quality API FAILED:', err.message || err);
-      });
-    
-    // Test 2: User Registration
-    console.log('📝 Testing User Registration...');
-    authAPI.register({
-      email: 'sandhya@gmail.com',
-      password: 'sandhya123',
-      full_name: 'sandhya',
-      role: 'operator'
-    })
-    .then(data => {
-      console.log('✅ User Registration SUCCESS:', data);
-      
-      // Test 3: User Login (after successful registration)
-      console.log('🔑 Testing User Login...');
-      return authAPI.login('sandhya@gmail.com', 'sandhya123');
-    })
-    .then(loginData => {
-      console.log('✅ User Login SUCCESS:', loginData);
-    })
-    .catch(err => {
-      console.error('❌ API Test FAILED:', err.message || err);
-      // If registration fails, it might be because user already exists
-      // Try login instead
-      console.log('🔄 Trying login instead...');
-      authAPI.login('sandhya@gmail.com', 'sandhya123')
-        .then(data => console.log('✅ Login successful:', data))
-        .catch(loginErr => console.error('❌ Login also failed:', loginErr.message || loginErr));
-    });
+  const [testResults, setTestResults] = useState({
+    stations: 'pending',
+    auth: 'pending'
+  });
 
+  useEffect(() => {
+    runTests();
   }, []);
 
+  const runTests = async () => {
+    // Test 1: Stations API
+    try {
+      const stations = await stationsAPI.getAllStations();
+      setTestResults(prev => ({ ...prev, stations: `success (${stations.length} stations)` }));
+    } catch (err) {
+      setTestResults(prev => ({ ...prev, stations: 'failed' }));
+    }
+
+    // Test 2: Auth API
+    try {
+      await authAPI.login('test@example.com', 'testpass');
+      setTestResults(prev => ({ ...prev, auth: 'success' }));
+    } catch (err) {
+      setTestResults(prev => ({ ...prev, auth: 'expected failure (no test user)' }));
+    }
+  };
+
   return (
-    <div style={{ 
-      padding: '20px', 
-      background: '#e8f5e9', 
-      margin: '20px',
-      borderRadius: '10px',
-      border: '2px solid #4caf50',
-      fontFamily: 'Arial, sans-serif'
-    }}>
-      <h3 style={{ margin: '0 0 10px 0', color: '#2e7d32' }}>🧪 API Connection Tests Running...</h3>
-      <p style={{ margin: '0 0 5px 0', color: '#555' }}>Check the browser Console (F12) for results</p>
-      <ul style={{ margin: '10px 0 0 0', paddingLeft: '20px', color: '#666', fontSize: '14px' }}>
-        <li>📊 Water Quality API Test</li>
-        <li>📝 User Registration Test</li>
-        <li>🔑 User Login Test</li>
-      </ul>
+    <div className="bg-green-50 border-2 border-green-500 rounded-lg p-5 m-5">
+      <h3 className="text-green-800 font-bold mb-3">🧪 API Connection Status</h3>
+      <div className="space-y-2 text-sm">
+        <div>📊 Stations API: <span className="font-medium">{testResults.stations}</span></div>
+        <div>🔑 Auth API: <span className="font-medium">{testResults.auth}</span></div>
+      </div>
     </div>
   );
 };

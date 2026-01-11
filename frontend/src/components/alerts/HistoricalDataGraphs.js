@@ -19,11 +19,19 @@ const HistoricalDataGraphs = () => {
     try {
       setLoading(true);
       const data = await alertsAPI.getHistoricalData(selectedPeriod);
-      setHistoricalData(data || {
-        boil_notice: [],
-        contamination: [],
-        outage: []
-      });
+      if (data && typeof data === 'object') {
+        setHistoricalData({
+          boil_notice: data.boil_notice || [],
+          contamination: data.contamination || [],
+          outage: data.outage || []
+        });
+      } else {
+        setHistoricalData({
+          boil_notice: [],
+          contamination: [],
+          outage: []
+        });
+      }
     } catch (error) {
       console.error('Error fetching historical data:', error);
       setHistoricalData({
@@ -55,8 +63,10 @@ const HistoricalDataGraphs = () => {
   };
 
   const calculateTotalAlerts = (data) => {
+    if (!data || typeof data !== 'object') return 0;
     return Object.values(data).reduce((total, typeData) => {
-      return total + typeData.reduce((sum, day) => sum + day.count, 0);
+      if (!Array.isArray(typeData)) return total;
+      return total + typeData.reduce((sum, day) => sum + (day?.count || 0), 0);
     }, 0);
   };
 

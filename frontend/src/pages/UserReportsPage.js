@@ -30,142 +30,29 @@ const UserReportsPage = () => {
   const fetchReports = async () => {
     try {
       setLoading(true);
-      // Try to get reports from API
-      const data = await reportsAPI.getMyReports();
-      if (data && Array.isArray(data) && data.length > 0) {
-        setReports(data);
+      const data = await reportsAPI.getAllReports();
+      
+      // Ensure data is an array and validate each report
+      if (Array.isArray(data)) {
+        const validReports = data.filter(report => report && typeof report === 'object');
+        setReports(validReports);
       } else {
-        // Use mock data if no real reports
-        const mockReports = generateMockReports();
-        setReports(mockReports);
+        setReports([]);
       }
     } catch (error) {
-      console.error('Failed to fetch reports:', error);
-      // Always fallback to mock data
-      const mockReports = generateMockReports();
-      setReports(mockReports);
+      setReports([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const generateMockReports = () => {
-    return [
-      {
-        id: 'RPT-001',
-        title: 'Unusual discoloration in Mumbai River',
-        description: 'Brownish water observed near Mahim Bridge, unusual odor detected',
-        location: 'Mumbai River, Mahim Creek',
-        coordinates: { lat: 19.045, lng: 72.845 },
-        status: 'pending',
-        severity: 'high',
-        submittedBy: 'John Doe',
-        submittedDate: '2024-01-20T10:30:00Z',
-        stationId: 'STN-001',
-        stationName: 'Riverbend Monitoring Station A',
-        waterSource: 'river',
-        photos: ['photo1.jpg', 'photo2.jpg'],
-        parameters: {
-          ph: 6.2,
-          temperature: 28.5,
-          turbidity: 8.5,
-          notes: 'Water appears brown with oily surface'
-        },
-        adminNotes: 'Awaiting field verification'
-      },
-      {
-        id: 'RPT-002',
-        title: 'Foam accumulation at Bangalore Lake',
-        description: 'White foam accumulation near eastern shoreline, dead fish observed',
-        location: 'Ulsoor Lake, Bangalore',
-        coordinates: { lat: 12.981, lng: 77.617 },
-        status: 'verified',
-        severity: 'medium',
-        submittedBy: 'Jane Smith',
-        submittedDate: '2024-01-18T14:20:00Z',
-        stationId: 'STN-002',
-        stationName: 'Lakeview Monitoring Point',
-        waterSource: 'lake',
-        photos: ['lake-foam.jpg'],
-        parameters: {
-          ph: 7.8,
-          temperature: 24.3,
-          turbidity: 4.2,
-          notes: 'Chemical odor detected near foam'
-        },
-        adminNotes: 'Confirmed industrial discharge, investigation ongoing'
-      },
-      {
-        id: 'RPT-003',
-        title: 'Low water level in Chennai Reservoir',
-        description: 'Water level 40% below seasonal average, affecting supply',
-        location: 'Chembarambakkam Reservoir',
-        coordinates: { lat: 13.013, lng: 80.074 },
-        status: 'verified',
-        severity: 'high',
-        submittedBy: 'Robert Johnson',
-        submittedDate: '2024-01-15T09:15:00Z',
-        stationId: 'STN-004',
-        stationName: 'Chennai Reservoir Station',
-        waterSource: 'reservoir',
-        photos: ['reservoir-low.jpg'],
-        parameters: {
-          ph: 7.0,
-          temperature: 26.8,
-          turbidity: 2.1,
-          notes: 'Concern about drinking water supply'
-        },
-        adminNotes: 'Verified, escalated to water management board'
-      },
-      {
-        id: 'RPT-004',
-        title: 'Oil spill in Delhi Canal',
-        description: 'Visible oil slick on water surface, strong petroleum odor',
-        location: 'Najafgarh Drain, Delhi',
-        coordinates: { lat: 28.613, lng: 77.229 },
-        status: 'rejected',
-        severity: 'critical',
-        submittedBy: 'Priya Sharma',
-        submittedDate: '2024-01-12T16:45:00Z',
-        stationId: 'STN-005',
-        stationName: 'Delhi Canal Monitoring',
-        waterSource: 'canal',
-        photos: ['oil-spill1.jpg', 'oil-spill2.jpg'],
-        parameters: {
-          ph: 5.8,
-          temperature: 22.5,
-          turbidity: 9.8,
-          notes: 'Immediate action required'
-        },
-        adminNotes: 'Duplicate report, already being addressed'
-      },
-      {
-        id: 'RPT-005',
-        title: 'Algae bloom in Kolkata Pond',
-        description: 'Green algae covering entire pond surface',
-        location: 'Rabindra Sarobar, Kolkata',
-        coordinates: { lat: 22.508, lng: 88.351 },
-        status: 'pending',
-        severity: 'medium',
-        submittedBy: 'Amit Kumar',
-        submittedDate: '2024-01-10T11:20:00Z',
-        stationId: 'STN-006',
-        stationName: 'Kolkata Pond Station',
-        waterSource: 'pond',
-        photos: ['algae-bloom.jpg'],
-        parameters: {
-          ph: 8.2,
-          temperature: 29.5,
-          turbidity: 6.3,
-          notes: 'Potential toxicity concern'
-        },
-        adminNotes: 'Sample collected for testing'
-      }
-    ];
-  };
-
   const filterAndSearchReports = () => {
-    let results = [...reports];
+    if (!Array.isArray(reports)) {
+      setFilteredReports([]);
+      return;
+    }
+    
+    let results = reports.filter(report => report && typeof report === 'object');
 
     // Apply status filter
     if (filter !== 'all') {
@@ -175,12 +62,15 @@ const UserReportsPage = () => {
     // Apply search
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
-      results = results.filter(report =>
-        report.title.toLowerCase().includes(term) ||
-        report.location.toLowerCase().includes(term) ||
-        report.id.toLowerCase().includes(term) ||
-        report.submittedBy.toLowerCase().includes(term)
-      );
+      results = results.filter(report => {
+        const description = String(report.description || '').toLowerCase();
+        const location = String(report.location || '').toLowerCase();
+        const id = String(report.id || '').toLowerCase();
+        
+        return description.includes(term) ||
+               location.includes(term) ||
+               id.includes(term);
+      });
     }
 
     setFilteredReports(results);
@@ -388,13 +278,15 @@ const UserReportsPage = () => {
                           <div className="flex items-center">
                             <FileText className="w-5 h-5 text-gray-400 mr-2" />
                             <div>
-                              <div className="font-medium text-gray-900">{report.title || 'Untitled Report'}</div>
+                              <div className="font-medium text-gray-900">
+                                Report from {report.location || 'Unknown Location'}
+                              </div>
                               <div className="text-sm text-gray-500 mt-1 line-clamp-1">
                                 {report.description || 'No description available'}
                               </div>
                               <div className="flex items-center mt-2">
                                 <User className="w-3 h-3 text-gray-400 mr-1" />
-                                <span className="text-xs text-gray-600">{report.submittedBy || 'Anonymous'}</span>
+                                <span className="text-xs text-gray-600">ID: {report.id}</span>
                               </div>
                             </div>
                           </div>
@@ -412,31 +304,24 @@ const UserReportsPage = () => {
                       <td className="px-6 py-4">
                         <div className="space-y-2">
                           {getStatusBadge(report.status)}
-                          {getSeverityBadge(report.severity)}
                         </div>
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center text-sm text-gray-900">
                           <Calendar className="w-4 h-4 mr-2 text-gray-400" />
-                          {formatDate(report.submittedDate || report.created_at)}
+                          {formatDate(report.created_at)}
                         </div>
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex space-x-2">
                           <button
-                            onClick={() => {
-                              if (report && report.id) {
-                                navigate(`/report/${report.id}`);
-                              } else {
-                                alert('Report details not available');
-                              }
-                            }}
+                            onClick={() => navigate(`/report/${report.id}`)}
                             className="inline-flex items-center px-3 py-1 border border-gray-300 rounded text-sm text-gray-700 hover:bg-gray-50"
                           >
                             <Eye className="w-3 h-3 mr-1" />
                             View
                           </button>
-                          {(report.status === 'pending' || !report.status) && (
+                          {report.status === 'pending' && (
                             <>
                               <button 
                                 onClick={() => alert('Edit functionality coming soon!')}
@@ -578,7 +463,7 @@ const UserReportsPage = () => {
             </h3>
             <div className="text-center">
               <div className="text-3xl font-bold text-blue-600 mb-2">
-                {reports.filter(r => r.photos && r.photos.length > 0).length}
+                {Array.isArray(reports) ? reports.filter(r => r && r.photo_url).length : 0}
               </div>
               <div className="text-gray-600">Reports with photos</div>
               <div className="text-sm text-gray-500 mt-2">Photos increase verification accuracy by 40%</div>

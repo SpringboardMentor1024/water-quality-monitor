@@ -74,62 +74,19 @@ class GovernmentAPIService:
     
     def get_cpcb_water_data(self, state: str = None) -> List[Dict]:
         """
-        Fetch water quality data from CPCB India
-        Falls back to US EPA data if CPCB is unavailable
+        CPCB India APIs are not available - use US EPA data only
         """
         try:
-            # Since CPCB has no public API, try US EPA data for Indian locations
-            if state:
-                # Try to get US data that might be relevant
-                us_data = self.get_epa_water_data()
-                if us_data:
-                    # Adapt US data for Indian context
-                    adapted_data = []
-                    for item in us_data[:3]:  # Limit to 3 records
-                        adapted_item = {
-                            "station_name": f"Water Station - {state}",
-                            "location": f"{state}, India",
-                            "parameters": item.get("parameters", {}),
-                            "recorded_at": item.get("recorded_at", datetime.now().isoformat()),
-                            "source": "EPA (adapted for India)"
-                        }
-                        adapted_data.append(adapted_item)
-                    
-                    if adapted_data:
-                        return adapted_data
+            # Use US EPA data as the primary source
+            us_data = self.get_epa_water_data()
+            if us_data:
+                return us_data[:3]  # Limit to 3 records
             
-            # Fallback to mock data if US APIs also fail
-            mock_data = [
-                {
-                    "station_name": f"Yamuna River - {state or 'Delhi'}",
-                    "location": f"{state or 'Delhi'}, India",
-                    "parameters": {
-                        "pH": 7.2,
-                        "DO": 4.5,
-                        "turbidity": 15.2,
-                        "lead": 0.01
-                    },
-                    "recorded_at": datetime.now().isoformat(),
-                    "source": "Local Mock Data"
-                },
-                {
-                    "station_name": f"Ganges River - {state or 'Uttar Pradesh'}",
-                    "location": f"{state or 'Uttar Pradesh'}, India",
-                    "parameters": {
-                        "pH": 8.1,
-                        "DO": 3.2,
-                        "turbidity": 22.5,
-                        "bacteria": 1200
-                    },
-                    "recorded_at": datetime.now().isoformat(),
-                    "source": "Local Mock Data"
-                }
-            ]
-            
-            return mock_data
+            # If EPA fails, return empty list (no mock data)
+            return []
             
         except Exception as e:
-            logger.error(f"Error fetching CPCB/India data: {e}")
+            logger.error(f"Error fetching water data: {e}")
             return []
     
     def _format_epa_data(self, raw_data: List[Dict]) -> List[Dict]:
@@ -177,12 +134,11 @@ class GovernmentAPIService:
     
     def get_all_government_data(self, location_params: Dict = None) -> Dict[str, List[Dict]]:
         """
-        Fetch data from all government sources with smart fallback
+        Fetch data from US EPA and WHO only - no mock data
         """
         results = {
             "epa": [],
             "who": [],
-            "cpcb": [],
             "fallback_used": False
         }
         
@@ -190,27 +146,11 @@ class GovernmentAPIService:
             state = location_params.get('state')
             country = location_params.get('country', 'USA')
             
-            # Fetch EPA data first (most reliable)
+            # Fetch EPA data (primary source)
             results["epa"] = self.get_epa_water_data(state=state)
             
             # Fetch WHO data
             results["who"] = self.get_who_water_data(country=country)
-            
-            # For Indian locations, try US data as fallback
-            if country.upper() == 'INDIA':
-                results["cpcb"] = self.get_cpcb_water_data(state=state)
-                
-                # If no Indian data and US EPA has data, use it as fallback
-                if not results["cpcb"] and results["epa"]:
-                    results["cpcb"] = [{
-                        **item,
-                        "location": f"{state or 'India'}, India",
-                        "source": "EPA (adapted for India)"
-                    } for item in results["epa"][:2]]  # Limit to 2 records
-                    results["fallback_used"] = True
-            else:
-                # For non-Indian locations, still try CPCB mock data
-                results["cpcb"] = self.get_cpcb_water_data(state=state)
         
         return results
     

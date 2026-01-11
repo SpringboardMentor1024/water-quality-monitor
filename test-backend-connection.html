@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Backend Connection Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        .test { margin: 20px 0; padding: 15px; border-radius: 5px; }
+        .success { background: #d4edda; border: 1px solid #c3e6cb; color: #155724; }
+        .error { background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; }
+        .loading { background: #fff3cd; border: 1px solid #ffeaa7; color: #856404; }
+        button { padding: 10px 20px; margin: 10px 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>Water Quality Monitor - Backend Connection Test</h1>
+    
+    <button onclick="testConnection()">Test Backend Connection</button>
+    <button onclick="testStations()">Test Stations API</button>
+    <button onclick="testAlerts()">Test Alerts API</button>
+    <button onclick="testReports()">Test Reports API</button>
+    
+    <div id="results"></div>
+
+    <script>
+        const API_BASE = 'http://localhost:8000';
+        
+        function showResult(test, status, message, data = null) {
+            const results = document.getElementById('results');
+            const div = document.createElement('div');
+            div.className = `test ${status}`;
+            div.innerHTML = `
+                <h3>${test}</h3>
+                <p>${message}</p>
+                ${data ? `<pre>${JSON.stringify(data, null, 2)}</pre>` : ''}
+            `;
+            results.appendChild(div);
+        }
+        
+        async function testConnection() {
+            showResult('Backend Connection', 'loading', 'Testing connection...');
+            try {
+                const response = await fetch(`${API_BASE}/`);
+                const data = await response.json();
+                showResult('Backend Connection', 'success', 'Backend is running!', data);
+            } catch (error) {
+                showResult('Backend Connection', 'error', `Failed to connect: ${error.message}`);
+            }
+        }
+        
+        async function testStations() {
+            showResult('Stations API', 'loading', 'Testing stations endpoint...');
+            try {
+                const response = await fetch(`${API_BASE}/api/stations`);
+                const data = await response.json();
+                showResult('Stations API', 'success', `Found ${data.length} stations`, data.slice(0, 2));
+            } catch (error) {
+                showResult('Stations API', 'error', `Failed: ${error.message}`);
+            }
+        }
+        
+        async function testAlerts() {
+            showResult('Alerts API', 'loading', 'Testing alerts endpoint...');
+            try {
+                const response = await fetch(`${API_BASE}/api/alerts`);
+                const data = await response.json();
+                showResult('Alerts API', 'success', `Found ${data.length} alerts`, data.slice(0, 2));
+            } catch (error) {
+                showResult('Alerts API', 'error', `Failed: ${error.message}`);
+            }
+        }
+        
+        async function testReports() {
+            showResult('Reports API', 'loading', 'Testing reports endpoint...');
+            try {
+                const response = await fetch(`${API_BASE}/api/reports`);
+                const data = await response.json();
+                showResult('Reports API', 'success', `Found ${data.length} reports`, data.slice(0, 2));
+            } catch (error) {
+                showResult('Reports API', 'error', `Failed: ${error.message}`);
+            }
+        }
+        
+        // Auto-test on load
+        window.onload = function() {
+            testConnection();
+        };
+    </script>
+</body>
+</html>

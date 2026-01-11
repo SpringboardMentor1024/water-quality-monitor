@@ -17,71 +17,64 @@ const SearchPage = () => {
   const waterSources = ['River', 'Lake', 'Well', 'Tap Water', 'Groundwater', 'Ocean'];
   const statusOptions = ['Active', 'Inactive', 'Maintenance'];
 
-  const mockStations = [
-    {
-      id: 'WS001',
-      name: 'Hudson River Station Alpha',
-      location: 'Hudson River, NY',
-      region: 'North America',
-      area: 'New York',
-      waterSource: 'River',
-      status: 'Active',
-      latitude: 40.7589,
-      longitude: -73.9851,
-      lastReading: '2024-01-15T14:30:00Z',
-      parameters: ['pH', 'Temperature', 'Turbidity', 'DO']
-    },
-    {
-      id: 'WS002',
-      name: 'Central Park Lake Monitor',
-      location: 'Central Park Lake, NYC',
-      region: 'North America',
-      area: 'New York',
-      waterSource: 'Lake',
-      status: 'Active',
-      latitude: 40.7829,
-      longitude: -73.9654,
-      lastReading: '2024-01-15T14:25:00Z',
-      parameters: ['pH', 'Temperature', 'Turbidity', 'E.Coli']
-    },
-    {
-      id: 'WS003',
-      name: 'Brooklyn Water Treatment',
-      location: 'Brooklyn, NY',
-      region: 'North America',
-      area: 'New York',
-      waterSource: 'Tap Water',
-      status: 'Active',
-      latitude: 40.6782,
-      longitude: -73.9442,
-      lastReading: '2024-01-15T14:20:00Z',
-      parameters: ['pH', 'Chlorine', 'Lead', 'Iron']
-    },
-    {
-      id: 'WS004',
-      name: 'Queens Community Well',
-      location: 'Queens, NY',
-      region: 'North America',
-      area: 'New York',
-      waterSource: 'Well',
-      status: 'Maintenance',
-      latitude: 40.7282,
-      longitude: -73.7949,
-      lastReading: '2024-01-14T16:45:00Z',
-      parameters: ['pH', 'Arsenic', 'Iron', 'Bacteria']
-    }
-  ];
-
   useEffect(() => {
-    // Load initial results
-    setSearchResults(mockStations);
+    // Load stations from backend API
+    loadStations();
   }, []);
+
+  const loadStations = async () => {
+    try {
+      const response = await fetch('http://localhost:8000/api/stations');
+      if (response.ok) {
+        const data = await response.json();
+        const transformedStations = data.map(station => ({
+          id: station.id,
+          name: station.name,
+          location: station.location,
+          region: 'Asia',
+          area: station.location.split(',')[1]?.trim() || 'India',
+          waterSource: 'River',
+          status: station.status === 'active' ? 'Active' : 'Inactive',
+          latitude: station.latitude,
+          longitude: station.longitude,
+          lastReading: station.lastUpdated || new Date().toISOString(),
+          parameters: ['pH', 'Temperature', 'Turbidity', 'DO']
+        }));
+        setSearchResults(transformedStations);
+      } else {
+        setSearchResults([]);
+      }
+    } catch (error) {
+      console.error('Backend connection failed:', error);
+      setSearchResults([]);
+    }
+  };
 
   const handleSearch = async () => {
     setLoading(true);
     try {
-      // Filter mock data based on search criteria
-      let filtered = mockStations.filter(station => {
+      const response = await fetch('http://localhost:8000/api/stations');
+      let stationsData = [];
+      
+      if (response.ok) {
+        const data = await response.json();
+        stationsData = data.map(station => ({
+          id: station.id,
+          name: station.name,
+          location: station.location,
+          region: 'Asia',
+          area: station.location.split(',')[1]?.trim() || 'India',
+          waterSource: 'River',
+          status: station.status === 'active' ? 'Active' : 'Inactive',
+          latitude: station.latitude,
+          longitude: station.longitude,
+          lastReading: station.lastUpdated || new Date().toISOString(),
+          parameters: ['pH', 'Temperature', 'Turbidity', 'DO']
+        }));
+      }
+      
+      // Filter data based on search criteria
+      let filtered = stationsData.filter(station => {
         return (
           (!filters.region || station.region === filters.region) &&
           (!filters.area || station.area.toLowerCase().includes(filters.area.toLowerCase())) &&
@@ -94,9 +87,9 @@ const SearchPage = () => {
       
       setSearchResults(filtered);
       
-      // Backend API integration pending
     } catch (error) {
       console.error('Search failed:', error);
+      setSearchResults([]);
     } finally {
       setLoading(false);
     }
@@ -115,7 +108,7 @@ const SearchPage = () => {
       waterSource: '',
       status: ''
     });
-    setSearchResults(mockStations);
+    loadStations(); // Reload from backend
   };
 
   const getStatusColor = (status) => {

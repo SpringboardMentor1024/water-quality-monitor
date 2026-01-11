@@ -1,62 +1,48 @@
-﻿import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import HistoricalDataGraphs from '../components/alerts/HistoricalDataGraphs';
+import { alertsAPI } from '../services/api';
 
 const AlertsPage = () => {
   const [expandedAlerts, setExpandedAlerts] = useState(new Set());
   const [activeTab, setActiveTab] = useState('alerts');
+  const [alerts, setAlerts] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const alerts = [
-    {
-      id: 1,
-      title: "High Turbidity Detected",
-      station: "Station Alpha",
-      priority: "high",
-      time: "5 minutes ago",
-      description: "Turbidity levels exceed 10 NTU",
-      details: "Turbidity reading: 12.5 NTU (Normal range: 0-5 NTU). This indicates potential sediment runoff or algae bloom. Recommended actions: 1. Collect water samples for lab analysis 2. Check upstream for construction activity 3. Monitor for 24 hours.",
-      parameters: ["Turbidity: 12.5 NTU", "Temperature: 22C", "pH: 7.2"]
-    },
-    {
-      id: 2,
-      title: "Low Dissolved Oxygen",
-      station: "River Delta Station",
-      priority: "high",
-      time: "10 minutes ago",
-      description: "DO levels critical at 2.1 mg/L",
-      details: "Dissolved Oxygen: 2.1 mg/L (Minimum required: 5.0 mg/L). This can cause fish kills and indicate organic pollution. Immediate action required.",
-      parameters: ["DO: 2.1 mg/L", "Temperature: 25C", "BOD: 8.2 mg/L"]
-    },
-    {
-      id: 3,
-      title: "Bacteria Contamination",
-      station: "Lake Reservoir",
-      priority: "critical",
-      time: "25 minutes ago",
-      description: "E. coli levels above safety limit",
-      details: "E. coli count: 450 CFU/100mL (Maximum safe level: 235 CFU/100mL). This indicates fecal contamination. URGENT action required.",
-      parameters: ["E. coli: 450 CFU/100mL", "Coliform: 620 CFU/100mL", "Turbidity: 8.3 NTU"]
-    },
-    {
-      id: 4,
-      title: "Temperature Spike",
-      station: "Lake Monitor",
-      priority: "medium",
-      time: "1 hour ago",
-      description: "Water temperature increased by 5C",
-      details: "Temperature increase from 18C to 23C within 3 hours. This may affect oxygen solubility and aquatic life.",
-      parameters: ["Temperature: 23C", "DO: 4.8 mg/L", "pH: 6.9"]
-    },
-    {
-      id: 5,
-      title: "Low pH Alert",
-      station: "River Station 3",
-      priority: "medium",
-      time: "15 minutes ago",
-      description: "pH level dropped to 6.2",
-      details: "pH dropped from 7.1 to 6.2. Acidic conditions can harm aquatic life and indicate acid rain or industrial discharge.",
-      parameters: ["pH: 6.2", "Alkalinity: 42 mg/L", "Hardness: 85 mg/L"]
+  useEffect(() => {
+    fetchAlerts();
+  }, []);
+
+  const fetchAlerts = async () => {
+    try {
+      setLoading(true);
+      const realAlerts = await alertsAPI.getAllAlerts();
+      if (realAlerts && Array.isArray(realAlerts)) {
+        const formattedAlerts = realAlerts.map(alert => ({
+          id: alert.id,
+          title: alert.message || 'No message',
+          station: alert.location || 'Unknown location',
+          priority: alert.type === 'contamination' ? 'critical' : 
+                   alert.type === 'boil_notice' ? 'high' : 'medium',
+          time: alert.issued_at ? new Date(alert.issued_at).toLocaleString() : 'Unknown time',
+          description: alert.message || 'No description',
+          details: `Alert issued for ${alert.location || 'unknown location'}. Type: ${alert.type || 'unknown'}. Please take appropriate action.`,
+          parameters: [
+            `Type: ${alert.type || 'unknown'}`, 
+            `Location: ${alert.location || 'unknown'}`, 
+            `Time: ${alert.issued_at ? new Date(alert.issued_at).toLocaleString() : 'unknown'}`
+          ]
+        }));
+        setAlerts(formattedAlerts);
+      } else {
+        setAlerts([]);
+      }
+    } catch (error) {
+      console.error('Failed to fetch alerts:', error);
+      setAlerts([]);
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
 
   const getPriorityColor = (priority) => {
     switch (priority) {
@@ -88,76 +74,113 @@ const AlertsPage = () => {
     setExpandedAlerts(newExpanded);
   };
 
-  // Function to export as JSON
   const exportToJSON = () => {
-    const dataStr = JSON.stringify(alerts, null, 2);
-    const dataBlob = new Blob([dataStr], { type: 'application/json' });
-    const url = URL.createObjectURL(dataBlob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `water-quality-alerts-${new Date().toISOString().split('T')[0]}.json`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    if (!alerts || alerts.length === 0) {
+      alert('No alerts to export');
+      return;
+    }
+    
+    try {
+      const dataStr = JSON.stringify(alerts, null, 2);
+      const dataBlob = new Blob([dataStr], { type: 'application/json' });
+      const url = URL.createObjectURL(dataBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `water-quality-alerts-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Export failed:', error);
+      alert('Export failed. Please try again.');
+    }
   };
 
   // Function to export as CSV
   const exportToCSV = () => {
-    // Convert alerts to CSV format
-    const headers = ['ID', 'Title', 'Station', 'Priority', 'Time', 'Description', 'Details', 'Parameters'];
-    const csvRows = [];
+    if (!alerts || alerts.length === 0) {
+      alert('No alerts to export');
+      return;
+    }
     
-    // Add headers
-    csvRows.push(headers.join(','));
-    
-    // Add data rows
-    alerts.forEach(alert => {
-      const row = [
-        alert.id,
-        `"${alert.title.replace(/"/g, '""')}"`,
-        `"${alert.station.replace(/"/g, '""')}"`,
-        alert.priority,
-        `"${alert.time}"`,
-        `"${alert.description.replace(/"/g, '""')}"`,
-        `"${alert.details.replace(/"/g, '""')}"`,
-        `"${alert.parameters.join('; ').replace(/"/g, '""')}"`
-      ];
-      csvRows.push(row.join(','));
-    });
-    
-    const csvString = csvRows.join('\n');
-    const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `water-quality-alerts-${new Date().toISOString().split('T')[0]}.csv`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    try {
+      const headers = ['ID', 'Title', 'Station', 'Priority', 'Time', 'Description', 'Details', 'Parameters'];
+      const csvRows = [];
+      
+      csvRows.push(headers.join(','));
+      
+      alerts.forEach(alert => {
+        const row = [
+          alert.id || '',
+          `"${(alert.title || '').replace(/"/g, '""')}"`,
+          `"${(alert.station || '').replace(/"/g, '""')}"`,
+          alert.priority || '',
+          `"${alert.time || ''}"`,
+          `"${(alert.description || '').replace(/"/g, '""')}"`,
+          `"${(alert.details || '').replace(/"/g, '""')}"`,
+          `"${(alert.parameters || []).join('; ').replace(/"/g, '""')}"`
+        ];
+        csvRows.push(row.join(','));
+      });
+      
+      const csvString = csvRows.join('\n');
+      const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `water-quality-alerts-${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Export failed:', error);
+      alert('Export failed. Please try again.');
+    }
   };
 
   const handleExportAll = () => {
-    // Show options dialog
-    const format = prompt('Choose export format:\n1. JSON\n2. CSV\n\nEnter 1 or 2:', '1');
+    if (!alerts || alerts.length === 0) {
+      alert('No alerts to export');
+      return;
+    }
     
-    switch(format) {
-      case '1':
-        exportToJSON();
-        break;
-      case '2':
-        exportToCSV();
-        break;
-      default:
-        alert('Please select a valid format (1 or 2)');
+    try {
+      const format = prompt('Choose export format:\n1. JSON\n2. CSV\n\nEnter 1 or 2:', '1');
+      
+      if (format === null) return; // User cancelled
+      
+      switch(format) {
+        case '1':
+          exportToJSON();
+          break;
+        case '2':
+          exportToCSV();
+          break;
+        default:
+          alert('Please select a valid format (1 or 2)');
+      }
+    } catch (error) {
+      console.error('Export failed:', error);
+      alert('Export failed. Please try again.');
     }
   };
 
   const handleAcknowledgeAll = () => {
-    if (window.confirm(`Are you sure you want to acknowledge all ${alerts.length} alerts?`)) {
-      alert(`All ${alerts.length} alerts have been acknowledged.`);
-      console.log('All alerts acknowledged');
+    if (!alerts || alerts.length === 0) {
+      alert('No alerts to acknowledge');
+      return;
+    }
+    
+    try {
+      if (window.confirm(`Are you sure you want to acknowledge all ${alerts.length} alerts?`)) {
+        alert(`All ${alerts.length} alerts have been acknowledged.`);
+        console.log('All alerts acknowledged');
+      }
+    } catch (error) {
+      console.error('Acknowledge failed:', error);
+      alert('Failed to acknowledge alerts. Please try again.');
     }
   };
 
@@ -197,7 +220,18 @@ const AlertsPage = () => {
       </div>
 
       {activeTab === 'alerts' && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div>
+          {loading ? (
+            <div className="text-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+              <p className="mt-4 text-gray-600">Loading alerts...</p>
+            </div>
+          ) : alerts.length === 0 ? (
+            <div className="text-center py-8">
+              <p className="text-gray-600">No alerts available</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {alerts.map((alert) => (
           <div 
             key={alert.id}
@@ -255,6 +289,8 @@ const AlertsPage = () => {
             )}
           </div>
         ))}
+            </div>
+          )}
         </div>
       )}
 

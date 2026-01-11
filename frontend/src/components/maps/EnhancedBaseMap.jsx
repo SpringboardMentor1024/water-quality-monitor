@@ -83,8 +83,7 @@ const EnhancedBaseMap = ({ onStationSelect }) => {
         setAllStations(transformedStations);
       } catch (error) {
         console.error('Failed to load stations:', error);
-        // Fallback to mock data
-        setAllStations(getMockStations());
+        setAllStations([]);
       } finally {
         setLoading(false);
       }
@@ -101,20 +100,6 @@ const EnhancedBaseMap = ({ onStationSelect }) => {
     if (locationLower.includes('chennai') || locationLower.includes('bangalore') || locationLower.includes('kerala')) return 'South India';
     if (locationLower.includes('kolkata') || locationLower.includes('bengal') || locationLower.includes('assam')) return 'East India';
     return 'Central India';
-  };
-
-  const getMockStations = () => {
-    // Fallback mock data
-    return [
-      { id: 1, name: 'Ganges River Station', lat: 25.3176, lng: 83.0058, 
-        region: 'North India', status: 'Active', waterSource: 'River',
-        ph: 7.2, turbidity: 2.1, dissolvedOxygen: 8.2, temperature: 22,
-        address: 'Varanasi, Uttar Pradesh', lastUpdated: '2025-12-24 10:30 AM' },
-      { id: 2, name: 'Yamuna Monitoring Point', lat: 28.6139, lng: 77.2090, 
-        region: 'North India', status: 'Active', waterSource: 'River',
-        ph: 6.8, turbidity: 3.5, dissolvedOxygen: 6.8, temperature: 24,
-        address: 'Delhi', lastUpdated: '2025-12-24 09:45 AM' }
-    ];
   };
 
   // Available filter options

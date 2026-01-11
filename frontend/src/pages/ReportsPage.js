@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import Navigation from '../components/layout/Navigation';
+import { reportsAPI } from '../services/api';
 
 const ReportsPage = () => {
   const [reports, setReports] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({
     station_id: '',
@@ -15,61 +17,17 @@ const ReportsPage = () => {
     iron: ''
   });
 
-  // Mock user reports data - replace with API call
-  const mockReports = [
-    { 
-      id: 1, 
-      location: 'Hudson River, NY', 
-      description: 'Unusual green color and strong odor detected', 
-      water_source: 'River', 
-      status: 'pending', 
-      created_at: '2024-01-15T10:30:00Z',
-      photo_url: null
-    },
-    { 
-      id: 2, 
-      location: 'Central Park Lake', 
-      description: 'High turbidity levels observed after recent rainfall', 
-      water_source: 'Lake', 
-      status: 'verified', 
-      created_at: '2024-01-12T14:20:00Z',
-      photo_url: 'https://example.com/sample-photo.jpg'
-    },
-    { 
-      id: 3, 
-      location: 'Brooklyn Bridge Water Station', 
-      description: 'pH levels seem abnormal, water tastes metallic', 
-      water_source: 'Tap Water', 
-      status: 'rejected', 
-      created_at: '2024-01-10T09:15:00Z',
-      photo_url: null
-    },
-    { 
-      id: 4, 
-      location: 'Queens Community Well', 
-      description: 'Suspected bacterial contamination, multiple residents affected', 
-      water_source: 'Well', 
-      status: 'verified', 
-      created_at: '2024-01-08T16:45:00Z',
-      photo_url: 'https://example.com/sample-photo2.jpg'
-    }
-  ];
-
   useEffect(() => {
     const loadReports = async () => {
       try {
-        // Try to get reports from API
+        setLoading(true);
         const data = await reportsAPI.getAllReports();
-        if (data && Array.isArray(data) && data.length > 0) {
-          setReports(data);
-        } else {
-          // Use mock data if no real reports
-          setReports(mockReports);
-        }
+        setReports(data || []);
       } catch (error) {
         console.error('Failed to load reports:', error);
-        // Always use mock data on error
-        setReports(mockReports);
+        setReports([]);
+      } finally {
+        setLoading(false);
       }
     };
     
@@ -110,7 +68,9 @@ const ReportsPage = () => {
       // Add to local state for immediate feedback
       const newReport = {
         id: Date.now(),
-        ...reportData,
+        location: reportData.location,
+        description: reportData.description,
+        water_source: reportData.water_source,
         status: 'pending',
         created_at: new Date().toISOString()
       };
@@ -317,7 +277,12 @@ const ReportsPage = () => {
               </div>
             </div>
             
-            {reports.length === 0 ? (
+            {loading ? (
+              <div className="text-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                <p className="mt-4 text-gray-600">Loading reports...</p>
+              </div>
+            ) : reports.length === 0 ? (
               <div className="text-center py-8 text-gray-500">
                 <span className="text-4xl mb-2 block">📋</span>
                 <p>No reports submitted yet</p>

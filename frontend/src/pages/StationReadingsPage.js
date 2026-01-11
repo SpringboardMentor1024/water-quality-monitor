@@ -25,19 +25,8 @@ const StationReadingsPage = () => {
       setReadings(readingsData);
     } catch (error) {
       console.error('Error fetching station data:', error);
-      // Mock data for demo
-      setStation({
-        id: stationId,
-        name: 'Demo Water Station',
-        location: 'Sample Location',
-        managed_by: 'Demo Authority'
-      });
-      setReadings([
-        { id: 1, parameter: 'pH', value: 7.2, recorded_at: new Date().toISOString() },
-        { id: 2, parameter: 'turbidity', value: 2.5, recorded_at: new Date().toISOString() },
-        { id: 3, parameter: 'DO', value: 8.1, recorded_at: new Date().toISOString() },
-        { id: 4, parameter: 'temperature', value: 22.5, recorded_at: new Date().toISOString() }
-      ]);
+      setStation(null);
+      setReadings([]);
     } finally {
       setLoading(false);
     }

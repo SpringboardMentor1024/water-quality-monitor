@@ -33,46 +33,28 @@ const StationDetailsPage = () => {
 
   // Generate trend data based on time range
   useEffect(() => {
-    const generateData = () => {
-      const data = [];
-      let points = 24; // daily
-      
-      if (timeRange === 'weekly') points = 7 * 24;
-      if (timeRange === 'monthly') points = 30 * 24;
-      
-      for (let i = 0; i < points; i++) {
-        data.push({
-          hour: `Point ${i+1}`,
-          ph: 6.5 + Math.random() * 2,
-          turbidity: 3 + Math.random() * 7,
-          dissolvedOxygen: 4 + Math.random() * 6,
-          temperature: 20 + Math.random() * 10
-        });
-      }
-      return data;
-    };
-    
-    setTrendData(generateData());
+    // For now, show empty trend data until backend provides historical data
+    setTrendData([]);
   }, [timeRange]);
 
-  // Mock station data
   useEffect(() => {
-    setTimeout(() => {
-      setStation({
-        id: stationId,
-        name: 'Ganga River Station',
-        location: 'Haridwar, Uttarakhand',
-        status: 'active',
-        currentReading: {
-          ph: 7.2,
-          turbidity: 2.1,
-          dissolved_oxygen: 8.3,
-          temperature: 24.5,
-          bacteriaConcentration: 120
+    const fetchStation = async () => {
+      try {
+        const response = await fetch(`http://localhost:8000/api/stations/${stationId}`);
+        if (response.ok) {
+          const data = await response.json();
+          setStation(data);
+        } else {
+          setStation(null);
         }
-      });
+      } catch (error) {
+        console.error('Failed to fetch station:', error);
+        setStation(null);
+      }
       setLoading(false);
-    }, 1000);
+    };
+    
+    fetchStation();
   }, [stationId]);
 
   // Loading state
@@ -210,18 +192,12 @@ const StationDetailsPage = () => {
 
       {/* Trend Chart */}
       <div className="bg-white p-6 rounded-lg shadow mb-8">
-        <div className="h-80">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={trendData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="hour" />
-              <YAxis />
-              <Tooltip />
-              <Line type="monotone" dataKey="ph" stroke="#3b82f6" strokeWidth={2} />
-              <Line type="monotone" dataKey="temperature" stroke="#ef4444" strokeWidth={2} />
-              <Line type="monotone" dataKey="dissolved_oxygen" stroke="#10b981" strokeWidth={2} />
-            </LineChart>
-          </ResponsiveContainer>
+        <div className="h-80 flex items-center justify-center">
+          <div className="text-center text-gray-500">
+            <div className="text-4xl mb-2">📊</div>
+            <p className="text-lg">Historical data not available</p>
+            <p className="text-sm">Connect to backend for trend analysis</p>
+          </div>
         </div>
       </div>
     </div>

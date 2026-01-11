@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Frontend Water Stations Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .result { padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .success { background: #d4edda; border: 1px solid #c3e6cb; color: #155724; }
+        .error { background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; }
+        .info { background: #d1ecf1; border: 1px solid #bee5eb; color: #0c5460; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 3px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>Water Stations Frontend Test</h1>
+    <div id="results"></div>
+    
+    <script>
+        async function testFrontendAPI() {
+            const resultsDiv = document.getElementById('results');
+            
+            try {
+                // Test 1: Backend API Direct Call
+                resultsDiv.innerHTML += '<div class="info">Testing backend API directly...</div>';
+                
+                const response = await fetch('http://localhost:8000/api/stations');
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    resultsDiv.innerHTML += `
+                        <div class="success">
+                            <h3>✅ BACKEND API TEST: SUCCESS</h3>
+                            <p><strong>Status:</strong> ${response.status}</p>
+                            <p><strong>Stations Count:</strong> ${data.length}</p>
+                            <p><strong>Data Source:</strong> Real Backend</p>
+                        </div>
+                    `;
+                    
+                    // Test 2: Data Structure Validation
+                    if (data.length > 0) {
+                        const station = data[0];
+                        const hasRequiredFields = station.id && station.name && station.latitude && station.longitude;
+                        
+                        if (hasRequiredFields) {
+                            resultsDiv.innerHTML += `
+                                <div class="success">
+                                    <h3>✅ DATA STRUCTURE TEST: VALID</h3>
+                                    <p><strong>Sample Station:</strong></p>
+                                    <pre>${JSON.stringify(station, null, 2)}</pre>
+                                </div>
+                            `;
+                        } else {
+                            resultsDiv.innerHTML += `
+                                <div class="error">
+                                    <h3>❌ DATA STRUCTURE TEST: INVALID</h3>
+                                    <p>Missing required fields in station data</p>
+                                </div>
+                            `;
+                        }
+                    }
+                    
+                    // Test 3: Frontend Integration Test
+                    resultsDiv.innerHTML += `
+                        <div class="success">
+                            <h3>✅ FRONTEND INTEGRATION: READY</h3>
+                            <p>Frontend StationsPage.js will show:</p>
+                            <ul>
+                                <li><strong>Data Source:</strong> Backend API</li>
+                                <li><strong>Stations:</strong> ${data.length} real stations</li>
+                                <li><strong>Loading:</strong> Will complete successfully</li>
+                            </ul>
+                        </div>
+                    `;
+                    
+                } else {
+                    resultsDiv.innerHTML += `
+                        <div class="error">
+                            <h3>❌ BACKEND API TEST: FAILED</h3>
+                            <p><strong>Status:</strong> ${response.status}</p>
+                            <p><strong>Frontend will use:</strong> Sample/Mock Data</p>
+                        </div>
+                    `;
+                }
+                
+            } catch (error) {
+                resultsDiv.innerHTML += `
+                    <div class="error">
+                        <h3>❌ CONNECTION TEST: FAILED</h3>
+                        <p><strong>Error:</strong> ${error.message}</p>
+                        <p><strong>Cause:</strong> Backend server not running</p>
+                        <p><strong>Frontend will use:</strong> Sample/Mock Data</p>
+                    </div>
+                `;
+            }
+            
+            // Final Summary
+            resultsDiv.innerHTML += `
+                <div class="info">
+                    <h3>📋 VERIFICATION SUMMARY</h3>
+                    <p><strong>To verify in your React app:</strong></p>
+                    <ol>
+                        <li>Open the Water Stations page</li>
+                        <li>Look for "Data Source: Backend API" text</li>
+                        <li>Check if station names match backend data</li>
+                        <li>If shows "Sample Data", backend connection failed</li>
+                    </ol>
+                </div>
+            `;
+        }
+        
+        // Run test when page loads
+        testFrontendAPI();
+    </script>
+</body>
+</html>

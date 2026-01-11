@@ -7,7 +7,7 @@ import QualityChart from '../components/dashboard/QualityChart';
 import AlertsPanel from '../components/dashboard/AlertsPanel';
 import ReportsPanel from '../components/dashboard/ReportsPanel';
 import TestAuth from '../components/TestAuth';
-import { authAPI } from '../services/api';
+import { authAPI, alertsAPI, stationsAPI } from '../services/api';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -31,63 +31,61 @@ const Dashboard = () => {
     };
   }, []);
 
-  const handleRefreshData = () => {
-    // Simulate data refresh
-    alert('Data refreshed successfully!');
-    window.location.reload();
+  const handleRefreshData = async () => {
+    try {
+      await fetchWaterQualityData();
+      // Show success message
+      const toast = document.createElement('div');
+      toast.className = 'fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded shadow-lg z-50';
+      toast.textContent = 'Data refreshed successfully!';
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 3000);
+    } catch (error) {
+      console.error('Refresh failed:', error);
+      const toast = document.createElement('div');
+      toast.className = 'fixed top-4 right-4 bg-red-500 text-white px-4 py-2 rounded shadow-lg z-50';
+      toast.textContent = 'Failed to refresh data';
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 3000);
+    }
   };
 
   const fetchWaterQualityData = async () => {
     try {
-      const response = await fetch('http://localhost:8000/api/readings');
-      if (response.ok) {
-        const readings = await response.json();
-        const processedData = readings.slice(0, 3).map((reading, index) => {
-          const locations = [
-            { name: 'Central Park Lake', lat: 40.7829, lng: -73.9654 },
-            { name: 'Hudson River', lat: 40.7589, lng: -73.9851 },
-            { name: 'East River', lat: 40.6892, lng: -73.9442 }
-          ];
-          const location = locations[index] || locations[0];
-          const status = reading.ph < 6.5 || reading.turbidity > 3 ? 'critical' : 
-                        reading.ph < 7 || reading.turbidity > 2 ? 'warning' : 'good';
-          
-          return {
-            id: reading.id,
-            location: location.name,
-            lat: location.lat,
-            lng: location.lng,
-            ph: parseFloat(reading.ph),
-            turbidity: parseFloat(reading.turbidity),
-            dissolved_oxygen: 8.0,
-            temperature: parseFloat(reading.temperature),
-            status: status
-          };
-        });
-        setWaterQualityData(processedData);
+      // Fetch real data from backend
+      const stations = await stationsAPI.getAllStations();
+      const processedData = stations.map((station) => {
+        let status = station.status || 'active';
+        if (status === 'active') status = 'good';
         
-        const newAlerts = processedData
-          .filter(data => data.status !== 'good')
-          .map(data => ({
-            id: data.id,
-            location: data.location,
-            message: data.status === 'critical' ? 'Critical water quality issue detected' : 'Water quality warning',
-            severity: data.status,
-            timestamp: new Date().toLocaleString()
-          }));
-        setAlerts(newAlerts);
-      }
+        return {
+          id: station.id,
+          location: station.name,
+          lat: parseFloat(station.latitude),
+          lng: parseFloat(station.longitude),
+          ph: station.currentReading?.ph || 7.0,
+          turbidity: station.currentReading?.turbidity || 1.0,
+          dissolved_oxygen: station.currentReading?.dissolved_oxygen || 8.0,
+          temperature: station.currentReading?.temperature || 20.0,
+          status: status
+        };
+      });
+      setWaterQualityData(processedData);
+      
+      const realAlerts = await alertsAPI.getAllAlerts();
+      const formattedAlerts = realAlerts.slice(0, 5).map(alert => ({
+        id: alert.id,
+        location: alert.location,
+        message: alert.message,
+        severity: alert.type === 'critical' ? 'critical' : alert.type === 'contamination' ? 'warning' : 'info',
+        timestamp: new Date(alert.issued_at).toLocaleString()
+      }));
+      setAlerts(formattedAlerts);
+      
     } catch (error) {
-      console.log('Using fallback data - backend not available');
-      setWaterQualityData([
-        { id: 1, location: 'Central Park Lake', lat: 40.7829, lng: -73.9654, ph: 7.2, turbidity: 1.5, dissolved_oxygen: 8.5, temperature: 22, status: 'good' },
-        { id: 2, location: 'Hudson River', lat: 40.7589, lng: -73.9851, ph: 6.8, turbidity: 2.1, dissolved_oxygen: 7.8, temperature: 24, status: 'warning' },
-        { id: 3, location: 'East River', lat: 40.6892, lng: -73.9442, ph: 6.2, turbidity: 4.2, dissolved_oxygen: 6.1, temperature: 26, status: 'critical' },
-      ]);
-      setAlerts([
-        { id: 1, location: 'Central Park Lake', message: 'High turbidity detected', severity: 'warning', timestamp: '2024-01-15 10:30' },
-        { id: 2, location: 'Hudson River', message: 'Low dissolved oxygen levels', severity: 'critical', timestamp: '2024-01-15 09:15' },
-      ]);
+      console.error('Backend API error:', error);
+      setWaterQualityData([]);
+      setAlerts([]);
     }
   };
 
@@ -102,17 +100,9 @@ const Dashboard = () => {
       }
     };
     fetchUser();
-
-    // Mock data - replace with actual API calls
-    setWaterQualityData([
-      { id: 1, lat: 40.7128, lng: -74.0060, ph: 7.2, turbidity: 1.5, dissolved_oxygen: 8.5, temperature: 22, status: 'good' },
-      { id: 2, lat: 40.7589, lng: -73.9851, ph: 6.8, turbidity: 2.1, dissolved_oxygen: 7.8, temperature: 24, status: 'warning' },
-      { id: 3, lat: 40.6892, lng: -73.9442, ph: 6.2, turbidity: 4.2, dissolved_oxygen: 6.1, temperature: 26, status: 'critical' },
-    ]);
-    setAlerts([
-      { id: 1, location: 'Central Park Lake', message: 'High turbidity detected', severity: 'warning', timestamp: '2024-01-15 10:30' },
-      { id: 2, location: 'Hudson River', message: 'Low dissolved oxygen levels', severity: 'critical', timestamp: '2024-01-15 09:15' },
-    ]);
+    
+    // Fetch real data from backend
+    fetchWaterQualityData();
   }, []);
 
   const handleLogout = () => {

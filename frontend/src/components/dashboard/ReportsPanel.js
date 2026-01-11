@@ -1,29 +1,34 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { reportsAPI } from '../services/api';
 
 const ReportsPanel = ({ onViewAll, onNewReport }) => {
-  const recentReports = [
-    {
-      id: 1,
-      title: 'Weekly Water Quality Report',
-      date: '2024-01-15',
-      type: 'Automated',
-      status: 'completed'
-    },
-    {
-      id: 2,
-      title: 'Contamination Alert - Hudson River',
-      date: '2024-01-14',
-      type: 'User Report',
-      status: 'investigating'
-    },
-    {
-      id: 3,
-      title: 'Monthly Compliance Report',
-      date: '2024-01-01',
-      type: 'Automated',
-      status: 'completed'
+  const [recentReports, setRecentReports] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchReports();
+  }, []);
+
+  const fetchReports = async () => {
+    try {
+      setLoading(true);
+      const reports = await reportsAPI.getAllReports();
+      // Get the 3 most recent reports
+      const recent = reports.slice(0, 3).map(report => ({
+        id: report.id,
+        title: `Report from ${report.location}`,
+        date: new Date(report.created_at).toLocaleDateString(),
+        type: 'User Report',
+        status: report.status
+      }));
+      setRecentReports(recent);
+    } catch (error) {
+      console.error('Failed to fetch reports:', error);
+      setRecentReports([]);
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
 
   const getStatusColor = (status) => {
     const colors = {
@@ -51,7 +56,17 @@ const ReportsPanel = ({ onViewAll, onNewReport }) => {
       </div>
       
       <div className="space-y-2 sm:space-y-3">
-        {recentReports.map((report) => (
+        {loading ? (
+          <div className="text-center py-4">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-teal-600 mx-auto"></div>
+            <p className="mt-2 text-sm text-gray-600">Loading reports...</p>
+          </div>
+        ) : recentReports.length === 0 ? (
+          <div className="text-center py-4 text-gray-500">
+            <p className="text-sm">No reports available</p>
+          </div>
+        ) : (
+          recentReports.map((report) => (
           <div key={report.id} className="border rounded-lg p-3 sm:p-4 hover:bg-gray-50">
             <div className="flex items-start justify-between space-x-2">
               <div className="flex items-start space-x-2 sm:space-x-3 flex-1 min-w-0">
@@ -70,7 +85,8 @@ const ReportsPanel = ({ onViewAll, onNewReport }) => {
               </span>
             </div>
           </div>
-        ))}
+          ))
+        )}
       </div>
       
       <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t">

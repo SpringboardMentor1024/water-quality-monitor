@@ -1,40 +1,43 @@
 ﻿import React, { useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar } from 'recharts';
+import { stationsAPI } from '../services/api';
 
 const AnalyticsPage = () => {
   const [timeRange, setTimeRange] = useState('7d');
   const [chartType, setChartType] = useState('line');
+  const [chartData, setChartData] = useState([]);
+  const [loading, setLoading] = useState(true);
   
-  // Generate sample data for ALL parameters
-  const generateChartData = React.useCallback(() => {
-    const data = [];
-    const days = timeRange === '7d' ? 7 : timeRange === '30d' ? 30 : 90;
-    
-    for (let i = 0; i < days; i++) {
-      const date = new Date();
-      date.setDate(date.getDate() - (days - i - 1));
-      
-      data.push({
-        date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-        // pH data with some trend
-        pH: 7.0 + Math.sin(i * 0.5) * 0.8 + Math.random() * 0.4,
-        // Temperature data with daily variation
-        temperature: 18 + Math.sin(i * 0.3) * 6 + Math.random() * 3,
-        // Dissolved Oxygen with inverse relationship to temperature
-        dissolvedOxygen: 8 - Math.sin(i * 0.3) * 2 + Math.random() * 1.5,
-        // Turbidity data with occasional spikes
-        turbidity: 2 + Math.abs(Math.sin(i * 0.2)) * 4 + Math.random() * 2,
-      });
-    }
-    
-    return data;
-  }, [timeRange]);
-
-  const [chartData, setChartData] = useState(generateChartData());
-
+  // Fetch real data from backend
   useEffect(() => {
-    setChartData(generateChartData());
-  }, [timeRange, generateChartData]);
+    const fetchAnalyticsData = async () => {
+      try {
+        setLoading(true);
+        // Try to get station readings for analytics
+        const stations = await stationsAPI.getAllStations();
+        if (stations && stations.length > 0) {
+          // Transform station data for analytics
+          const analyticsData = stations.map((station, index) => ({
+            date: new Date(Date.now() - (stations.length - index) * 24 * 60 * 60 * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+            pH: station.currentReading?.ph || 7.0,
+            temperature: station.currentReading?.temperature || 20.0,
+            dissolvedOxygen: station.currentReading?.dissolved_oxygen || 8.0,
+            turbidity: station.currentReading?.turbidity || 2.0,
+          }));
+          setChartData(analyticsData);
+        } else {
+          setChartData([]);
+        }
+      } catch (error) {
+        console.error('Failed to fetch analytics data:', error);
+        setChartData([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchAnalyticsData();
+  }, [timeRange]);
 
   // Color scheme for each parameter
   const colors = {
@@ -52,11 +55,25 @@ const AnalyticsPage = () => {
     turbidity: { min: 0, max: 5, unit: 'NTU' },
   };
 
-  // Calculate statistics
+  // Calculate statistics from real data
   const calculateStats = () => {
+    if (!chartData || chartData.length === 0) {
+      return {
+        pH: { avg: 0, min: 0, max: 0, withinOptimal: 0 },
+        temperature: { avg: 0, min: 0, max: 0, withinOptimal: 0 },
+        dissolvedOxygen: { avg: 0, min: 0, max: 0, withinOptimal: 0 },
+        turbidity: { avg: 0, min: 0, max: 0, withinOptimal: 0 }
+      };
+    }
+    
     const stats = {};
     ['pH', 'temperature', 'dissolvedOxygen', 'turbidity'].forEach(param => {
-      const values = chartData.map(d => d[param]);
+      const values = chartData.map(d => d[param]).filter(v => v != null);
+      if (values.length === 0) {
+        stats[param] = { avg: 0, min: 0, max: 0, withinOptimal: 0 };
+        return;
+      }
+      
       const avg = values.reduce((a, b) => a + b, 0) / values.length;
       const min = Math.min(...values);
       const max = Math.max(...values);
@@ -70,6 +87,29 @@ const AnalyticsPage = () => {
   };
 
   const stats = calculateStats();
+
+  if (loading) {
+    return (
+      <div className="p-6 flex justify-center items-center min-h-96">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading analytics data...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!chartData || chartData.length === 0) {
+    return (
+      <div className="p-6">
+        <div className="text-center py-12">
+          <div className="text-4xl mb-4">📊</div>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">No Analytics Data Available</h2>
+          <p className="text-gray-600">Connect to backend to view water quality analytics</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6">

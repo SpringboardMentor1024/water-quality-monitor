@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
+import { stationsAPI } from '../../services/api';
 
 // Fix for default markers in react-leaflet
 delete L.Icon.Default.prototype._getIconUrl;
@@ -16,12 +17,13 @@ const createCustomIcon = (status) => {
   const colors = {
     good: '#10b981',
     warning: '#f59e0b',
-    critical: '#ef4444'
+    critical: '#ef4444',
+    active: '#10b981'
   };
   
   return L.divIcon({
     className: 'custom-marker',
-    html: `<div style="background-color: ${colors[status]}; width: 20px; height: 20px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>`,
+    html: `<div style="background-color: ${colors[status] || colors.good}; width: 20px; height: 20px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>`,
     iconSize: [20, 20],
     iconAnchor: [10, 10]
   });
@@ -31,56 +33,31 @@ const WaterQualityMap = ({ data, onLocationSelect, selectedLocation, showRealTim
   const [stations, setStations] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const mockStations = [
-    {
-      id: 1,
-      name: 'Hudson River Station',
-      lat: 40.7589,
-      lng: -73.9851,
-      status: 'good',
-      ph: 7.2,
-      turbidity: 2.1,
-      dissolved_oxygen: 8.5,
-      temperature: 18.5,
-      lastUpdate: '2024-01-15T14:30:00Z',
-      managed_by: 'NYC Water Dept'
-    },
-    {
-      id: 2,
-      name: 'Central Park Lake',
-      lat: 40.7829,
-      lng: -73.9654,
-      status: 'warning',
-      ph: 6.8,
-      turbidity: 4.2,
-      dissolved_oxygen: 6.2,
-      temperature: 22.1,
-      lastUpdate: '2024-01-15T14:25:00Z',
-      managed_by: 'Parks Department'
-    },
-    {
-      id: 3,
-      name: 'Brooklyn Water Station',
-      lat: 40.6782,
-      lng: -73.9442,
-      status: 'critical',
-      ph: 8.9,
-      turbidity: 6.8,
-      dissolved_oxygen: 4.1,
-      temperature: 25.3,
-      lastUpdate: '2024-01-15T14:20:00Z',
-      managed_by: 'Brooklyn Water Works'
-    }
-  ];
-
   useEffect(() => {
     const loadStations = async () => {
       try {
-        // Backend API integration pending
-        setStations(data || mockStations);
+        if (data && data.length > 0) {
+          setStations(data);
+        } else {
+          const realStations = await stationsAPI.getAllStations();
+          const processedStations = realStations.map(station => ({
+            id: station.id,
+            name: station.name,
+            lat: parseFloat(station.latitude),
+            lng: parseFloat(station.longitude),
+            status: station.status || 'good',
+            ph: station.currentReading?.ph || 7.0,
+            turbidity: station.currentReading?.turbidity || 1.0,
+            dissolved_oxygen: station.currentReading?.dissolved_oxygen || 8.0,
+            temperature: station.currentReading?.temperature || 20.0,
+            lastUpdate: station.lastUpdated || new Date().toISOString(),
+            managed_by: station.managed_by || 'Water Authority'
+          }));
+          setStations(processedStations);
+        }
       } catch (error) {
         console.error('Failed to load stations:', error);
-        setStations(mockStations);
+        setStations([]);
       } finally {
         setLoading(false);
       }
@@ -88,11 +65,13 @@ const WaterQualityMap = ({ data, onLocationSelect, selectedLocation, showRealTim
 
     loadStations();
   }, [data, showRealTimeData]);
+
   const getStatusColor = (status) => {
     const colors = {
       good: 'text-green-600',
       warning: 'text-yellow-600',
-      critical: 'text-red-600'
+      critical: 'text-red-600',
+      active: 'text-green-600'
     };
     return colors[status] || 'text-gray-600';
   };
@@ -101,16 +80,28 @@ const WaterQualityMap = ({ data, onLocationSelect, selectedLocation, showRealTim
     const texts = {
       good: 'Good',
       warning: 'Warning',
-      critical: 'Critical'
+      critical: 'Critical',
+      active: 'Active'
     };
     return texts[status] || 'Unknown';
   };
 
+  if (loading) {
+    return (
+      <div className="h-64 sm:h-80 lg:h-96 w-full rounded-lg overflow-hidden flex items-center justify-center bg-gray-100">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+          <p className="text-sm text-gray-600">Loading map...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="h-64 sm:h-80 lg:h-96 w-full rounded-lg overflow-hidden">
+    <div className="h-64 sm:h-80 lg:h-96 w-full rounded-lg overflow-hidden relative">
       <MapContainer
         key="water-quality-map"
-        center={[40.7128, -74.0060]}
+        center={stations.length > 0 ? [stations[0].lat, stations[0].lng] : [40.7128, -74.0060]}
         zoom={11}
         style={{ height: '100%', width: '100%' }}
         whenCreated={(mapInstance) => {
@@ -128,7 +119,7 @@ const WaterQualityMap = ({ data, onLocationSelect, selectedLocation, showRealTim
             position={[location.lat, location.lng]}
             icon={createCustomIcon(location.status)}
             eventHandlers={{
-              click: () => onLocationSelect(location)
+              click: () => onLocationSelect && onLocationSelect(location)
             }}
           >
             <Popup>
@@ -146,19 +137,19 @@ const WaterQualityMap = ({ data, onLocationSelect, selectedLocation, showRealTim
                   <div className="grid grid-cols-2 gap-2">
                     <div className="flex justify-between">
                       <span className="text-gray-600">pH:</span>
-                      <span className="font-medium">{location.ph}</span>
+                      <span className="font-medium">{location.ph?.toFixed(1) || 'N/A'}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Temp:</span>
-                      <span className="font-medium">{location.temperature}°C</span>
+                      <span className="font-medium">{location.temperature?.toFixed(1) || 'N/A'}°C</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Turbidity:</span>
-                      <span className="font-medium">{location.turbidity} NTU</span>
+                      <span className="font-medium">{location.turbidity?.toFixed(1) || 'N/A'} NTU</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">DO:</span>
-                      <span className="font-medium">{location.dissolved_oxygen} mg/L</span>
+                      <span className="font-medium">{location.dissolved_oxygen?.toFixed(1) || 'N/A'} mg/L</span>
                     </div>
                   </div>
                 </div>
@@ -176,7 +167,7 @@ const WaterQualityMap = ({ data, onLocationSelect, selectedLocation, showRealTim
                     View Details
                   </button>
                   <button
-                    onClick={() => alert(`Real-time data for ${location.name}`)}
+                    onClick={() => window.location.href = `/stations/${location.id}/readings`}
                     className="bg-green-600 text-white px-3 py-1 rounded text-xs hover:bg-green-700"
                   >
                     Live Data
@@ -187,6 +178,15 @@ const WaterQualityMap = ({ data, onLocationSelect, selectedLocation, showRealTim
           </Marker>
         ))}
       </MapContainer>
+      
+      {stations.length === 0 && !loading && (
+        <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-90 z-50">
+          <div className="text-center">
+            <div className="text-4xl mb-2">🗺️</div>
+            <p className="text-sm text-gray-600">No monitoring stations available</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

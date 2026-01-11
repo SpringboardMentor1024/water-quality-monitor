@@ -21,20 +21,7 @@ const AlertDetailsPage = () => {
       setAlert(data);
     } catch (err) {
       console.error('Error fetching alert:', err);
-      // If alert not found, create a mock alert for demo
-      if (err.message.includes('404') || err.message.includes('not found')) {
-        const mockAlert = {
-          id: alertId,
-          type: 'contamination',
-          message: 'Sample alert for demonstration purposes',
-          location: 'Demo Location',
-          priority: 'medium',
-          issued_at: new Date().toISOString()
-        };
-        setAlert(mockAlert);
-      } else {
-        setError('Failed to load alert details');
-      }
+      setError('Failed to load alert details');
     } finally {
       setLoading(false);
     }

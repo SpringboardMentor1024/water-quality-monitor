@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Calendar, MapPin, User, AlertCircle, CheckCircle, XCircle } from 'lucide-react';
+import { reportsAPI } from '../services/api';
 
 const ReportDetailsPage = () => {
   const { reportId } = useParams();
@@ -13,28 +14,21 @@ const ReportDetailsPage = () => {
   }, [reportId]);
 
   const fetchReport = async () => {
-    // Mock data - replace with API call
-    setTimeout(() => {
-      setReport({
-        id: reportId,
-        title: 'Unusual discoloration in river',
-        description: 'Brownish water observed near the bridge. Strong odor detected. Fish showing unusual behavior.',
-        location: 'Mumbai River, near Willow Creek Bridge',
-        latitude: 19.0760,
-        longitude: 72.8777,
-        status: 'pending',
-        severity: 'high',
-        submittedBy: 'John Doe',
-        submittedDate: '2024-01-18',
-        stationId: 'STN-001',
-        photos: [],
-        notes: 'Report submitted, awaiting field verification.',
-        verificationNotes: '',
-        assignedTo: null,
-        priority: 'high'
-      });
+    try {
+      setLoading(true);
+      const allReports = await reportsAPI.getAllReports();
+      const foundReport = allReports.find(r => r.id === parseInt(reportId));
+      
+      if (foundReport) {
+        setReport(foundReport);
+      } else {
+        setReport(null);
+      }
+    } catch (error) {
+      setReport(null);
+    } finally {
       setLoading(false);
-    }, 500);
+    }
   };
 
   const getStatusIcon = (status) => {
@@ -66,6 +60,25 @@ const ReportDetailsPage = () => {
     );
   }
 
+  if (!report) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-6xl mb-4">⚠️</div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Report Not Found</h2>
+          <p className="text-gray-600 mb-4">The requested report could not be loaded.</p>
+          <p className="text-sm text-gray-500">Please ensure the backend server is running and the report ID is valid.</p>
+          <button
+            onClick={() => navigate('/reports')}
+            className="mt-4 bg-teal-600 text-white px-4 py-2 rounded-md hover:bg-teal-700"
+          >
+            Back to Reports
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -80,11 +93,13 @@ const ReportDetailsPage = () => {
               Back
             </button>
             <div className="flex-1">
-              <h1 className="text-2xl font-bold text-gray-900">{report.title}</h1>
+              <h1 className="text-2xl font-bold text-gray-900">
+                Report from {report.location || 'Unknown Location'}
+              </h1>
               <p className="text-gray-600 mt-1">Report ID: {report.id}</p>
             </div>
-            <span className={`px-4 py-2 rounded-full font-semibold ${getStatusColor(report.status)}`}>
-              {report.status.toUpperCase()}
+            <span className={`px-4 py-2 rounded-full font-semibold ${getStatusColor(report.status || 'pending')}`}>
+              {(report.status || 'pending').toUpperCase()}
             </span>
           </div>
         </div>
@@ -132,7 +147,7 @@ const ReportDetailsPage = () => {
                       report.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
                       'bg-blue-100 text-blue-800'
                     }`}>
-                      {report.priority.toUpperCase()}
+                      {(report.priority || 'medium').toUpperCase()}
                     </p>
                   </div>
                 </div>
@@ -190,7 +205,7 @@ const ReportDetailsPage = () => {
               <div className="flex items-center">
                 {getStatusIcon(report.status)}
                 <div className="ml-4">
-                  <p className="font-medium">{report.status.charAt(0).toUpperCase() + report.status.slice(1)}</p>
+                  <p className="font-medium">{(report.status || 'pending').charAt(0).toUpperCase() + (report.status || 'pending').slice(1)}</p>
                   <p className="text-sm text-gray-600">Last updated: Today</p>
                 </div>
               </div>
