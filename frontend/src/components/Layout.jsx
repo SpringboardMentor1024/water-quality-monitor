@@ -7,18 +7,17 @@ const Layout = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // FULL MENU ITEMS LIST
+  // FULL MENU ITEMS LIST (Map View Removed)
   const menuItems = [
     { name: "Dashboard", path: "/dashboard", icon: "📊" },
-    { name: "Map View", path: "/map", icon: "🗺️" },
     { name: "Alerts", path: "/alerts", icon: "🔔" },
     { name: "Locations", path: "/locations", icon: "📍" },
+    { name: "Analytics", path: "/analytics", icon: '📈'},
     { name: "User Reports", path: "/userreports", icon: "📋" },
     { name: "Profile", path: "/profile", icon: "👤" },
     { name: "Settings", path: "/settings", icon: "⚙️" },
   ];
 
-  // Secure Logout Logic
   const handleLogout = () => {
     const confirmLogout = window.confirm(
       "Are you sure you want to log out of the Authority System?"
@@ -61,7 +60,6 @@ const Layout = () => {
 
       {/* --- MAIN CONTENT AREA --- */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* HEADER / NAVBAR */}
         <header className="bg-white shadow-sm h-16 flex items-center justify-between px-8 border-b border-blue-100 sticky top-0 z-50">
           <div className="flex items-center gap-4">
             <button
@@ -75,7 +73,6 @@ const Layout = () => {
             </h2>
           </div>
 
-          {/* PROFILE DROPDOWN */}
           <div className="relative">
             <button
               onClick={() => setShowProfileDropdown(!showProfileDropdown)}
@@ -121,7 +118,6 @@ const Layout = () => {
         </header>
 
         <main className="flex-1 overflow-auto p-4 md:p-8">
-          {/* Renders Dashboard, Map, etc. */}
           <Outlet />
         </main>
       </div>

@@ -13,7 +13,6 @@ import StationReadings from "./pages/StationReadings";
 import Alerts from "./pages/Alerts";
 import Locations from "./pages/Locations";
 import Settings from "./pages/Settings";
-import BaseMap from "./pages/BaseMap";
 import Search from "./pages/Search";
 import Analysis from "./pages/Analysis";
 import Profile from "./pages/Profile";
@@ -50,7 +49,7 @@ export default function App() {
         >
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/locations" element={<Locations />} />
-          <Route path="/map" element={<BaseMap />} />
+          
           <Route path="/search" element={<Search />} />
 
           {/* Station Analysis */}
