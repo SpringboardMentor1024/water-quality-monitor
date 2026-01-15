@@ -1,13 +1,17 @@
+<<<<<<< HEAD
 """
 Water Quality Monitor - Alert Database Model
 Updated for Predictive Analysis & Remediation Steps
 """
 
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, Float, ForeignKey, Text, Enum as DbEnum
+=======
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, Float, ForeignKey
+>>>>>>> 69213e5bcaa462445faf874fdc22dea33238c46e
 from sqlalchemy.sql import func
 from app.core.database import Base
-import enum
 
+<<<<<<< HEAD
 # 🟢 1. Define Enums for Strict Categorization
 class AlertCategory(str, enum.Enum):
     current = "current"       # Option A: Happening NOW (Threshold breach)
@@ -19,12 +23,14 @@ class AlertType(str, enum.Enum):
     outage = "outage"
     system_warning = "system_warning" # Used for sensor trends
 
+=======
+>>>>>>> 69213e5bcaa462445faf874fdc22dea33238c46e
 class Alert(Base):
     __tablename__ = "alerts"
 
-    # Primary Key
     id = Column(Integer, primary_key=True, index=True)
 
+<<<<<<< HEAD
     # ✅ Preserved your existing fields
     station_id = Column(Integer, ForeignKey("water_stations.id"), nullable=True)
     
@@ -51,3 +57,16 @@ class Alert(Base):
     # Metadata
     acknowledged = Column(Boolean, default=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+=======
+    # Optional – not required for public alerts
+    station_id = Column(Integer, ForeignKey("water_stations.id"), nullable=True)
+
+    parameter = Column(String(100), nullable=True)
+    value = Column(Float, nullable=True)
+
+    severity = Column(String(50), default="WARNING")
+    message = Column(String(255), nullable=False)
+
+    acknowledged = Column(Boolean, default=False)
+    created_at = Column(DateTime, server_default=func.now())
+>>>>>>> 69213e5bcaa462445faf874fdc22dea33238c46e
