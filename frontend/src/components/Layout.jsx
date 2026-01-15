@@ -14,6 +14,7 @@ const Layout = () => {
     { name: "Locations", path: "/locations", icon: "📍" },
     { name: "Analytics", path: "/analytics", icon: '📈'},
     { name: "User Reports", path: "/userreports", icon: "📋" },
+    { name: "Collaborations", path: "/collaborations", icon: "🤝" },
     { name: "Profile", path: "/profile", icon: "👤" },
     { name: "Settings", path: "/settings", icon: "⚙️" },
   ];
