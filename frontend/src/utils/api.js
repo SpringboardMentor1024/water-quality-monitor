@@ -7,14 +7,7 @@ const api = axios.create({
   },
 });
 
-/* ================= USERS ================= */
-
-export const getAllUsers = async () => {
-  const res = await api.get("/users/users/");
-  return res.data;
-};
-
-
+/* ================= AUTH TOKEN ================= */
 // Attach JWT token automatically
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem("authToken");
@@ -38,6 +31,14 @@ export const registerUser = async (data) => {
 };
 
 /* =====================
+   USERS
+===================== */
+export const getAllUsers = async () => {
+  const res = await api.get("/users/users/");
+  return res.data;
+};
+
+/* =====================
    STATIONS
 ===================== */
 export const getStations = async () => {
@@ -51,8 +52,59 @@ export const getStationDetails = async (stationId) => {
 };
 
 export const getStationSeries = async (stationId, points = 12) => {
-  const res = await api.get(`/stations/${stationId}/series?points=${points}`);
+  const res = await api.get(
+    `/stations/${stationId}/series?points=${points}`
+  );
   return res.data;
 };
 
+/* =====================
+   ALERTS (Milestone 3)
+===================== */
+// Get all alerts
+export const getAlerts = async (limit = 50, location = null) => {
+  let url = `/alerts/?limit=${limit}`;
+  if (location) url += `&location=${location}`;
+
+  const res = await api.get(url);
+  return res.data;
+};
+
+// Create new alert
+export const createAlert = async (data) => {
+  const res = await api.post("/alerts/", data);
+  return res.data;
+};
+
+// Acknowledge alert
+export const acknowledgeAlert = async (alertId) => {
+  const res = await api.post(`/alerts/${alertId}/acknowledge`);
+  return res.data;
+};
+
+// Delete alert
+export const deleteAlert = async (alertId) => {
+  await api.delete(`/alerts/${alertId}`);
+};
+
+/* =====================
+   USER REPORTS
+===================== */
+export const getMyReports = async () => {
+  const res = await api.get("/reports/my-reports/");
+  return res.data;
+};
+
+export const createReport = async (data) => {
+  const res = await api.post("/reports/", data, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
+  return res.data;
+};
+
+/* =====================
+   DEFAULT EXPORT
+===================== */
 export default api;

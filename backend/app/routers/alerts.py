@@ -1,64 +1,96 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, status, HTTPException
 from sqlalchemy.orm import Session
-from typing import List, Optional
+from typing import List
 
 from app.core.database import get_db
-from app.models.alert import Alert
+# Ensure this matches your filename (alerts.py vs alert.py)
+from app.models.alert import Alert, AlertCategory  
 from app.schemas.alert_schema import AlertCreate, AlertResponse
+from app.services.prediction_service import PredictionService 
 
-router = APIRouter(
-    prefix="/alerts",
-    tags=["Alerts & Notifications"]
-)
+router = APIRouter(prefix="/alerts", tags=["Alerts & Notifications"])
 
-# 🟢 CREATE: Create a new Public Safety Alert
+# ✅ REAL WATER QUALITY THRESHOLDS (Indian Standards)
+WATER_QUALITY_RULES = {
+    "pH": {"normal": (6.5, 8.5), "warning": (8.5, 9.0), "critical": (0, 6.5), "unit": "pH"},
+    "Turbidity": {"normal": (0, 5), "warning": (5, 10), "critical": (10, 100), "unit": "NTU"},
+    "Oxygen": {"normal": (4.0, 8.0), "warning": (3.0, 4.0), "critical": (0, 3.0), "unit": "mg/L"},
+    "Temperature": {"normal": (15, 25), "warning": (25, 35), "critical": (0, 15), "unit": "°C"},
+    "Conductivity": {"normal": (0, 1000), "warning": (1000, 2000), "critical": (2000, 5000), "unit": "µS/cm"}
+}
+
+# ==========================================
+# 🟢 1. AUTOMATIC / PREDICTIVE (AI Trigger)
+# ==========================================
+@router.post("/analyze/{station_id}")
+def analyze_station_risks(station_id: int, db: Session = Depends(get_db)):
+    """
+    Triggers the AI engine to check for sensor anomalies or trends.
+    Useful for 'System Checks' or 'Predictive Maintenance'.
+    """
+    alerts = PredictionService.analyze_station(db, station_id)
+    
+    if not alerts:
+        return {
+            "status": "Safe", 
+            "message": "No immediate risks or dangerous trends detected."
+        }
+    
+    return {
+        "status": "Risks Detected", 
+        "count": len(alerts),
+        "analysis": [
+            {
+                "type": a.type,
+                "category": a.category,
+                "message": a.message, 
+                "recommendation": a.action_taken 
+            } for a in alerts
+        ]
+    }
+
+# ==========================================
+# 🔵 2. MANUAL CREATION (Admin / NGO)
+# ==========================================
 @router.post("/", response_model=AlertResponse, status_code=status.HTTP_201_CREATED)
 def create_alert(alert: AlertCreate, db: Session = Depends(get_db)):
     """
-    Issue a new alert.
-    Type must be one of: 'boil_notice', 'contamination', 'outage'.
+    Manual Alert Creation for Admins/NGOs.
+    Example: Reporting a visible pipe burst or local news warning.
     """
+    
+    # We map your input to the NEW database columns.
+    # Manual alerts are always 'current' (happening now).
+    
     new_alert = Alert(
-        type=alert.type,
         message=alert.message,
-        location=alert.location
+        
+        # ✅ YOUR KEY LOGIC PRESERVED
+        severity=str(alert.type).upper(), 
+        
+        # New required fields (we fill these automatically for manual alerts)
+        type=alert.type,
+        location=alert.location,     # Make sure your Schema sends this!
+        category=AlertCategory.current,
+        action_taken="Manual Report - Pending Investigation"
     )
     db.add(new_alert)
     db.commit()
     db.refresh(new_alert)
     return new_alert
 
-# 🔵 READ: Get All Alerts
+# ==========================================
+# 🟠 3. READ & DELETE (Standard)
+# ==========================================
 @router.get("/", response_model=List[AlertResponse])
-def read_alerts(
-    limit: int = 50, 
-    location: Optional[str] = Query(None, description="Filter by city/location"),
-    db: Session = Depends(get_db)
-):
-    """
-    Get a list of active alerts.
-    - Optional: Filter by location (e.g., ?location=Chennai)
-    - Returns newest first.
-    """
-    query = db.query(Alert)
+def read_alerts(db: Session = Depends(get_db)):
+    # Returns newest alerts first
+    return db.query(Alert).order_by(Alert.created_at.desc()).all()
 
-    # Optional Filter logic
-    if location:
-        query = query.filter(Alert.location.ilike(f"%{location}%"))
-
-    # Sort by newest time (descending)
-    return query.order_by(Alert.issued_at.desc()).limit(limit).all()
-
-# 🔴 DELETE: Resolve/Remove an Alert
 @router.delete("/{alert_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_alert(alert_id: int, db: Session = Depends(get_db)):
-    """
-    Delete an alert by ID (mark as resolved).
-    """
     alert = db.query(Alert).filter(Alert.id == alert_id).first()
-    if not alert:
-        raise HTTPException(status_code=404, detail="Alert not found")
-    
-    db.delete(alert)
-    db.commit()
+    if alert:
+        db.delete(alert)
+        db.commit()
     return None

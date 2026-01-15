@@ -1,22 +1,53 @@
 from pydantic import BaseModel
+from typing import Optional
 from datetime import datetime
-from app.models.alert import AlertType  # 🟢 Import the Enum from your model to ensure consistency
+from enum import Enum
 
-# 1. Base Schema (Shared Data)
-class AlertBase(BaseModel):
-    type: AlertType   # This enforces: 'boil_notice', 'contamination', or 'outage'
+# 🟢 Define Enums in Schema too (or import from models if preferred)
+class AlertCategory(str, Enum):
+    current = "current"
+    predictive = "predictive"
+
+class AlertType(str, Enum):
+    boil_notice = "boil_notice"
+    contamination = "contamination"
+    outage = "outage"
+    system_warning = "system_warning"
+
+# ==========================================
+# INPUT SCHEMA (Creating Alerts)
+# ==========================================
+class AlertCreate(BaseModel):
+    type: AlertType # 🟢 Validates input is one of the allowed types
     message: str
-    location: str     # e.g., "Chennai - Zone 5"
+    location: Optional[str] = None
+    station_id: Optional[int] = None
 
-# 2. Create Schema (What the user POSTs)
-class AlertCreate(AlertBase):
-    pass 
-
-# 3. Response Schema (What the API returns)
-class AlertResponse(AlertBase):
+# ==========================================
+# OUTPUT SCHEMA (Returning Data)
+# ==========================================
+class AlertResponse(BaseModel):
     id: int
-    issued_at: datetime
+    message: str
+    severity: str
+    acknowledged: bool
+    created_at: datetime
+
+    # 🟢 NEW AI FIELDS (Crucial for Dashboard)
+    category: Optional[AlertCategory] = None  # "current" vs "predictive"
+    type: Optional[AlertType] = None          # "contamination", etc.
+    action_taken: Optional[str] = None        # The "Steps to Solve" recommendation
+
+    # Location Info
+    location: Optional[str] = None  
+    station_id: Optional[int] = None
+    
+    # Note: These will only be filled if you specifically join tables in your query
+    station_name: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
 
     class Config:
-        # This tells Pydantic to read data from the SQLAlchemy ORM model
         from_attributes = True
+
+# ==========================================
