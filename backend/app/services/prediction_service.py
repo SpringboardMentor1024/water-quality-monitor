@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
-import numpy as np # standard math library
+import numpy as np 
 from app.models.readings import StationReading
 from app.models.alert import Alert, AlertType, AlertCategory
 from app.models.station import WaterStation
@@ -10,7 +10,7 @@ class PredictionService:
     # 🧠 THE EXPERT KNOWLEDGE BASE
     # Maps specific conditions to professional remediation steps.
     KNOWLEDGE_BASE = {
-        "ph_high": "CRITICAL: pH > 8.5. Immediate Action: Stop water intake. Initiate acid injection (HCL or CO2 dosing) at mixing chamber. Check lime feed pump for malfunction.",
+        "ph_high": "CRITICAL: pH > 8.5. Immediate Action: Stop water intake. Initiate acid injection (HCL or CO2 dosing). Check lime feed pump for malfunction.",
         "ph_low": "WARNING: pH < 6.5. Water is corrosive. Action: Increase Soda Ash or Lime dosage. Check for acid rain inflow or chemical spill near source.",
         "ph_rising": "TREND ALERT: pH rising rapidly (+0.1/hr). Potential alkalizer pump failure. Switch to manual control loop immediately.",
         
@@ -38,14 +38,10 @@ class PredictionService:
         if not readings:
             return None
 
-        latest = readings[0]
         alerts_generated = []
 
-        # Convert readings to simple dict for analysis
-        # (Assuming readings have 'parameter' and 'value')
-        # We group them by parameter
-        param_history = {} # {'ph': [7.1, 7.2, 7.3...], 'turbidity': [...]}
-        
+        # Group readings by parameter
+        param_history = {} 
         for r in readings:
             p = r.parameter.lower()
             if p not in param_history:
@@ -59,38 +55,47 @@ class PredictionService:
             val = param_history["ph"][0] # Latest value
             if val > 8.5:
                 alerts_generated.append(PredictionService._create_alert_obj(
-                    station.location, AlertType.contamination, AlertCategory.current,
-                    f"High pH detected ({val}).", PredictionService.KNOWLEDGE_BASE["ph_high"]
+                    station, 
+                    AlertType.contamination, 
+                    AlertCategory.current,
+                    f"High pH detected ({val}).", 
+                    PredictionService.KNOWLEDGE_BASE["ph_high"]
                 ))
             elif val < 6.5:
                 alerts_generated.append(PredictionService._create_alert_obj(
-                    station.location, AlertType.contamination, AlertCategory.current,
-                    f"Low pH detected ({val}).", PredictionService.KNOWLEDGE_BASE["ph_low"]
+                    station, 
+                    AlertType.contamination, 
+                    AlertCategory.current,
+                    f"Low pH detected ({val}).", 
+                    PredictionService.KNOWLEDGE_BASE["ph_low"]
                 ))
 
         if "turbidity" in param_history:
             val = param_history["turbidity"][0]
             if val > 5.0:
                 alerts_generated.append(PredictionService._create_alert_obj(
-                    station.location, AlertType.contamination, AlertCategory.current,
-                    f"High Turbidity ({val} NTU).", PredictionService.KNOWLEDGE_BASE["turbidity_high"]
+                    station, 
+                    AlertType.contamination, 
+                    AlertCategory.current,
+                    f"High Turbidity ({val} NTU).", 
+                    PredictionService.KNOWLEDGE_BASE["turbidity_high"]
                 ))
 
         # =========================================
         # 2. OPTION B: PREDICTIVE TREND ANALYSIS
         # =========================================
         # We calculate the "Slope" (Rate of Change)
-        # If pH rose from 7.0 to 7.4 in 4 readings, slope is +0.1 per reading.
         
         if "ph" in param_history and len(param_history["ph"]) >= 3:
-            # Reverse to get chronological order [oldest ... newest]
             data = list(reversed(param_history["ph"]))
             slope = data[-1] - data[0] # Simple change over time window
             
             if slope > 0.3: # Rising fast
                 alerts_generated.append(PredictionService._create_alert_obj(
-                    station.location, AlertType.system_warning, AlertCategory.predictive,
-                    f"pH is spiking rapidly (+{round(slope,2)} in last few hours).", 
+                    station, 
+                    AlertType.system_warning, 
+                    AlertCategory.predictive,
+                    f"pH is spiking rapidly (+{round(slope,2)}).", 
                     PredictionService.KNOWLEDGE_BASE["ph_rising"]
                 ))
 
@@ -99,32 +104,48 @@ class PredictionService:
              slope = data[-1] - data[0]
              if slope > 1.0: # Getting cloudy fast
                  alerts_generated.append(PredictionService._create_alert_obj(
-                    station.location, AlertType.system_warning, AlertCategory.predictive,
+                    station, 
+                    AlertType.system_warning, 
+                    AlertCategory.predictive,
                     f"Turbidity increasing rapidly.", 
                     PredictionService.KNOWLEDGE_BASE["turbidity_rising"]
                 ))
 
         # Save Alerts to DB
+        unique_alerts = []
         for alert in alerts_generated:
-            # Check duplicate to avoid spamming
+            # Check duplicate to avoid spamming (Logic: Same station, same message)
             exists = db.query(Alert).filter(
-                Alert.location == alert.location, 
+                Alert.station_id == alert.station_id, 
                 Alert.message == alert.message,
                 Alert.category == alert.category
             ).first()
             
             if not exists:
                 db.add(alert)
+                unique_alerts.append(alert)
         
         db.commit()
+
+        # 🟢 CRITICAL FIX: Return ALL current risks (alerts_generated)
+        # NOT just the new ones (unique_alerts).
+        # This ensures the API reports the risk even if it was already saved.
         return alerts_generated
 
     @staticmethod
-    def _create_alert_obj(loc, type_, cat, msg, action):
+    def _create_alert_obj(station, type_, cat, msg, action):
+        """
+        Helper to create the Alert Object with proper links.
+        """
         return Alert(
-            location=loc,
+            # Link the Foreign Key so Dashboard can find Name/Lat/Lon
+            station_id=station.id,
+            
+            # Save the location string for backup/display
+            location=station.location,
+            
             type=type_,
             category=cat,
             message=msg,
-            action_taken=action # The detailed remediation step
+            action_taken=action
         )
