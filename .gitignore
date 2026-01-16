@@ -1,4 +1,4 @@
-# ---------------- Python / Backend ----------------
+# ================= PYTHON / BACKEND =================
 venv/
 backend/venv/
 .env
@@ -7,18 +7,19 @@ __pycache__/
 *.pyo
 *.pyd
 
-# ---------------- Node / Frontend ----------------
+# ================= NODE / FRONTEND =================
 node_modules/
 frontend/node_modules/
 dist/
+frontend/dist/
 build/
 
-# ---------------- Logs ----------------
+# ================= LOGS =================
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# ---------------- Editor / OS ----------------
+# ================= EDITOR / OS =================
 .vscode/
 .DS_Store
 Thumbs.db

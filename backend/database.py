@@ -5,13 +5,18 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+# ---------------------------------
+# BASE DIRECTORY (IMPORTANT FIX)
+# ---------------------------------
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 # ---------------------------------
 # DATABASE ENGINE
 # ---------------------------------
 if not DATABASE_URL:
-    DATABASE_URL = "sqlite:///./water_quality.db"
+    DATABASE_URL = f"sqlite:///{os.path.join(BASE_DIR, 'water_quality.db')}"
     engine = create_engine(
         DATABASE_URL,
         connect_args={"check_same_thread": False}

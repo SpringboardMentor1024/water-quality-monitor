@@ -1,17 +1,20 @@
-from alert import router as alert_router
 from fastapi import FastAPI, Depends
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from sqlalchemy import func
-from fastapi.middleware.cors import CORSMiddleware
+
+# ✅ IMPORTANT: package-style imports
+import models
+import schemas
+from database import engine, get_db
 from auth import router as auth_router
-from fastapi.middleware.cors import CORSMiddleware
+from alert import router as alert_router
+from history import router as history_router
+
+
 from fetch_wqp_data import sync_wqp_data
 from fetch_wqp_live import sync_wqp_live_data
 
-
-from database import engine, get_db
-import models
-import schemas
 
 # ---------------------------------
 # CREATE DATABASE TABLES
@@ -22,9 +25,13 @@ models.Base.metadata.create_all(bind=engine)
 # APP INIT
 # ---------------------------------
 app = FastAPI(title="Water Quality Monitor API")
+
+# ---------------------------------
+# ROUTERS
+# ---------------------------------
 app.include_router(auth_router)
 app.include_router(alert_router)
-
+app.include_router(history_router)
 
 # ---------------------------------
 # CORS
@@ -33,7 +40,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:5173",
-        "http://127.0.0.1:5173"
+        "http://127.0.0.1:5173",
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -109,10 +116,11 @@ def create_report(
     db.commit()
     db.refresh(new_report)
 
+    # auto alert
     create_alert_if_needed(new_report, db)
     db.commit()
 
-    # 🔄 Update station latest snapshot
+    # update station snapshot
     station = (
         db.query(models.Station)
         .filter(models.Station.name == new_report.station_name)
@@ -122,6 +130,10 @@ def create_report(
         station.ph = new_report.ph
         station.turbidity = new_report.turbidity
         station.temperature = new_report.temperature
+        station.arsenic = new_report.arsenic
+        station.dissolved_oxygen = new_report.dissolved_oxygen
+        station.nitrate = new_report.nitrate
+        station.fluoride = new_report.fluoride
         station.status = new_report.status
         db.commit()
 
@@ -163,6 +175,8 @@ def get_station_analytics(db: Session = Depends(get_db)):
             func.avg(models.WaterReading.ph).label("avg_ph"),
             func.avg(models.WaterReading.turbidity).label("avg_turbidity"),
             func.avg(models.WaterReading.temperature).label("avg_temperature"),
+            func.avg(models.WaterReading.arsenic).label("avg_arsenic"),
+            func.avg(models.WaterReading.dissolved_oxygen).label("avg_do"),
         )
         .group_by(models.WaterReading.station_name)
         .all()
@@ -174,6 +188,8 @@ def get_station_analytics(db: Session = Depends(get_db)):
             "avg_ph": float(r.avg_ph or 0),
             "avg_turbidity": float(r.avg_turbidity or 0),
             "avg_temperature": float(r.avg_temperature or 0),
+            "avg_arsenic": float(r.avg_arsenic or 0),
+            "avg_do": float(r.avg_do or 0),
         }
         for r in results
     ]
@@ -192,18 +208,16 @@ def get_alerts(db: Session = Depends(get_db)):
 # ---------------------------------
 @app.post("/api/sync/india")
 def sync_india_data():
-    from fetch_india_data import populate_india_data
+    from backend.fetch_india_data import populate_india_data
     populate_india_data()
     return {"message": "Indian water data synced successfully"}
+
 
 @app.post("/api/sync/wqp")
 def sync_wqp():
     sync_wqp_data()
     return {"message": "WQP data synced successfully"}
 
-@app.get("/api/stations", response_model=list[schemas.StationResponse])
-def get_stations(db: Session = Depends(get_db)):
-    return db.query(models.Station).all()
 
 @app.post("/api/sync/wqp/live")
 def sync_wqp_live():

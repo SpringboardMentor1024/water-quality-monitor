@@ -71,10 +71,11 @@ export default function Dashboard() {
 
           {alerts.slice(0, 3).map((alert) => (
             <AlertItem
-              key={alert.id}
-              location={alert.station_name}
-              status={alert.status}
-            />
+  key={alert.id}
+  location={alert.station}
+  status={alert.details.Status}
+/>
+
           ))}
 
           {alerts.length === 0 && (
@@ -138,7 +139,9 @@ function AlertItem({ location, status }) {
   const color =
     status === "Warning"
       ? "bg-yellow-500"
-      : "bg-red-500";
+      : status === "Unsafe"
+      ? "bg-red-500"
+      : "bg-green-500";
 
   return (
     <div className="p-3 rounded-lg mb-3 border border-gray-200 flex justify-between items-center">
@@ -155,6 +158,7 @@ function AlertItem({ location, status }) {
     </div>
   );
 }
+
 
 function ReportItem({ location, ph, status }) {
   const color =

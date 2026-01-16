@@ -18,6 +18,7 @@ import "../utils/fixLeafletIcons";
 export default function StationDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
+
   const [station, setStation] = useState(null);
   const [readings, setReadings] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -28,8 +29,12 @@ export default function StationDetails() {
 
   const fetchStationDetails = async () => {
     try {
-      const res = await axios.get("http://127.0.0.1:8000/api/stations");
-      const found = res.data.find((s) => s.id === Number(id));
+      const stationsRes = await axios.get(
+        "http://127.0.0.1:8000/api/stations"
+      );
+      const found = stationsRes.data.find(
+        (s) => s.id === Number(id)
+      );
       setStation(found);
 
       if (found) {
@@ -56,7 +61,7 @@ export default function StationDetails() {
         <p className="text-gray-600">Station not found.</p>
         <button
           onClick={() => navigate("/map")}
-          className="mt-4 px-4 py-2 bg-[#4FA3B5] text-white rounded hover:bg-[#3D91A3]"
+          className="mt-4 px-4 py-2 bg-[#4FA3B5] text-white rounded"
         >
           Back to Map
         </button>
@@ -82,28 +87,37 @@ export default function StationDetails() {
           height:14px;
           border-radius:50%;
           border:2px solid white;
-          box-shadow:0 0 5px rgba(0,0,0,0.3);
         "></div>
       `,
     });
 
+  const PARAMETERS = [
+    { key: "ph", label: "pH", unit: "" },
+    { key: "turbidity", label: "Turbidity", unit: " NTU" },
+    { key: "temperature", label: "Temperature", unit: " °C" },
+    { key: "arsenic", label: "Arsenic", unit: " mg/L" },
+    { key: "dissolved_oxygen", label: "Dissolved Oxygen", unit: " mg/L" },
+    { key: "nitrate", label: "Nitrate", unit: " mg/L" },
+    { key: "fluoride", label: "Fluoride", unit: " mg/L" },
+  ];
+
   return (
     <div className="min-h-screen bg-[#F4FBFD] p-6 space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold text-gray-700">
-          {station.name} Details
+          {station.name}
         </h2>
         <button
           onClick={() => navigate("/map")}
-          className="bg-[#4FA3B5] hover:bg-[#3D91A3] text-white px-4 py-2 rounded-lg transition"
+          className="bg-[#4FA3B5] text-white px-4 py-2 rounded"
         >
-          ← Back to Map
+          ← Back
         </button>
       </div>
 
-      {/* Mini Map Preview */}
-      <div className="h-[300px] rounded-xl overflow-hidden border border-[#A4CCD9] shadow">
+      {/* Map */}
+      <div className="h-[300px] rounded-xl overflow-hidden border">
         <MapContainer
           center={[station.latitude, station.longitude]}
           zoom={9}
@@ -111,7 +125,6 @@ export default function StationDetails() {
         >
           <TileLayer
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            attribution="© OpenStreetMap contributors"
           />
           <Marker
             position={[station.latitude, station.longitude]}
@@ -121,43 +134,30 @@ export default function StationDetails() {
               <strong>{station.name}</strong>
               <br />
               Status: {station.status}
-              <br />
-              pH: {station.ph}
-              <br />
-              Turbidity: {station.turbidity}
-              <br />
-              Temperature: {station.temperature}°C
             </Popup>
           </Marker>
         </MapContainer>
       </div>
 
-      {/* Station Summary */}
-      <div className="bg-white rounded-xl shadow p-6 border border-[#C4E1E6]">
-        <h3 className="text-xl font-semibold text-gray-700 mb-2">
+      {/* Current Readings */}
+      <div className="bg-white p-6 rounded-xl shadow">
+        <h3 className="text-xl font-semibold mb-4">
           Current Readings
         </h3>
-        <div className="grid grid-cols-3 gap-6 text-center">
-          <div className="p-3 bg-gray-50 rounded-lg">
-            <p className="text-gray-600">pH</p>
-            <p className="text-2xl font-bold text-gray-800">
-              {station.ph || latest.ph || "-"}
-            </p>
-          </div>
-          <div className="p-3 bg-gray-50 rounded-lg">
-            <p className="text-gray-600">Turbidity</p>
-            <p className="text-2xl font-bold text-gray-800">
-              {station.turbidity || latest.turbidity || "-"}
-            </p>
-          </div>
-          <div className="p-3 bg-gray-50 rounded-lg">
-            <p className="text-gray-600">Temperature</p>
-            <p className="text-2xl font-bold text-gray-800">
-              {station.temperature || latest.temperature || "-"}°C
-            </p>
-          </div>
+
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+          {PARAMETERS.map((p) => (
+            <div key={p.key} className="bg-gray-50 p-4 rounded-lg">
+              <p className="text-gray-600">{p.label}</p>
+              <p className="text-xl font-bold">
+                {station[p.key] ?? latest[p.key] ?? "-"}
+                {p.unit}
+              </p>
+            </div>
+          ))}
         </div>
-        <p className="text-gray-600 text-sm mt-4">
+
+        <p className="mt-4">
           Status:{" "}
           <span
             className={`font-semibold ${
@@ -173,29 +173,31 @@ export default function StationDetails() {
         </p>
       </div>
 
-      {/* Historical Chart */}
-      <div className="bg-white rounded-xl shadow p-6 border border-[#C4E1E6]">
-        <h3 className="text-xl font-semibold text-gray-700 mb-4">
+      {/* Historical Trends */}
+      <div className="bg-white p-6 rounded-xl shadow">
+        <h3 className="text-xl font-semibold mb-4">
           Historical Trends
         </h3>
+
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {["ph", "turbidity", "temperature"].map((param) => (
-            <div
-              key={param}
-              className="bg-gray-50 p-3 rounded-lg border border-gray-200"
-            >
-              <h4 className="font-semibold mb-2 capitalize text-gray-700">
-                {param}
-              </h4>
-              <ResponsiveContainer width="100%" height={150}>
-                <LineChart data={readings.slice().reverse()}>
+          {PARAMETERS.map((p) => (
+            <div key={p.key} className="bg-gray-50 p-4 rounded-lg">
+              <h4 className="font-semibold mb-2">{p.label}</h4>
+              <ResponsiveContainer width="100%" height={180}>
+                <LineChart
+                  data={
+                    readings.length
+                      ? readings.slice().reverse()
+                      : []
+                  }
+                >
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="recorded_at" hide />
                   <YAxis />
                   <Tooltip />
                   <Line
                     type="monotone"
-                    dataKey={param}
+                    dataKey={p.key}
                     stroke="#4FA3B5"
                     strokeWidth={2}
                   />
