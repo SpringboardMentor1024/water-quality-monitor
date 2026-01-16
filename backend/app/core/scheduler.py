@@ -188,39 +188,45 @@ def save_data_grouped(db: Session, stations_list: list, country: str, region: st
 # =========================================================
 def seed_station_history(db: Session, station_id: int):
     """
-    Generates 30 Days of realistic 'Random Walk' sensor data.
+    Generates 30 Days of realistic 'Random Walk' sensor data for 
+    pH, Turbidity, and Oxygen.
     """
     now = datetime.now()
     readings = []
     
-    # Random Baseline
+    # Random Baselines for healthy water
     current_ph = random.uniform(7.0, 7.5)
-    current_turb = random.uniform(1.5, 4.0)
+    current_turb = random.uniform(1.5, 3.5)
+    current_oxy = random.uniform(7.5, 8.5) # 🟢 Oxygen Baseline (mg/L)
     
     # Generate 30 Daily Readings (Past -> Today)
     for i in range(30):
-        # Time moves backwards (Today minus i days)
         time_offset = now - timedelta(days=(30-i))
         
-        # RANDOM WALK: Drifts slightly (+/-) instead of jumping wildy
-        current_ph += random.uniform(-0.15, 0.15)
-        current_turb += random.uniform(-0.3, 0.3)
+        # RANDOM WALK: Drifts slightly (+/-)
+        current_ph += random.uniform(-0.10, 0.10)
+        current_turb += random.uniform(-0.25, 0.25)
+        current_oxy += random.uniform(-0.20, 0.20) # 🟢 Oxygen Drift
         
-        # Safety Clamps (So it doesn't go to pH 14 or pH 0)
-        current_ph = max(6.2, min(8.8, current_ph))
-        current_turb = max(0.5, min(8.0, current_turb))
+        # Safety Clamps
+        current_ph = max(6.5, min(8.5, current_ph))
+        current_turb = max(0.2, min(7.0, current_turb))
+        current_oxy = max(4.0, min(11.0, current_oxy)) # 🟢 Oxygen Safety Clamp
 
+        # Append pH
         readings.append(StationReading(
-            station_id=station_id, 
-            parameter="pH", 
-            value=round(current_ph, 2), 
-            recorded_at=time_offset
+            station_id=station_id, parameter="pH", 
+            value=round(current_ph, 2), recorded_at=time_offset
         ))
+        # Append Turbidity
         readings.append(StationReading(
-            station_id=station_id, 
-            parameter="Turbidity", 
-            value=round(current_turb, 2), 
-            recorded_at=time_offset
+            station_id=station_id, parameter="Turbidity", 
+            value=round(current_turb, 2), recorded_at=time_offset
+        ))
+        # 🟢 Append Oxygen (Matching Frontend Requirement)
+        readings.append(StationReading(
+            station_id=station_id, parameter="Oxygen", 
+            value=round(current_oxy, 2), recorded_at=time_offset
         ))
 
     db.add_all(readings)
