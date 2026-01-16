@@ -3,6 +3,10 @@ import { Link } from "react-router-dom";
 import DashboardMap from "../components/DashboardMap";
 import { getAlerts, getReports, getStations } from "../services/api";
 
+import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
+import "../utils/fixLeafletIcons";
 export default function Dashboard() {
   const [alerts, setAlerts] = useState([]);
   const [reports, setReports] = useState([]);
@@ -71,11 +75,10 @@ export default function Dashboard() {
 
           {alerts.slice(0, 3).map((alert) => (
             <AlertItem
-  key={alert.id}
-  location={alert.station}
-  status={alert.details.Status}
-/>
-
+              key={alert.id}
+              location={alert.station}
+              status={alert.details.Status}
+            />
           ))}
 
           {alerts.length === 0 && (
@@ -158,7 +161,6 @@ function AlertItem({ location, status }) {
     </div>
   );
 }
-
 
 function ReportItem({ location, ph, status }) {
   const color =

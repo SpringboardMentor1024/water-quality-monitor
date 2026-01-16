@@ -11,18 +11,25 @@ import { useNavigate } from "react-router-dom"; // ✅ import this
 ----------------------------------- */
 const getMarkerIcon = (status) =>
   L.divIcon({
-    className: "",
-    iconSize: [26, 26],
-    iconAnchor: [13, 13],
-    popupAnchor: [0, -12],
+    className: "river-marker",
+    iconSize: [18, 18],
+    iconAnchor: [9, 9],
+    popupAnchor: [0, -10],
     html: `
-      <div class="marker-circle ${
-        status === "Safe"
-          ? "marker-safe"
-          : status === "Warning"
-          ? "marker-warning"
-          : "marker-unsafe"
-      }"></div>
+      <div style="
+        width:14px;
+        height:14px;
+        border-radius:50%;
+        background:${
+          status === "Safe"
+            ? "#22c55e"
+            : status === "Warning"
+            ? "#facc15"
+            : "#ef4444"
+        };
+        border:2px solid white;
+        box-shadow:0 0 6px rgba(0,0,0,0.4);
+      "></div>
     `,
   });
 
