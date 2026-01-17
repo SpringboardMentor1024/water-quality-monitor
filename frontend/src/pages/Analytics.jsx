@@ -6,6 +6,7 @@ import {
   BarChart, Bar, Cell, YAxis 
 } from "recharts";
 import { getStations, getStationSeries } from "../utils/api";
+import PredictiveAlertsMock from "../components/PredictiveAlertsMock"; // ✅ ADDED
 
 export default function Analytics() {
   const { id: urlId } = useParams(); 
@@ -26,7 +27,6 @@ export default function Analytics() {
         const safeList = Array.isArray(stationList) ? stationList : [];
         setStations(safeList);
         
-        // Priority: Use ID from URL, if none, use the first available station
         const finalId = urlId || (safeList.length > 0 ? safeList[0].id : "");
         
         if (finalId) {
@@ -59,7 +59,6 @@ export default function Analytics() {
   const processIntelligence = (data, sid) => {
     if (!data.length) return;
 
-    // 1. pH DISTRIBUTION CALCULATION
     const distMap = { "Acidic (<6.5)": 0, "Neutral (6.5-7.5)": 0, "Alkaline (>7.5)": 0 };
     data.forEach(d => {
       if (d.ph < 6.5 && d.ph > 0) distMap["Acidic (<6.5)"]++;
@@ -71,14 +70,12 @@ export default function Analytics() {
     const latest = data[data.length - 1];
     const avgTurb = data.reduce((a, b) => a + b.turb, 0) / data.length;
 
-    // 2. HEALTH LOGS (Green = Safe, Orange = Threshold Warning)
     setLogs([
       { type: "Turbidity", val: `${latest.turb.toFixed(1)} NTU`, color: latest.turb > 5.0 ? "orange" : "green" },
       { type: "Oxygen", val: `${latest.do.toFixed(1)} mg/L`, color: latest.do < 5.0 ? "orange" : "green" },
       { type: "pH Level", val: latest.ph.toFixed(2), color: (latest.ph < 6.5 || latest.ph > 8.5) ? "orange" : "green" }
     ]);
 
-    // 3. PREDICTIONS (Comparing Latest to 30-day Average)
     setPredictions([
       { title: latest.turb > avgTurb * 1.15 ? "Turbidity Surge Risk" : "Turbidity Stability", param: "Turbidity", prob: "75%", color: latest.turb > avgTurb * 1.15 ? "orange" : "green" },
       { title: latest.do < 5.0 ? "Oxygen Depletion Risk" : "Optimal Oxygen Levels", param: "Oxygen", prob: "80%", color: latest.do < 5.0 ? "orange" : "green" }
@@ -106,7 +103,11 @@ export default function Analytics() {
             onChange={handleStationChange}
             className="w-full bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl px-6 py-5 font-black text-sm uppercase outline-none text-white cursor-pointer"
           >
-            {stations.map(s => <option key={s.id} value={s.id} className="text-[#1e3a8a] bg-white">{s.name || s.id}</option>)}
+            {stations.map(s => (
+              <option key={s.id} value={s.id} className="text-[#1e3a8a] bg-white">
+                {s.name || s.id}
+              </option>
+            ))}
           </select>
         </div>
       </div>
@@ -125,15 +126,21 @@ export default function Analytics() {
               <XAxis type="number" hide />
               <YAxis dataKey="range" type="category" tick={{fontSize: 9, fontWeight: 900}} axisLine={false} width={100} />
               <Bar dataKey="count" radius={[0, 10, 10, 0]} barSize={25}>
-                {distribution.map((e, i) => <Cell key={i} fill={i === 1 ? '#1e3a8a' : '#eff6ff'} />)}
+                {distribution.map((e, i) => (
+                  <Cell key={i} fill={i === 1 ? '#1e3a8a' : '#eff6ff'} />
+                ))}
               </Bar>
             </BarChart>
           </ResponsiveContainer>
         </div>
 
         <div className="space-y-4">
-          <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-4">System Health Logs</h3>
-          {logs.map((log, i) => <LogRow key={i} {...log} date={history[history.length-1]?.name} />)}
+          <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-4">
+            System Health Logs
+          </h3>
+          {logs.map((log, i) => (
+            <LogRow key={i} {...log} date={history[history.length - 1]?.name} />
+          ))}
         </div>
       </div>
 
@@ -142,6 +149,9 @@ export default function Analytics() {
           <PredictionCard key={i} {...p} sid={selectedStationId} navigate={navigate} />
         ))}
       </div>
+
+      {/* ✅ PREDICTIVE ALERTS MOCK (ADDED) */}
+<PredictiveAlertsMock stationId={selectedStationId} />
     </div>
   );
 }
@@ -180,8 +190,14 @@ const PredictionCard = ({ title, param, prob, color, sid, navigate }) => (
       <Zap className={color === 'green' ? 'text-emerald-500' : 'text-orange-500'} />
     </div>
     <div className="flex gap-12">
-      <div><p className="text-[9px] font-black text-slate-400 uppercase">Parameter</p><p className="text-sm font-bold">{param}</p></div>
-      <div><p className="text-[9px] font-black text-slate-400 uppercase">Confidence</p><p className="text-sm font-black">{prob}</p></div>
+      <div>
+        <p className="text-[9px] font-black text-slate-400 uppercase">Parameter</p>
+        <p className="text-sm font-bold">{param}</p>
+      </div>
+      <div>
+        <p className="text-[9px] font-black text-slate-400 uppercase">Confidence</p>
+        <p className="text-sm font-black">{prob}</p>
+      </div>
     </div>
     <button 
       onClick={() => navigate(`/prediction-details/${sid}/${param.toLowerCase()}`)}

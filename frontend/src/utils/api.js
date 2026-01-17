@@ -59,7 +59,7 @@ export const getStationSeries = async (stationId, points = 12) => {
 };
 
 /* =====================
-   ALERTS (Milestone 3)
+   ALERTS
 ===================== */
 // Get all alerts
 export const getAlerts = async (limit = 50, location = null) => {
@@ -85,6 +85,15 @@ export const acknowledgeAlert = async (alertId) => {
 // Delete alert
 export const deleteAlert = async (alertId) => {
   await api.delete(`/alerts/${alertId}`);
+};
+
+/* =====================
+   PREDICTIVE ALERTS (AI)
+===================== */
+// Run predictive analysis for a station
+export const analyzeStationAlerts = async (stationId) => {
+  const res = await api.post(`/alerts/analyze/${stationId}`);
+  return res.data;
 };
 
 /* =====================
