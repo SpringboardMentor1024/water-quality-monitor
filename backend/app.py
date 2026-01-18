@@ -10,6 +10,8 @@ from database import engine, get_db
 from auth import router as auth_router
 from alert import router as alert_router
 from history import router as history_router
+from alert_predictive import router as alert_predictive_router
+
 
 
 from fetch_wqp_data import sync_wqp_data
@@ -32,6 +34,7 @@ app = FastAPI(title="Water Quality Monitor API")
 app.include_router(auth_router)
 app.include_router(alert_router)
 app.include_router(history_router)
+app.include_router(alert_predictive_router)
 
 # ---------------------------------
 # CORS
@@ -223,3 +226,4 @@ def sync_wqp():
 def sync_wqp_live():
     sync_wqp_live_data()
     return {"message": "WQP live data synced successfully"}
+

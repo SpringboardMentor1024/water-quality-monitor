@@ -10,6 +10,8 @@ import Alerts from "./pages/AlertsPage";
 import AlertTrendsPage from "./pages/AlertTrendsPage";
 import Stations from "./pages/Stations";
 import Analytics from "./pages/Analytics";
+import NgoDashboard from "./pages/NgoDashboard";
+import AddProject from "./pages/AddProject";
 import StationDetails from "./pages/StationDetails";
 import MapView from "./pages/MapView";
 import Profile from "./pages/Profile";
@@ -59,7 +61,11 @@ export default function App() {
           <Route path="/alert-trends" element={<AlertTrendsPage />} />
           <Route path="/stations" element={<Stations />} />
           <Route path="/analytics" element={<Analytics />} />
+          <Route path="/ngo/dashboard" element={<NgoDashboard />} />
+          <Route path="/add-project" element={<AddProject />} />
+          <Route path="/collaboration" element={<NgoDashboard />} />
           <Route path="/stations/:id" element={<StationDetails />} />
+
           <Route path="/profile" element={<Profile />} />
           <Route path="/map" element={<MapView />} />
           <Route path="/search" element={<Search />} />

@@ -10,19 +10,21 @@ import {
   MdPerson,
   MdSettings,
   MdLogout,
+  MdGroups, // ✅ add this import for Collaboration icon
 } from "react-icons/md";
 
 export default function Sidebar() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // ✅ LOGOUT FUNCTION (THIS IS WHERE IT GOES)
+  // LOGOUT FUNCTION
   const handleLogout = () => {
     localStorage.removeItem("isLoggedIn");
     localStorage.removeItem("role");
     navigate("/login", { replace: true });
   };
 
+  // MENU ITEMS
   const menu = [
     { name: "Dashboard", path: "/dashboard", icon: <MdDashboard size={22} /> },
     { name: "Map", path: "/map", icon: <MdMap size={22} /> },
@@ -30,9 +32,13 @@ export default function Sidebar() {
     { name: "Alerts", path: "/alerts", icon: <MdWarning size={22} /> },
     { name: "Stations", path: "/stations", icon: <MdSensors size={22} /> },
     { name: "Analytics", path: "/analytics", icon: <MdAnalytics size={22} /> },
+     { name: "Collaboration", path: "/collaboration", icon: <MdGroups size={22} /> },
     { name: "Search", path: "/search", icon: <MdSearch size={22} /> },
     { name: "Profile", path: "/profile", icon: <MdPerson size={22} /> },
     { name: "Settings", path: "/settings", icon: <MdSettings size={22} /> },
+
+    
+   
   ];
 
   return (
@@ -61,7 +67,7 @@ export default function Sidebar() {
         ))}
       </div>
 
-      {/* LOGOUT BUTTON (BOTTOM) */}
+      {/* LOGOUT BUTTON */}
       <button
         onClick={handleLogout}
         className="flex items-center gap-3 p-3 rounded-lg text-red-600 hover:bg-red-100 transition"
