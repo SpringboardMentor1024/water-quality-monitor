@@ -7,26 +7,19 @@ export default function CpcbDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Search states
   const [stationSearch, setStationSearch] = useState("");
   const [selectedParam, setSelectedParam] = useState("");
-
-  // List of unique parameters for dropdown
   const [parameters, setParameters] = useState([]);
 
   useEffect(() => {
     const loadReadings = async () => {
-      setLoading(true);
-      setError(null);
       try {
         const data = await fetchCpcbReadings();
         setReadings(data);
 
-        // Extract unique parameters
         const uniqueParams = [...new Set(data.map((r) => r.parameter))];
         setParameters(uniqueParams);
       } catch (err) {
-        console.error(err);
         setError("Failed to fetch CPCB readings.");
       } finally {
         setLoading(false);
@@ -36,10 +29,20 @@ export default function CpcbDashboard() {
     loadReadings();
   }, []);
 
-  if (loading) return <p>Loading CPCB readings...</p>;
-  if (error) return <p>{error}</p>;
+  if (loading)
+    return (
+      <div className="p-6 text-center text-gray-300">
+        Loading CPCB readings...
+      </div>
+    );
 
-  // Filter readings based on search inputs
+  if (error)
+    return (
+      <div className="p-6 text-center text-red-400">
+        {error}
+      </div>
+    );
+
   const filteredReadings = readings.filter((r) => {
     const matchesStation = r.station_name
       .toLowerCase()
@@ -51,22 +54,29 @@ export default function CpcbDashboard() {
   });
 
   return (
-    <div className="p-4 bg-[#1e242d] rounded-lg text-white">
-      <h2 className="text-xl font-semibold mb-4 text-center">CPCB Readings</h2>
+    <div className="p-6 bg-[#1e242d] rounded-xl shadow-lg text-white h-full flex flex-col">
+      
+      {/* Title */}
+      <h2 className="text-2xl font-semibold mb-6 text-center text-blue-400">
+        CPCB Water Quality Readings
+      </h2>
 
       {/* Search & Filter */}
-      <div className="flex gap-2 mb-4">
+      <div className="flex flex-col md:flex-row gap-3 mb-4">
         <input
           type="text"
           placeholder="Search by Station Name"
           value={stationSearch}
           onChange={(e) => setStationSearch(e.target.value)}
-          className="p-2 rounded border border-gray-600 bg-gray-700 text-white flex-1"
+          className="p-2 rounded-lg border border-gray-600 bg-gray-700 text-white flex-1
+                     focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
+
         <select
           value={selectedParam}
           onChange={(e) => setSelectedParam(e.target.value)}
-          className="p-2 rounded border border-gray-600 bg-gray-700 text-white"
+          className="p-2 rounded-lg border border-gray-600 bg-gray-700 text-white
+                     focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           <option value="">All Parameters</option>
           {parameters.map((param) => (
@@ -77,36 +87,53 @@ export default function CpcbDashboard() {
         </select>
       </div>
 
-      {/* Table */}
-      <div className="overflow-x-auto">
-        <table className="min-w-full border border-gray-600">
-          <thead>
-            <tr className="bg-gray-700">
-              <th className="px-4 py-2 border-b">Station</th>
-              <th className="px-4 py-2 border-b">Parameter</th>
-              <th className="px-4 py-2 border-b">Value</th>
-              <th className="px-4 py-2 border-b">Recorded At</th>
+      {/* Table Container */}
+      <div className="flex-1 overflow-auto rounded-lg border border-gray-700">
+        <table className="min-w-full text-sm">
+          <thead className="sticky top-0 bg-gray-800 z-10">
+            <tr>
+              <th className="px-4 py-3 text-left border-b border-gray-700">
+                Station
+              </th>
+              <th className="px-4 py-3 text-left border-b border-gray-700">
+                Parameter
+              </th>
+              <th className="px-4 py-3 text-left border-b border-gray-700">
+                Value
+              </th>
+              <th className="px-4 py-3 text-left border-b border-gray-700">
+                Recorded At
+              </th>
             </tr>
           </thead>
+
           <tbody>
             {filteredReadings.map((r, idx) => (
               <tr
                 key={idx}
-                className={idx % 2 === 0 ? "bg-gray-800" : "bg-gray-900"}
+                className="odd:bg-gray-800 even:bg-gray-900
+                           hover:bg-blue-900/30 transition-colors"
               >
-                <td className="px-4 py-2 border-b">{r.station_name}</td>
-                <td className="px-4 py-2 border-b">{r.parameter}</td>
-                <td className="px-4 py-2 border-b">{r.value}</td>
-                <td className="px-4 py-2 border-b">
+                <td className="px-4 py-2 border-b border-gray-700">
+                  {r.station_name}
+                </td>
+                <td className="px-4 py-2 border-b border-gray-700">
+                  {r.parameter}
+                </td>
+                <td className="px-4 py-2 border-b border-gray-700">
+                  {r.value}
+                </td>
+                <td className="px-4 py-2 border-b border-gray-700">
                   {new Date(r.recorded_at).toLocaleString()}
                 </td>
               </tr>
             ))}
+
             {filteredReadings.length === 0 && (
               <tr>
                 <td
                   colSpan="4"
-                  className="px-4 py-2 text-center border-b text-gray-400"
+                  className="px-4 py-6 text-center text-gray-400"
                 >
                   No results found
                 </td>
