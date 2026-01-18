@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import StatCard from '../components/StatCard';
-import NGOMap from '../components/NGOMap';
+
 import PredictiveChart from '../components/PredictiveChart';
 import CollaborationsPanel from '../components/Collaboration/CollaborationsPanel';
 import SharedReports from '../components/Collaboration/SharedReports';
@@ -431,11 +431,8 @@ const handleCreateProject = async () => {
   </button>
 </div>
           </div>
-          {/* MAP */}
-          <div className="bg-white rounded-xl shadow p-6 mb-8">
-            <h2 className="text-xl font-bold mb-4">Assigned Water Stations</h2>
-            <NGOMap stations={dashboardData.stations} />
-          </div>
+          
+          
 
           {/* PREDICTIVE */}
           <div className="bg-white rounded-xl shadow p-6 mb-8">

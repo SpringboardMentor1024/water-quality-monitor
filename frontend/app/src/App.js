@@ -2,7 +2,7 @@
 // frontend/app/src/App.js
 import React from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
-
+import SubmitReport from "./pages/SubmitReport";
 import Home from "./pages/home";
 import Login from "./pages/login";
 import Register from "./pages/register";
@@ -10,7 +10,7 @@ import Dashboard from "./pages/dashboard";
 import Profile from "./pages/profile";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
-
+import WaterStationDetails from "./pages/WaterStationDetails";
 /* ✅ NEW IMPORTS */
 import Details from "./pages/sections/details";
 import Reports from "./pages/sections/report";
@@ -38,7 +38,10 @@ function App() {
         <Route path="/register" element={<Register />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
-
+        <Route
+          path="/ngo/water-stations/:stationId"
+          element={<WaterStationDetails />}
+        />
         {/* =====================
             PROTECTED ROUTES
         ===================== */}
@@ -46,6 +49,10 @@ function App() {
           path="/dashboard"
           element={isAuthenticated() ? <Dashboard /> : <Navigate to="/login" replace />}
         />
+        <Route
+  path="/ngo/water-stations/:stationId/submit-report"
+  element={<SubmitReport />}
+/>
 
         <Route
           path="/profile"

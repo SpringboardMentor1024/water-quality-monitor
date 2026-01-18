@@ -27,17 +27,18 @@ api.interceptors.request.use(
 );
 
 // Response interceptor for handling errors
+// Response interceptor for handling errors
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // Handle unauthorized - redirect to login
-      localStorage.removeItem("token");
-      window.location.href = "/login";
+      console.warn("401 Unauthorized — not redirecting during development");
+      // ❌ DO NOT redirect automatically during dev
     }
     return Promise.reject(error);
   }
 );
+
 
 // -----------------------------
 // Water Stations

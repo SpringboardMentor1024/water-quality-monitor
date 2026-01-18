@@ -4,7 +4,7 @@ import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import { useNavigate } from 'react-router-dom';
 import 'leaflet/dist/leaflet.css';
 
-// Fix for default markers
+// Fix for default marker icons
 import L from 'leaflet';
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -19,116 +19,118 @@ const NGOMap = ({ stations = [] }) => {
 
   const getMarkerColor = (alertLevel) => {
     switch (alertLevel) {
-      case 'critical': return '#ef4444'; // red
-      case 'warning': return '#f59e0b'; // yellow
-      case 'predictive_alert': return '#8b5cf6'; // purple
-      default: return '#10b981'; // green
+      case 'critical':
+        return '#ef4444';
+      case 'warning':
+        return '#f59e0b';
+      case 'predictive_alert':
+        return '#8b5cf6';
+      default:
+        return '#10b981';
     }
   };
 
-  const createCustomIcon = (color) => {
-    return L.divIcon({
-      html: `<div style="background-color: ${color}; width: 20px; height: 20px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.3);"></div>`,
-      className: 'custom-marker',
-      iconSize: [20, 20]
+  const createCustomIcon = (color) =>
+    L.divIcon({
+      html: `
+        <div style="
+          background-color: ${color};
+          width: 14px;
+          height: 14px;
+          border-radius: 50%;
+          border: 2px solid white;
+          box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+        "></div>
+      `,
+      className: '',
+      iconSize: [14, 14],
     });
-  };
-
-  if (!stations || stations.length === 0) {
-    return (
-      <div className="h-96 bg-gray-100 rounded-lg flex items-center justify-center">
-        <p className="text-gray-500">No stations assigned</p>
-      </div>
-    );
-  }
 
   return (
-    <>
-      <div className="h-96 rounded-lg overflow-hidden">
-        <MapContainer 
-          center={mapCenter} 
-          zoom={5} 
+    <div className="w-full h-full">
+      <div className="h-96 rounded-lg overflow-hidden border">
+        <MapContainer
+          center={mapCenter}
+          zoom={5}
           className="h-full w-full"
-          scrollWheelZoom={true}
+          scrollWheelZoom
         >
           <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            attribution='&copy; OpenStreetMap contributors'
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
-          
-          {stations.map(station => (
-            <Marker
-              key={station.id}
-              position={[
-                station.latitude || 20.5937,
-                station.longitude || 78.9629
-              ]}
-              icon={createCustomIcon(
-                getMarkerColor(station.alertLevel || 'normal')
-              )}
-            >
-              <Popup>
-                <div className="p-2">
-                  <h3 className="font-bold text-lg">
-                    {station.name || 'Unknown Station'}
-                  </h3>
 
-                  <p className="text-sm text-gray-600">
-                    {station.location || 'Unknown Location'}
-                  </p>
+          {/* ✅ ROBUST MARKER RENDERING */}
+          {stations.map((station) => {
+            const latitude =
+              station.latitude ?? station.lat ?? null;
+            const longitude =
+              station.longitude ?? station.lng ?? station.long ?? null;
 
-                  <div className="mt-2 space-y-1">
-                    <p className="text-sm">
-                      <span className="font-medium">Status:</span> 
-                      <span className={`ml-2 px-2 py-1 rounded text-xs ${
-                        (station.alertLevel || 'normal') === 'critical'
-                          ? 'bg-red-100 text-red-800'
-                          : (station.alertLevel || 'normal') === 'warning'
-                          ? 'bg-yellow-100 text-yellow-800'
-                          : 'bg-green-100 text-green-800'
-                      }`}>
-                        {station.alertLevel || 'normal'}
-                      </span>
+            if (latitude === null || longitude === null) return null;
+
+            return (
+              <Marker
+                key={station.id}
+                position={[latitude, longitude]}
+                icon={createCustomIcon(
+                  getMarkerColor(station.alertLevel || 'normal')
+                )}
+              >
+                <Popup>
+                  <div className="p-2">
+                    <h3 className="font-bold text-base">
+                      {station.name}
+                    </h3>
+
+                    <p className="text-sm text-gray-600">
+                      {station.location}
                     </p>
 
-                    <p className="text-sm">
-                      <span className="font-medium">Last Reading:</span> 
-                      <span className="ml-2">
-                        {station.lastReadingTime || 'Unknown'}
-                      </span>
+                    <p className="mt-2 text-xs">
+                      <span className="font-medium">Status:</span>{' '}
+                      {station.alertLevel || 'normal'}
                     </p>
+
+                    <button
+                      onClick={() =>
+                        navigate(`/ngo/water-stations/${station.id}`)
+                      }
+                      className="mt-3 text-blue-600 text-sm font-medium hover:underline"
+                    >
+                      View Details →
+                    </button>
                   </div>
-
-                  {/* ✅ REQUIRED NAVIGATION TO DETAILS PAGE */}
-                  <button
-                    onClick={() => navigate(`/ngo/station/${station.id}`)}
-                    className="mt-3 text-blue-600 text-sm font-medium hover:underline"
-                  >
-                    View Details →
-                  </button>
-                </div>
-              </Popup>
-            </Marker>
-          ))}
+                </Popup>
+              </Marker>
+            );
+          })}
         </MapContainer>
       </div>
-      
-      {/* Legend */}
-      <div className="mt-4 flex flex-wrap items-center gap-4">
-        <div className="flex items-center">
-          <div className="w-4 h-4 bg-green-500 rounded-full mr-2"></div>
-          <span className="text-sm">Normal</span>
+
+      {/* INFO MESSAGE */}
+      {stations.length === 0 && (
+        <p className="mt-3 text-center text-gray-500 text-sm">
+          No stations assigned
+        </p>
+      )}
+
+      {/* LEGEND */}
+      <div className="mt-4 flex flex-wrap justify-center gap-4 text-sm">
+        <div className="flex items-center gap-2">
+          <span className="w-3 h-3 rounded-full bg-green-500"></span>
+          Normal
         </div>
-        <div className="flex items-center">
-          <div className="w-4 h-4 bg-yellow-500 rounded-full mr-2"></div>
-          <span className="text-sm">Warning</span>
+        <div className="flex items-center gap-2">
+          <span className="w-3 h-3 rounded-full bg-yellow-500"></span>
+          Warning
         </div>
-        <div className="flex items-center">
-          <div className="w-4 h-4 bg-red-500 rounded-full mr-2"></div>
-          <span className="text-sm">Critical</span>
+        <div className="flex items-center gap-2">
+          <span className="w-3 h-3 rounded-full bg-red-500"></span>
+          Critical
         </div>
       </div>
-    </>
+    </div>
   );
 };
 

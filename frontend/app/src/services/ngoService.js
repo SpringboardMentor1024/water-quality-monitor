@@ -1,169 +1,86 @@
-// frontend/app/src/services/ngoService.js
-import api from './api';
-
-
-
-
+// src/services/ngoService.js
+import api from "./api";
 
 const ngoService = {
 
-  // ================= DASHBOARD =================
+  /* ================= DASHBOARD ================= */
   getDashboardData: async () => {
-    try {
-      const response = await api.get('/ngo/dashboard');
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching NGO dashboard data:', error);
-      throw error; // ❗ NO hardcoded fallback
-    }
+    const response = await api.get("/ngo/dashboard");
+    return response.data;
   },
 
-  // ================= PROJECTS =================
+  /* ================= PROJECTS ================= */
   getProjects: async () => {
-    try {
-      const response = await api.get('/ngo/projects');
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching NGO projects:', error);
-      throw error;
-    }
-  },
-
-
-  createProject: async (projectData) => {
-    const response = await api.post('/ngo/projects', projectData);
+    const response = await api.get("/ngo/projects");
     return response.data;
   },
 
-  updateProject: async (projectId, projectData) => {
-    const response = await api.put(`/ngo/projects/${projectId}`, projectData);
+  getProjectDetails: async (projectId) => {
+    const response = await api.get(`/ngo/projects/${projectId}/details`);
     return response.data;
   },
 
-  // ================= STATIONS =================
+  /* ================= STATIONS ================= */
   getAssignedStations: async (projectId = null) => {
-    try {
-      const params = projectId ? { project_id: projectId } : {};
-      const response = await api.get('/ngo/stations', { params });
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching NGO stations:', error);
-      throw error;
-    }
+    const params = projectId ? { project_id: projectId } : {};
+    const response = await api.get("/ngo/stations", { params });
+    return response.data;
   },
 
-  getStationDetails: async (stationId) => {
-    try {
-      const response = await api.get(`/ngo/stations/${stationId}`);
-      return response.data;
-    } catch (error) {
-      console.error(`Error fetching station ${stationId} details:`, error);
-      throw error;
-    }
+  getWaterStationDetails: async (stationId) => {
+    const response = await api.get(`/ngo/stations/${stationId}`);
+    return response.data;
   },
 
-  // ================= REPORTS =================
-  getStationReports: async (stationId, status = null) => {
-    try {
-      const params = status ? { status } : {};
-      const response = await api.get(`/ngo/stations/${stationId}/reports`, { params });
-      return response.data;
-    } catch (error) {
-      console.error(`Error fetching reports for station ${stationId}:`, error);
-      throw error;
-    }
+  /* ================= STATION PARAMETERS ================= */
+  getStationParameters: async (stationId) => {
+    const response = await api.get(`/ngo/stations/${stationId}/parameters`);
+    return response.data;
+  },
+
+  getStationReadings: async (stationId) => {
+    const response = await api.get(`/ngo/stations/${stationId}/readings`);
+    return response.data;
+  },
+
+  /* ================= REPORTS ================= */
+  getWaterStationReports: async (stationId) => {
+    const response = await api.get(
+      `/ngo/stations/${stationId}/reports`
+    );
+    return response.data;
+  },
+
+  submitWaterStationReport: async (payload) => {
+    /**
+     * payload = {
+     *   stationId,
+     *   description,
+     *   water_source
+     * }
+     */
+    const response = await api.post("/ngo/reports", payload);
+    return response.data;
   },
 
   updateReportStatus: async (reportId, status) => {
-    const response = await api.put(`/ngo/reports/${reportId}/status`, { status });
+    const response = await api.put(
+      `/ngo/reports/${reportId}/status`,
+      { status }
+    );
     return response.data;
   },
-
-  // ================= PREDICTIVE =================
-  getPredictiveData: async (stationId, parameter, days = 30) => {
-    try {
-      const response = await api.get(`/predictive/${stationId}`, {
-        params: { parameter, days }
-      });
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching predictive data:', error);
-      throw error;
-    }
-  },
-
-  getPredictiveAlerts: async () => {
-    try {
-      const response = await api.get('/predictive/alerts');
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching predictive alerts:', error);
-      throw error;
-    }
-  },
-
-  // ================= QUALITATIVE =================
-  getQualitativeAssessment: async (stationId) => {
-    try {
-      const response = await api.get(`/qualitative-assessment/${stationId}`);
-      return response.data;
-    } catch (error) {
-      console.error(`Error fetching qualitative assessment for station ${stationId}:`, error);
-      throw error;
-    }
-  },
-
-  submitAssessment: async (stationId, assessmentData) => {
-    const response = await api.post(`/qualitative-assessment/${stationId}`, assessmentData);
-    return response.data;
-  },
-
-  // ================= COLLABORATIONS =================
-  getCollaborations: async () => {
-    try {
-      const response = await api.get('/ngo/collaborations');
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching NGO collaborations:', error);
-      throw error;
-    }
-  },
-
-  // ================= ANALYTICS =================
-  getProjectPerformance: async (projectId) => {
-    try {
-      const response = await api.get(`/ngo/projects/${projectId}/performance`);
-      return response.data;
-    } catch (error) {
-      console.error(`Error fetching performance for project ${projectId}:`, error);
-      throw error;
-    }
-  },
-
-  getStationStatistics: async (stationId, period = 'month') => {
-    try {
-      const response = await api.get(`/ngo/stations/${stationId}/statistics`, {
-        params: { period }
-      });
-      return response.data;
-    } catch (error) {
-      console.error(`Error fetching statistics for station ${stationId}:`, error);
-      throw error;
-    }
-    
-  },
-  // ================= PROJECT DETAILS =================
-getProjectDetails: async (projectId) => {
+  // ================= SUBMIT REPORT =================
+submitWaterReport: async (payload) => {
   try {
-    const response = await api.get(`/ngo/projects/${projectId}/details`);
+    const response = await api.post("/ngo/reports", payload);
     return response.data;
   } catch (error) {
-    console.error(`Error fetching project ${projectId} details:`, error);
+    console.error("Report submission failed:", error);
     throw error;
   }
 },
 
-  
 
 };
 
