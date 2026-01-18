@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Activity, Info, Zap, ShieldAlert, Users, MapPin, Droplets } from "lucide-react";
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { ArrowLeft, Activity, Info, Zap, MapPin, Droplets } from "lucide-react";
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { getStationDetails, getStationSeries } from "../utils/api";
 
 export default function StationReadings() {
@@ -20,10 +20,12 @@ export default function StationReadings() {
 
         if (seriesData?.series) {
           const s = seriesData.series;
-          const formatted = seriesData.timestamps.map((t, idx) => ({
+          // 🔴 SYNC FIX: Map backend keys to history state
+          // Backend uses 'do' for Oxygen and 'turbidity' for Turbidity
+          const formatted = (seriesData.timestamps || []).map((t, idx) => ({
             time: new Date(t).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
             ph: s.ph?.[idx] ?? 0,
-            do: s.do?.[idx] ?? 0,
+            do: s.do?.[idx] ?? 0, 
             turb: s.turbidity?.[idx] ?? 0
           }));
           setHistory(formatted);
@@ -37,12 +39,27 @@ export default function StationReadings() {
     loadData();
   }, [id]);
 
+  /**
+   * Helper to get the latest value for snapshots
+   * Maps short frontend keys to full backend schema keys
+   */
   const getVal = (k) => {
-    const realTime = details?.latest_readings?.[k];
+    const keyMap = { 
+        do: 'dissolved_oxygen', 
+        turb: 'turbidity', 
+        ph: 'ph' 
+    };
+    const backendKey = keyMap[k] || k;
+
+    // Check real-time snapshot first
+    const realTime = details?.latest_readings?.[backendKey];
     if (realTime && realTime !== 0) return realTime;
+
+    // Fallback to the last point in history if real-time is null
     if (history.length > 0) {
+      const histKey = k; // matches formatted array keys: ph, do, turb
       for (let i = history.length - 1; i >= 0; i--) {
-        if (history[i][k] && history[i][k] !== 0) return history[i][k];
+        if (history[i][histKey] && history[i][histKey] !== 0) return history[i][histKey];
       }
     }
     return 0.0;
@@ -66,7 +83,7 @@ export default function StationReadings() {
         <ArrowLeft className="w-4 h-4 group-hover:scale-125 transition-transform" /> Back to Overview
       </button>
 
-      {/* HERO CARD - FIXED ALIGNMENT */}
+      {/* HERO CARD */}
       <div className="bg-[#1e3a8a] rounded-[30px] md:rounded-[50px] p-8 md:p-12 text-white shadow-2xl flex flex-col lg:flex-row justify-between items-stretch lg:items-center gap-8 md:gap-12 relative overflow-hidden">
         <div className="z-10 flex-1">
           <h1 className="text-4xl md:text-7xl font-black mb-6 tracking-tighter uppercase leading-none break-words">
@@ -83,20 +100,6 @@ export default function StationReadings() {
             <div className="flex items-center gap-4">
               <Zap className="text-yellow-400 w-5 h-5" />
               <div>
-                <p className="text-[9px] font-black uppercase opacity-40">Coordinates</p>
-                <p className="text-sm font-bold">{details.latitude}, {details.longitude}</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-4">
-              <Droplets className="text-cyan-400 w-5 h-5" />
-              <div>
-                <p className="text-[9px] font-black uppercase opacity-40">Managed By</p>
-                <p className="text-sm font-bold">{details.managed_by || "US EPA"}</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-4">
-              <Activity className="text-purple-400 w-5 h-5" />
-              <div>
                 <p className="text-[9px] font-black uppercase opacity-40">Station ID</p>
                 <p className="text-sm font-bold">STN-{details.id}</p>
               </div>
@@ -104,7 +107,7 @@ export default function StationReadings() {
           </div>
         </div>
 
-        {/* LATEST READINGS MINI-CARD - ALIGNMENT FIXED */}
+        {/* LIVE SNAPSHOT MINI-CARD */}
         <div className="bg-white/10 backdrop-blur-3xl rounded-[35px] p-8 border border-white/20 z-10 shadow-2xl w-full lg:w-[400px] flex flex-col justify-center">
           <p className="text-[10px] font-black uppercase mb-8 tracking-[0.3em] opacity-40">Live Snapshot</p>
           <div className="space-y-6">
@@ -113,23 +116,22 @@ export default function StationReadings() {
             <SnapshotRow label="Oxygen" val={getVal('do').toFixed(2)} unit="mg/L" isLast />
           </div>
         </div>
-
-        <div className="hidden xl:block absolute -right-16 -bottom-16 text-[30rem] font-black text-white/5 italic pointer-events-none select-none">
-          {details.id}
-        </div>
       </div>
 
+      {/* SENSOR ANALYTICS BOXES */}
       <section>
         <h3 className="text-[10px] md:text-[11px] font-black text-slate-400 uppercase mb-8 tracking-[0.4em] flex items-center gap-3">
           <span className="h-px w-10 bg-slate-200"></span> Sensor Analytics
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <MetricBox title="PH LEVEL" val={getVal('ph')} unit="pH" color="green" />
+          {/* 🔴 SYNC FIX: Ensure Oxygen saturation uses 'do' key */}
           <MetricBox title="DISSOLVED OXYGEN" val={getVal('do')} unit="mg/L" color="blue" />
-          <MetricBox title="TURBIDITY" val={getVal('turb')} unit="NTU" status="WARNING" color="orange" />
+          <MetricBox title="TURBIDITY" val={getVal('turb')} unit="NTU" color="orange" />
         </div>
       </section>
 
+      {/* 24H TELEMETRY CHARTS */}
       <section className="pb-10">
         <h3 className="text-[10px] md:text-[11px] font-black text-slate-400 uppercase mb-8 tracking-[0.4em] flex items-center gap-3">
           <span className="h-px w-10 bg-slate-200"></span> 24H Telemetry
@@ -137,6 +139,7 @@ export default function StationReadings() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <AdvancedChart title="pH Dynamics" data={history} k="ph" color="#22c55e" unit="pH units" />
           <AdvancedChart title="Turbidity Levels" data={history} k="turb" color="#f97316" unit="NTU" />
+          {/* 🔴 SYNC FIX: Chart data key set to 'do' to match history array mapping */}
           <AdvancedChart title="Oxygen Saturation" data={history} k="do" color="#3b82f6" unit="mg/L" />
         </div>
       </section>
@@ -151,11 +154,11 @@ const SnapshotRow = ({ label, val, unit, isLast }) => (
   </div>
 );
 
-const MetricBox = ({ title, val, unit, status = "NORMAL", color }) => (
-  <div className="bg-white p-12 rounded-[45px] shadow-sm border border-slate-100 flex flex-col justify-between h-64 hover:shadow-xl hover:-translate-y-1 transition-all duration-500 group">
+const MetricBox = ({ title, val, unit, color }) => (
+  <div className="bg-white p-12 rounded-[45px] shadow-sm border border-slate-100 flex flex-col justify-between h-64 hover:shadow-xl transition-all duration-500 group">
     <div className="flex justify-between items-start">
       <span className="text-[9px] font-black text-slate-300 uppercase tracking-widest">{title}</span>
-      <div className={`p-1.5 rounded-full ${color === 'green' ? 'bg-green-50 text-emerald-600' : 'bg-orange-50 text-orange-600'}`}>
+      <div className={`p-1.5 rounded-full ${color === 'green' ? 'bg-green-50 text-emerald-600' : color === 'blue' ? 'bg-blue-50 text-blue-600' : 'bg-orange-50 text-orange-600'}`}>
         <Activity className="w-3 h-3" />
       </div>
     </div>
@@ -186,8 +189,8 @@ const AdvancedChart = ({ title, data, k, color, unit }) => (
           </defs>
           <XAxis dataKey="time" angle={-45} textAnchor="end" interval="preserveStartEnd" tick={{ fill: '#94a3b8', fontSize: 9, fontWeight: 900 }} axisLine={false} tickLine={false} dy={10} />
           <YAxis fontSize={9} fontWeight="black" stroke="#cbd5e1" axisLine={false} tickLine={false} />
-          <Tooltip contentStyle={{ borderRadius: '20px', border: 'none', boxShadow: '0 20px 40px -10px rgba(0,0,0,0.1)', padding: '12px' }} itemStyle={{ fontWeight: 'black', fontSize: '11px', textTransform: 'uppercase' }} />
-          <Area type="monotone" dataKey={k} stroke={color} strokeWidth={4} fillOpacity={1} fill={`url(#gradient${k})`} dot={{ r: 3, fill: color, strokeWidth: 0 }} activeDot={{ r: 6, strokeWidth: 0 }} />
+          <Tooltip contentStyle={{ borderRadius: '20px', border: 'none', boxShadow: '0 20px 40px -10px rgba(0,0,0,0.1)', padding: '12px' }} />
+          <Area type="monotone" dataKey={k} stroke={color} strokeWidth={4} fillOpacity={1} fill={`url(#gradient${k})`} dot={{ r: 3, fill: color, strokeWidth: 0 }} />
         </AreaChart>
       </ResponsiveContainer>
     </div>

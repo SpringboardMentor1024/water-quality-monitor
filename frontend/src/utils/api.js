@@ -1,5 +1,9 @@
 import axios from "axios";
 
+/**
+ * Global API Configuration
+ * Standardized to connect with FastAPI Backend (Milestone 3 Sync)
+ */
 const api = axios.create({
   baseURL: "http://127.0.0.1:8000",
   headers: {
@@ -7,8 +11,11 @@ const api = axios.create({
   },
 });
 
-/* ================= AUTH TOKEN ================= */
-// Attach JWT token automatically
+/* ================= AUTH TOKEN INTERCEPTOR ================= */
+/**
+ * Automatically attaches the JWT token from localStorage to every request.
+ * Uses 'authToken' key to match Login.jsx and App.js logic.
+ */
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem("authToken");
   if (token) {
@@ -17,94 +24,118 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-/* =====================
-   AUTH
-===================== */
+/* ==========================================
+   1. AUTHENTICATION (auth.py)
+   ========================================== */
 export const loginUser = async (email, password) => {
   const res = await api.post("/auth/login", { email, password });
   return res.data;
 };
 
-export const registerUser = async (data) => {
-  const res = await api.post("/auth/register", data);
+export const registerUser = async (userData) => {
+  const res = await api.post("/auth/register", userData);
   return res.data;
 };
 
-/* =====================
-   USERS
-===================== */
+/* ==========================================
+   2. USERS (users.py)
+   ========================================== */
+/**
+ * SYNC FIX: Updated prefix from /users/users/ to /users/
+ */
 export const getAllUsers = async () => {
-  const res = await api.get("/users/users/");
+  const res = await api.get("/users/");
   return res.data;
 };
 
-/* =====================
-   STATIONS
-===================== */
+export const getUserProfile = async (userId) => {
+  const res = await api.get(`/users/${userId}`);
+  return res.data;
+};
+
+/* ==========================================
+   3. STATIONS (stations.py)
+   ========================================== */
 export const getStations = async () => {
   const res = await api.get("/stations/");
   return res.data;
 };
 
-export const getStationDetails = async (stationId) => {
-  const res = await api.get(`/stations/${stationId}`);
+export const getStationDetails = async (id) => {
+  const res = await api.get(`/stations/${id}`);
   return res.data;
 };
 
-export const getStationSeries = async (stationId, points = 12) => {
-  const res = await api.get(
-    `/stations/${stationId}/series?points=${points}`
-  );
+/**
+ * Fetches time-series data for Recharts
+ * Backend provides 'ph', 'turbidity', and 'do' keys.
+ */
+export const getStationSeries = async (id, points = 30) => {
+  const res = await api.get(`/stations/${id}/series?points=${points}`);
   return res.data;
 };
 
-/* =====================
-   ALERTS (Milestone 3)
-===================== */
-// Get all alerts
-export const getAlerts = async (limit = 50, location = null) => {
-  let url = `/alerts/?limit=${limit}`;
-  if (location) url += `&location=${location}`;
-
-  const res = await api.get(url);
+/* ==========================================
+   4. ALERTS & NOTIFICATIONS (alerts.py)
+   ========================================== */
+/**
+ * Fetches all alerts for the dashboard.
+ * Backend sorts these by 'created_at' DESC.
+ */
+export const getAlerts = async () => {
+  const res = await api.get("/alerts/");
   return res.data;
 };
 
-// Create new alert
-export const createAlert = async (data) => {
-  const res = await api.post("/alerts/", data);
+/**
+ * Triggers AI Analysis for a specific station.
+ */
+export const triggerAIAnalysis = async (stationId) => {
+  const res = await api.post(`/alerts/analyze/${stationId}`);
   return res.data;
 };
 
-// Acknowledge alert
-export const acknowledgeAlert = async (alertId) => {
-  const res = await api.post(`/alerts/${alertId}/acknowledge`);
+export const createAlert = async (alertData) => {
+  const res = await api.post("/alerts/", alertData);
   return res.data;
 };
 
-// Delete alert
 export const deleteAlert = async (alertId) => {
   await api.delete(`/alerts/${alertId}`);
 };
 
-/* =====================
-   USER REPORTS
-===================== */
-export const getMyReports = async () => {
-  const res = await api.get("/reports/my-reports/");
+/* ==========================================
+   5. USER REPORTS (reports.py)
+   ========================================== */
+/**
+ * SYNC FIX: Updated to match simple /reports endpoint.
+ */
+export const getAllReports = async () => {
+  const res = await api.get("/reports");
   return res.data;
 };
 
-export const createReport = async (data) => {
-  const res = await api.post("/reports/", data, {
-    headers: {
-      "Content-Type": "multipart/form-data",
-    },
-  });
+export const createReport = async (reportData) => {
+  // Uses standard JSON as per your report_schema.py
+  const res = await api.post("/reports", reportData);
   return res.data;
 };
 
-/* =====================
-   DEFAULT EXPORT
-===================== */
+/* ==========================================
+   6. EXTERNAL DATA (gov.py)
+   ========================================== */
+export const fetchGovWaterQuality = async (location) => {
+  const res = await api.get(`/external/fetch-water-quality?location_value=${location}`);
+  return res.data;
+};
+
+// Milestone 4 NGO Specific Endpoints
+export const getNGOStationSeries = async (id, timeframe = 'hourly') => {
+  return await api.get(`/stations/${id}/series?timeframe=${timeframe}`);
+};
+
+export const updateReportStatus = async (reportId, status, notes) => {
+  return await api.patch(`/reports/${reportId}`, { status, moderation_notes: notes });
+};
+
 export default api;
