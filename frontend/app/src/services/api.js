@@ -1,13 +1,49 @@
+// src/pages/services/api.js
 // frontend/app/src/services/api.js
 import axios from "axios";
 
 const BASE_URL = "http://127.0.0.1:8000";
 
+// Create axios instance
+const api = axios.create({
+  baseURL: BASE_URL,
+  headers: {
+    "Content-Type": "application/json",
+  },
+});
+
+// Request interceptor for adding auth token
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// Response interceptor for handling errors
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      // Handle unauthorized - redirect to login
+      localStorage.removeItem("token");
+      window.location.href = "/login";
+    }
+    return Promise.reject(error);
+  }
+);
+
 // -----------------------------
 // Water Stations
 // -----------------------------
 export const fetchStations = async () => {
-  return axios.get(`${BASE_URL}/stations`);
+  return api.get("/stations");
 };
 
 // -----------------------------
@@ -29,14 +65,14 @@ export async function getWhoWaterData(indicator, country, limit) {
 // Station Readings (single)
 // -----------------------------
 export const fetchStationReadings = async (stationId) => {
-  return axios.get(`${BASE_URL}/readings/${stationId}`);
+  return api.get(`/readings/${stationId}`);
 };
 
 // -----------------------------
 // Station Readings (BATCH) ✅ NEW
 // -----------------------------
 export const fetchBatchReadings = async (stationIds) => {
-  return axios.post(`${BASE_URL}/readings/batch`, stationIds);
+  return api.post("/readings/batch", stationIds);
 };
 
 // -----------------------------
@@ -44,10 +80,7 @@ export const fetchBatchReadings = async (stationIds) => {
 // -----------------------------
 export const fetchCpcbReadings = async () => {
   try {
-    const token = localStorage.getItem("token");
-    const res = await axios.get(`${BASE_URL}/cpcb/readings`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    const res = await api.get("/cpcb/readings");
     return res.data;
   } catch (error) {
     console.error("CPCB fetch error:", error);
@@ -60,7 +93,7 @@ export const fetchCpcbReadings = async () => {
 // -----------------------------
 export const fetchWqpResults = async (state, page = 1, page_size = 20) => {
   try {
-    const res = await axios.get(`${BASE_URL}/wqp/results`, {
+    const res = await api.get("/wqp/results", {
       params: { state, page, page_size },
     });
     return res.data;
@@ -72,7 +105,7 @@ export const fetchWqpResults = async (state, page = 1, page_size = 20) => {
 
 export const fetchNearbyStations = async (lat, lon, radius = 10, limit = 20) => {
   try {
-    const res = await axios.get(`${BASE_URL}/wqp/nearby`, {
+    const res = await api.get("/wqp/nearby", {
       params: { lat, lon, radius, limit },
     });
     return res.data;
@@ -81,3 +114,18 @@ export const fetchNearbyStations = async (lat, lon, radius = 10, limit = 20) => 
     return [];
   }
 };
+
+// -----------------------------
+// Auth Helper
+// -----------------------------
+export const getAuthHeaders = () => {
+  const token = localStorage.getItem("token");
+  return {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  };
+};
+
+// Export the axios instance
+export default api;

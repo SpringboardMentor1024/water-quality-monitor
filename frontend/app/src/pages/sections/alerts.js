@@ -12,15 +12,38 @@ import {
   Legend
 } from "recharts";
 
-
 import {
   FaBell, FaExclamationTriangle,
   FaSearch, FaClock,
   FaEye, FaCheckCircle, FaTimes
 } from "react-icons/fa";
 
-
 const ALERT_API = "http://127.0.0.1:8000/alerts";
+/* 🔮 DUMMY PREDICTIVE ALERTS (FRONTEND ONLY) */
+const DUMMY_PREDICTIVE_ALERTS = [
+  {
+    id: "PA-1",
+    parameter: "pH",
+    message: "pH levels predicted to exceed safe threshold",
+    severity: "High",
+    window: "Next 24 hrs"
+  },
+  {
+    id: "PA-2",
+    parameter: "Turbidity",
+    message: "Upward turbidity trend indicates contamination risk",
+    severity: "Critical",
+    window: "Next 12 hrs"
+  },
+  {
+    id: "PA-3",
+    parameter: "Dissolved Oxygen",
+    message: "DO levels declining – possible hypoxic conditions",
+    severity: "High",
+    window: "Next 48 hrs"
+  }
+];
+
 
 /* ==============================
    MAIN PAGE
@@ -31,14 +54,25 @@ export default function Alerts() {
   const [activeTab, setActiveTab] = useState("active");
   const [selectedAlert, setSelectedAlert] = useState(null);
   const [showTrigger, setShowTrigger] = useState(false);
+  const [predictiveAlerts, setPredictiveAlerts] = useState([]);
   const prevCount = useRef(0);
 
-  useEffect(() => {
-    loadAlerts();
-    const interval = setInterval(loadAlerts, 10000);
-    return () => clearInterval(interval);
-  }, []);
+  /* 🔮 FETCH PREDICTIVE ALERTS FROM MODEL (BACKEND) 
+  const loadPredictiveAlerts = async () => {
+    try {
+      const res = await axios.get(`${ALERT_API}/predictive`);
+      setPredictiveAlerts(res.data || []);
+    } catch (err) {
+      console.error("Predictive alerts not available");
+    }
+  };*/
+  const loadPredictiveAlerts = () => {
+  // Frontend demo data only (backend-independent)
+  setPredictiveAlerts(DUMMY_PREDICTIVE_ALERTS);
+};
 
+
+  /* FETCH ACTIVE + HISTORY ALERTS */
   const loadAlerts = async () => {
     const [activeRes, historyRes] = await Promise.all([
       axios.get(ALERT_API),
@@ -54,6 +88,18 @@ export default function Alerts() {
     setAlerts(activeRes.data.map(mapAlert));
     setHistory(historyRes.data.map(mapAlert));
   };
+
+  useEffect(() => {
+    loadAlerts();
+    loadPredictiveAlerts();
+
+    const interval = setInterval(() => {
+      loadAlerts();
+      loadPredictiveAlerts();
+    }, 10000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   const handleResolve = async (alert) => {
     await axios.put(`${ALERT_API}/${alert.id}/resolve`);
@@ -99,6 +145,7 @@ export default function Alerts() {
         <Tab label="Resolved Alerts (History)" active={activeTab === "history"} onClick={() => setActiveTab("history")} />
         <Tab label="Alert Trends & Historical Analysis" active={activeTab === "trends"} onClick={() => setActiveTab("trends")} />
         <Tab label="Alert Trigger Conditions" active={activeTab === "triggers"} onClick={() => setActiveTab("triggers")} />
+        <Tab label="Predictive Alerts" active={activeTab === "predictive"} onClick={() => setActiveTab("predictive")} />
       </div>
 
       {activeTab === "active" && (
@@ -113,13 +160,41 @@ export default function Alerts() {
 
       {activeTab === "triggers" && <TriggersInfo />}
 
+      {activeTab === "predictive" && (
+        <div className="bg-white p-6 rounded border border-slate-300">
+          <h2 className="text-xl font-extrabold text-blue-900 mb-4">
+            Predictive Alerts (Model Forecast)
+          </h2>
+
+          <table className="w-full">
+            <thead className="bg-blue-100 text-blue-900 font-bold">
+              <tr>
+                <th className="p-4 text-left">Parameter</th>
+                <th className="p-4 text-left">Prediction</th>
+                <th className="p-4 text-center">Severity</th>
+                <th className="p-4 text-center">Expected Window</th>
+              </tr>
+            </thead>
+            <tbody>
+              {predictiveAlerts.map(p => (
+                <tr key={p.id} className="border-t border-slate-300">
+                  <td className="p-4 font-bold">{p.parameter}</td>
+                  <td className="p-4">{p.message}</td>
+                  <td className="p-4 text-center font-bold">{p.severity}</td>
+                  <td className="p-4 text-center">{p.window}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
       {selectedAlert && (
         <AlertModal alert={selectedAlert} onClose={() => setSelectedAlert(null)} />
       )}
     </div>
   );
 }
-
 /* ==============================
    ALERT MODAL  ✅ FIXED
 ================================ */

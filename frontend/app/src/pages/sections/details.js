@@ -8,7 +8,8 @@ import {
   FaClock,
   FaMapMarkerAlt,
   FaBuilding,
-  FaExclamationTriangle
+  FaExclamationTriangle,
+  FaFileAlt
 } from "react-icons/fa";
 
 /* =================================================
@@ -25,6 +26,26 @@ const mockStation = {
 
 // PARAMETERS TO DISPLAY (UI)
 const PARAMETERS = ["pH", "turbidity", "DO", "temperature", "lead", "arsenic", "iron"];
+
+/* =================================================
+   DUMMY REPORTS (Report Management – Milestone 4)
+================================================= */
+const dummyReports = [
+  {
+    id: 1,
+    title: "High Turbidity Observed",
+    status: "Pending",
+    submitted_by: "Citizen A",
+    date: "2026-01-10"
+  },
+  {
+    id: 2,
+    title: "Unusual Odor in Water",
+    status: "Verified",
+    submitted_by: "NGO Volunteer",
+    date: "2026-01-12"
+  }
+];
 
 export default function Details({ stationId, goToReports }) {
   const [showTrends, setShowTrends] = useState(false);
@@ -61,7 +82,6 @@ export default function Details({ stationId, goToReports }) {
                 recorded_at: results[0].value.data.recorded_at
               });
             }
-
             if (results[1].status === "fulfilled") {
               collected.push({
                 parameter: "do",
@@ -69,7 +89,6 @@ export default function Details({ stationId, goToReports }) {
                 recorded_at: results[1].value.data.recorded_at
               });
             }
-
             if (results[2].status === "fulfilled") {
               collected.push({
                 parameter: "temperature",
@@ -80,16 +99,11 @@ export default function Details({ stationId, goToReports }) {
 
             setReadings(collected);
           })
-          .catch((err) => {
-            console.error("Failed to fetch USGS live data", err);
-            setReadings([]);
-          })
+          .catch(() => setReadings([]))
           .finally(() => setLoading(false));
       };
 
       fetchUsgsData();
-
-      // 🔁 Auto-refresh every 30 seconds
       const interval = setInterval(fetchUsgsData, 30000);
       return () => clearInterval(interval);
     }
@@ -98,36 +112,12 @@ export default function Details({ stationId, goToReports }) {
     setLoading(true);
     fetchStationReadings(stationId)
       .then((res) => setReadings(res.data || []))
-      .catch((err) => {
-        console.error("Failed to fetch DB readings", err);
-        setReadings([]);
-      })
+      .catch(() => setReadings([]))
       .finally(() => setLoading(false));
   }, [stationId]);
 
   /* =================================================
-     ALERTS (USGS ONLY)
-  ================================================= */
-  useEffect(() => {
-    if (!stationId || !String(stationId).startsWith("USGS-")) return;
-
-    readings.forEach((r) => {
-      const p = r.parameter?.toLowerCase();
-
-      if (p === "ph" && (r.value < 6.5 || r.value > 8.5)) {
-        alert("⚠️ USGS Alert: Unsafe pH level detected");
-      }
-      if (p === "do" && r.value < 5) {
-        alert("⚠️ USGS Alert: Low Dissolved Oxygen detected");
-      }
-      if (p === "temperature" && r.value > 30) {
-        alert("⚠️ USGS Alert: High Water Temperature detected");
-      }
-    });
-  }, [readings, stationId]);
-
-  /* =================================================
-     BUILD LATEST READING PER PARAMETER (FIXED)
+     BUILD LATEST READING PER PARAMETER
   ================================================= */
   const latestReadings = {};
   PARAMETERS.forEach((param) => {
@@ -138,12 +128,11 @@ export default function Details({ stationId, goToReports }) {
   });
 
   /* =================================================
-     GROUP READINGS BY PARAMETER (FOR TRENDS) - FIXED
+     GROUP READINGS FOR TRENDS
   ================================================= */
   const groupedReadings = readings.reduce((acc, r) => {
     const key = r.parameter?.toLowerCase();
     if (!key) return acc;
-
     if (!acc[key]) acc[key] = [];
     acc[key].push({
       time: r.recorded_at
@@ -154,7 +143,7 @@ export default function Details({ stationId, goToReports }) {
     return acc;
   }, {});
 
-  if (stationId === undefined || stationId === null) {
+  if (!stationId) {
     return (
       <div className="h-full flex items-center justify-center p-6">
         <p className="text-gray-400">Select a station from the map</p>
@@ -162,16 +151,14 @@ export default function Details({ stationId, goToReports }) {
     );
   }
 
-  const isUSGS = String(stationId).startsWith("USGS-");
-
   return (
     <div className="h-full overflow-y-auto bg-gray-50">
       <div className="p-4 md:p-6 max-w-6xl mx-auto">
 
-        {/* HEADER */}
+        {/* ================= HEADER ================= */}
         <div className="bg-white rounded-lg border p-6 mb-6">
           <h1 className="text-2xl font-bold text-gray-800">
-            {isUSGS ? "USGS Live Water Monitoring Station" : mockStation.name}
+            {mockStation.name}
           </h1>
 
           <div className="flex flex-wrap gap-4 text-gray-600 mt-2">
@@ -182,7 +169,7 @@ export default function Details({ stationId, goToReports }) {
               <FaBuilding /> {mockStation.managed_by}
             </span>
             <span className="flex items-center gap-2">
-              <FaClock /> Updated Just now
+              <FaClock /> Updated {mockStation.lastUpdated}
             </span>
           </div>
 
@@ -194,18 +181,10 @@ export default function Details({ stationId, goToReports }) {
               <FaChartLine className="inline mr-2" />
               {showTrends ? "Hide Trends" : "View Trends"}
             </button>
-
-            <button
-              onClick={goToReports}
-              className="px-4 py-2 bg-yellow-600 text-white rounded"
-            >
-              <FaExclamationTriangle className="inline mr-2" />
-              View Reports
-            </button>
           </div>
         </div>
 
-        {/* READINGS */}
+        {/* ================= READINGS ================= */}
         <div className="bg-white rounded-lg border p-6 mb-6">
           <h2 className="text-xl font-bold text-gray-800 mb-4">
             Live Water Quality Readings
@@ -215,24 +194,13 @@ export default function Details({ stationId, goToReports }) {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {Object.entries(latestReadings).map(([param, r]) => (
-              <div
-                key={param}
-                className="p-4 border rounded bg-white text-gray-800"
-              >
-                <div className="flex items-center gap-3 mb-2">
+              <div key={param} className="p-4 border rounded">
+                <div className="flex items-center gap-2 mb-2">
                   <FaFlask />
-                  <h3 className="font-bold text-gray-700">{param}</h3>
+                  <h3 className="font-bold">{param}</h3>
                 </div>
-
-                <p className="text-3xl font-bold text-black">
+                <p className="text-2xl font-bold">
                   {r ? r.value : "—"}
-                </p>
-
-                <p className="text-xs text-gray-500 mt-1">
-                  Recorded at:{" "}
-                  {r?.recorded_at
-                    ? new Date(r.recorded_at).toLocaleString()
-                    : "—"}
                 </p>
               </div>
             ))}
@@ -252,6 +220,43 @@ export default function Details({ stationId, goToReports }) {
             </div>
           )}
         </div>
+
+        {/* ================= REPORT MANAGEMENT ================= */}
+        <div className="bg-white rounded-lg border p-6">
+          <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+            <FaFileAlt /> Reports & Observations
+          </h2>
+
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-100">
+              <tr>
+                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                  Title
+                </th>
+                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                  Submitted By
+                </th>
+                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                  Status
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y">
+              {dummyReports.map((r) => (
+                <tr key={r.id}>
+                  <td className="px-4 py-2">{r.title}</td>
+                  <td className="px-4 py-2">{r.submitted_by}</td>
+                  <td className="px-4 py-2">
+                    <span className="px-2 py-1 text-xs rounded bg-yellow-100 text-yellow-700">
+                      {r.status}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
       </div>
     </div>
   );

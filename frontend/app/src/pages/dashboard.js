@@ -1,6 +1,7 @@
+// pages/dashboard.js
 // frontend/app/src/pages/dashboard.js
 import React, { useState, useEffect } from "react";
-import { FaBars, FaUserCircle, FaTimes, FaWater, FaExclamationTriangle, FaClipboardList, FaFlask, FaChartLine, FaMapMarkerAlt, FaSignOutAlt, FaUser, FaKey, FaFilter, FaGlobe } from "react-icons/fa";
+import { FaBars, FaUserCircle, FaTimes, FaWater, FaExclamationTriangle, FaClipboardList, FaFlask, FaChartLine, FaMapMarkerAlt, FaSignOutAlt, FaUser, FaKey, FaFilter, FaGlobe, FaHandsHelping } from "react-icons/fa"; // Added FaHandsHelping
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { ToastContainer, toast } from "react-toastify";
@@ -117,7 +118,7 @@ const StatsPanel = ({ stats, onFilter, hoveredStation }) => (
 );
 
 /* =========================
-   Sidebar - Enhanced
+   Sidebar - Enhanced with NGO Dashboard
 ========================= */
 const Sidebar = ({ isOpen, toggle, setActiveSection, activeSection }) => {
   const menuItems = [
@@ -130,6 +131,7 @@ const Sidebar = ({ isOpen, toggle, setActiveSection, activeSection }) => {
     { name: "CPCB", icon: <FaClipboardList /> },
     { name: "WQP", icon: <FaFlask /> },
     { name: "WHO", icon: <FaGlobe /> },
+    { name: "NGO Dashboard", icon: <FaHandsHelping /> }, // ✅ NEW NGO Dashboard
   ];
 
   return (
@@ -176,7 +178,11 @@ const Sidebar = ({ isOpen, toggle, setActiveSection, activeSection }) => {
                 }`}
                 onClick={() => {
                   setActiveSection(item.name);
-                  toggle();
+                  if (item.name === "NGO Dashboard") {
+                    window.location.href = "/ngo-dashboard"; // Redirect to NGO Dashboard
+                  } else {
+                    toggle();
+                  }
                 }}
               >
                 <div className={`p-2 rounded-lg ${activeSection === item.name ? 'bg-blue-500/30' : 'bg-gray-800'}`}>
@@ -270,6 +276,7 @@ const Dashboard = () => {
       "CPCB": "CPCB Dashboard",
       "WQP": "WQP Dashboard",
       "WHO": "WHO Water Data",
+      "NGO Dashboard": "NGO Management Dashboard", // ✅ Added
     };
 
     const sectionIcons = {
@@ -282,6 +289,7 @@ const Dashboard = () => {
       "CPCB": <FaClipboardList />,
       "WQP": <FaFlask />,
       "WHO": <FaGlobe />,
+      "NGO Dashboard": <FaHandsHelping />, // ✅ Added
     };
 
     switch (activeSection) {
@@ -294,6 +302,10 @@ const Dashboard = () => {
       case "CPCB": return <CpcbDashboard />;
       case "WQP": return <WqpDashboard />;
       case "WHO": return <WhoDashboard />;
+      case "NGO Dashboard": 
+        // Redirect to NGO Dashboard page
+        window.location.href = "/ngo-dashboard";
+        return null;
       default: return <MapView filter={filter} onHoverStation={setHoveredStation} />;
     }
   };
@@ -328,9 +340,7 @@ const Dashboard = () => {
       {/* Main Content */}
       <div className="flex-1 flex flex-col p-2 md:p-3 md:ml-0 overflow-hidden">
         {/* Header */}
-        {/* Header */}
-          <div className="flex justify-between items-center mb-1 relative z-[10000]">
-
+        <div className="flex justify-between items-center mb-1 relative z-[10000]">
           <div className="hidden md:block">
             <h1 className="text-lg font-bold bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
               Water Quality Dashboard
@@ -365,8 +375,7 @@ const Dashboard = () => {
                 <div
                   className="absolute right-0 top-10 bg-gray-800/95 backdrop-blur-lg rounded-lg shadow-2xl border border-gray-700 w-44 z-[9999] overflow-hidden"
                   onClick={(e) => e.stopPropagation()}
-            >
-
+                >
                   <div className="p-2 border-b border-gray-700">
                     <p className="font-medium text-xs">{userName}</p>
                     <p className="text-xs text-gray-400">waterwatch@admin.com</p>

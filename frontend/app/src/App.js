@@ -1,3 +1,4 @@
+// App.js
 // frontend/app/src/App.js
 import React from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
@@ -17,7 +18,10 @@ import CpcbDashboard from "./pages/CpcbDashboard"; // CPCB
 import WqpDashboard from "./pages/WqpDashboard";   // WQP
 import WhoDashboard from "./pages/WhoDashboard"; // NEW
 
-
+/* ✅ NGO IMPORTS FOR MILESTONE 4 */
+import NGODashboard from "./pages/NGODashboard";
+import NGOStationDetail from "./pages/NGOStationDetail";
+import ProjectDetails from "./pages/ProjectDetails";
 import "./App.css";
 
 // Utility function to check token
@@ -28,6 +32,7 @@ function App() {
     <Router>
       <Routes>
         <Route path="/" element={<Home />} />
+        <Route path="/ngo/project/:projectId" element={<ProjectDetails />} />
 
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
@@ -75,6 +80,19 @@ function App() {
         <Route
           path="/wqp"
           element={isAuthenticated() ? <WqpDashboard /> : <Navigate to="/login" replace />}
+        />
+
+        {/* =====================
+            NGO ROUTES FOR MILESTONE 4
+        ===================== */}
+        <Route
+          path="/ngo-dashboard"
+          element={isAuthenticated() ? <NGODashboard /> : <Navigate to="/login" replace />}
+        />
+        
+        <Route
+          path="/ngo/station/:stationId"
+          element={isAuthenticated() ? <NGOStationDetail /> : <Navigate to="/login" replace />}
         />
 
         {/* Fallback */}
