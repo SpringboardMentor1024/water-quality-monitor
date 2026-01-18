@@ -6,6 +6,7 @@ import {
   BarChart, Bar, Cell, YAxis, CartesianGrid 
 } from "recharts";
 import { getStations, getStationSeries } from "../utils/api";
+import PredictiveAlertsMock from "../components/PredictiveAlertsMock";
 
 export default function Analytics() {
   const { id: urlId } = useParams(); 
@@ -43,13 +44,11 @@ export default function Analytics() {
 
   const loadSeries = async (sid) => {
     try {
-      // Fetch the last 30 points to match your UI requirements
       const data = await getStationSeries(sid, 30);
       if (data?.series) {
         const s = data.series;
         
-        // 🟢 SYNC FIX: Mapping backend keys precisely like StationReadings.jsx
-        // Backend uses 'do' for Oxygen and 'turbidity' for Turbidity
+        // 🟢 SYNCED MAPPING: Using your working key logic
         const formatted = (data.timestamps || []).map((t, idx) => ({
           name: new Date(t).toLocaleDateString([], { month: 'short', day: 'numeric' }),
           ph: s.ph?.[idx] ?? 0,
@@ -66,12 +65,10 @@ export default function Analytics() {
   };
 
   /**
-   * 🟢 SYNC FIX: Helper to get the latest non-zero value
-   * Adapted from your getVal() function in StationReadings.jsx
+   * 🟢 SYNC FIX: Logic to extract the latest non-zero value
    */
   const getLatestVal = (dataArray, key) => {
     if (!dataArray || dataArray.length === 0) return 0.0;
-    // Fallback logic: iterate backwards to find the last point that is not 0
     for (let i = dataArray.length - 1; i >= 0; i--) {
       if (dataArray[i][key] && dataArray[i][key] !== 0) {
         return dataArray[i][key];
@@ -83,7 +80,7 @@ export default function Analytics() {
   const processIntelligence = (freshData, sid) => {
     if (!freshData || freshData.length === 0) return;
 
-    // 1. pH DISTRIBUTION CALCULATION
+    // 1. pH DISTRIBUTION
     const distMap = { "Acidic (<6.5)": 0, "Neutral (6.5-7.5)": 0, "Alkaline (>7.5)": 0 };
     freshData.forEach(d => {
       if (d.ph < 6.5 && d.ph > 0) distMap["Acidic (<6.5)"]++;
@@ -92,7 +89,7 @@ export default function Analytics() {
     });
     setDistribution(Object.keys(distMap).map(k => ({ range: k, count: distMap[k] })));
 
-    // 🟢 SYNC FIX: Use the fallback helper to avoid showing 0.0 in Health Logs
+    // 🟢 SYNC FIX: Use the fallback helper for Health Logs
     const latestTurb = getLatestVal(freshData, 'turb');
     const latestDo = getLatestVal(freshData, 'do');
     const latestPh = getLatestVal(freshData, 'ph');
@@ -101,33 +98,15 @@ export default function Analytics() {
 
     // 2. HEALTH LOGS
     setLogs([
-      { 
-        type: "Turbidity", 
-        val: `${latestTurb.toFixed(1)} NTU`, 
-        color: latestTurb > 5.0 ? "orange" : "green" 
-      },
-      { 
-        type: "Oxygen", 
-        val: `${latestDo.toFixed(1)} mg/L`, 
-        color: latestDo < 5.0 ? "orange" : "green" 
-      },
-      { 
-        type: "pH Level", 
-        val: latestPh.toFixed(2), 
-        color: (latestPh < 6.5 || latestPh > 8.5) ? "orange" : "green" 
-      }
+      { type: "Turbidity", val: `${latestTurb.toFixed(1)} NTU`, color: latestTurb > 5.0 ? "orange" : "green" },
+      { type: "Oxygen", val: `${latestDo.toFixed(1)} mg/L`, color: latestDo < 5.0 ? "orange" : "green" },
+      { type: "pH Level", val: latestPh.toFixed(2), color: (latestPh < 6.5 || latestPh > 8.5) ? "orange" : "green" }
     ]);
 
     // 3. PREDICTIONS
     setPredictions([
-      { 
-        title: latestTurb > avgTurb * 1.15 ? "Turbidity Surge Risk" : "Turbidity Stability", 
-        param: "Turbidity", prob: "75%", color: latestTurb > avgTurb * 1.15 ? "orange" : "green" 
-      },
-      { 
-        title: latestDo < 5.0 ? "Oxygen Depletion Risk" : "Optimal Oxygen Levels", 
-        param: "Oxygen", prob: "80%", color: latestDo < 5.0 ? "orange" : "green" 
-      }
+      { title: latestTurb > avgTurb * 1.15 ? "Turbidity Surge Risk" : "Turbidity Stability", param: "Turbidity", prob: "75%", color: latestTurb > avgTurb * 1.15 ? "orange" : "green" },
+      { title: latestDo < 5.0 ? "Oxygen Depletion Risk" : "Optimal Oxygen Levels", param: "Oxygen", prob: "80%", color: latestDo < 5.0 ? "orange" : "green" }
     ]);
   };
 
@@ -145,7 +124,7 @@ export default function Analytics() {
   return (
     <div className="max-w-7xl mx-auto p-4 md:p-8 space-y-10 bg-[#f8fafc] min-h-screen font-sans">
       
-      {/* HEADER SECTION */}
+      {/* HEADER SECTION (Merged Design) */}
       <div className="bg-[#1e3a8a] rounded-[50px] p-8 md:p-12 text-white shadow-2xl relative overflow-hidden">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 relative z-10">
           <div>
@@ -200,6 +179,9 @@ export default function Analytics() {
           <PredictionCard key={i} {...p} sid={selectedStationId} navigate={navigate} />
         ))}
       </div>
+
+      {/* ✅ PREDICTIVE ALERTS MOCK */}
+      <PredictiveAlertsMock stationId={selectedStationId} />
     </div>
   );
 }
