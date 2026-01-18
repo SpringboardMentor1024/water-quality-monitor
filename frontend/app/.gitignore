@@ -43,3 +43,5 @@ frontend/build/
 # Environment files
 .env
 /backend/data/
+node_modules/
+*.csv

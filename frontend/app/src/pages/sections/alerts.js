@@ -19,31 +19,6 @@ import {
 } from "react-icons/fa";
 
 const ALERT_API = "http://127.0.0.1:8000/alerts";
-/* 🔮 DUMMY PREDICTIVE ALERTS (FRONTEND ONLY) */
-const DUMMY_PREDICTIVE_ALERTS = [
-  {
-    id: "PA-1",
-    parameter: "pH",
-    message: "pH levels predicted to exceed safe threshold",
-    severity: "High",
-    window: "Next 24 hrs"
-  },
-  {
-    id: "PA-2",
-    parameter: "Turbidity",
-    message: "Upward turbidity trend indicates contamination risk",
-    severity: "Critical",
-    window: "Next 12 hrs"
-  },
-  {
-    id: "PA-3",
-    parameter: "Dissolved Oxygen",
-    message: "DO levels declining – possible hypoxic conditions",
-    severity: "High",
-    window: "Next 48 hrs"
-  }
-];
-
 
 /* ==============================
    MAIN PAGE
@@ -57,20 +32,29 @@ export default function Alerts() {
   const [predictiveAlerts, setPredictiveAlerts] = useState([]);
   const prevCount = useRef(0);
 
-  /* 🔮 FETCH PREDICTIVE ALERTS FROM MODEL (BACKEND) 
+  /* 🔮 FETCH PREDICTIVE ALERTS FROM BACKEND */
   const loadPredictiveAlerts = async () => {
     try {
-      const res = await axios.get(`${ALERT_API}/predictive`);
-      setPredictiveAlerts(res.data || []);
+      const res = await axios.post("http://127.0.0.1:8000/predictive/analyze");
+      const mapped = res.data.map(p => ({
+        id: p.station_id,
+        parameter: p.station_name,
+        message: `Risk Level: ${p.risk_level}`,
+        severity: p.risk_level,
+        window: `Probability: ${p.probability}% | Avg pH: ${p.avg_ph}, DO: ${p.avg_do}, Turbidity: ${p.avg_turbidity}`,
+        predicted_on: p.predicted_on,
+        station_name: p.station_name,
+        avg_ph: p.avg_ph,
+        avg_do: p.avg_do,
+        avg_turbidity: p.avg_turbidity,
+        probability: p.probability,
+        risk_level: p.risk_level
+      }));
+      setPredictiveAlerts(mapped);
     } catch (err) {
-      console.error("Predictive alerts not available");
+      console.error("Predictive alerts not available", err);
     }
-  };*/
-  const loadPredictiveAlerts = () => {
-  // Frontend demo data only (backend-independent)
-  setPredictiveAlerts(DUMMY_PREDICTIVE_ALERTS);
-};
-
+  };
 
   /* FETCH ACTIVE + HISTORY ALERTS */
   const loadAlerts = async () => {
@@ -169,10 +153,10 @@ export default function Alerts() {
           <table className="w-full">
             <thead className="bg-blue-100 text-blue-900 font-bold">
               <tr>
-                <th className="p-4 text-left">Parameter</th>
+                <th className="p-4 text-left">Station</th>
                 <th className="p-4 text-left">Prediction</th>
                 <th className="p-4 text-center">Severity</th>
-                <th className="p-4 text-center">Expected Window</th>
+                <th className="p-4 text-center">Details</th>
               </tr>
             </thead>
             <tbody>
@@ -195,8 +179,9 @@ export default function Alerts() {
     </div>
   );
 }
+
 /* ==============================
-   ALERT MODAL  ✅ FIXED
+   ALERT MODAL
 ================================ */
 function AlertModal({ alert, onClose }) {
   return (
@@ -311,10 +296,8 @@ function AlertsTable({ data, history = false, active = false, onResolve, onView 
 }
 
 /* ==============================
-   TRIGGERS + TRENDS + HELPERS
-   (UNCHANGED LOGIC)
+   TRIGGERS + TRENDS
 ================================ */
-
 function TriggersInfo() {
   return (
     <div className="bg-white p-6 rounded border border-slate-300">
@@ -333,9 +316,6 @@ function TriggersInfo() {
   );
 }
 
-/* ==============================
-   ALERT TRENDS (LINE + PIE)
-================================ */
 function AlertTrends() {
   const [trendData, setTrendData] = useState([]);
   const [pieData, setPieData] = useState([]);
@@ -344,7 +324,6 @@ function AlertTrends() {
   useEffect(() => {
     axios.get(`${ALERT_API}/analytics/trends`).then(res => {
       setTrendData(res.data);
-
       const total = res.data.reduce((sum, d) => sum + d.count, 0);
       setPieData([{ name: "Alert Occurrences", value: total }]);
     });
@@ -357,89 +336,41 @@ function AlertTrends() {
   return (
     <>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-
-        {/* LINE CHART */}
         <div className="bg-white p-6 rounded border border-slate-300">
-          <h2 className="text-lg font-extrabold text-blue-900 mb-4">
-            Alert Trend Over Time
-          </h2>
-
+          <h2 className="text-lg font-extrabold text-blue-900 mb-4">Alert Trend Over Time</h2>
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={trendData}>
               <CartesianGrid stroke="#334155" strokeDasharray="3 3" />
-              <XAxis
-                dataKey="date"
-                tick={{ fill: "#0f172a", fontWeight: 600 }}
-              />
-              <YAxis
-                tick={{ fill: "#0f172a", fontWeight: 600 }}
-                 />
+              <XAxis dataKey="date" tick={{ fill: "#0f172a", fontWeight: 600 }} />
+              <YAxis tick={{ fill: "#0f172a", fontWeight: 600 }} />
               <Tooltip />
-              <Line
-                type="monotone"
-                dataKey="count"
-                stroke="#0f172a"
-                strokeWidth={3}
-              />
+              <Line type="monotone" dataKey="count" stroke="#0f172a" strokeWidth={3} />
             </LineChart>
-
           </ResponsiveContainer>
         </div>
 
-        {/* PIE CHART */}
         <div className="bg-white p-6 rounded border border-slate-300">
-          <h2 className="text-lg font-extrabold text-blue-900 mb-4">
-            Alert Distribution Summary
-          </h2>
-
+          <h2 className="text-lg font-extrabold text-blue-900 mb-4">Alert Distribution Summary</h2>
           <ResponsiveContainer width="100%" height={300}>
             <PieChart>
-             <Pie
-                data={pieData}
-                dataKey="value"
-                nameKey="name"
-                cx="50%"
-                cy="50%"
-                outerRadius={100}
-                fill="#2563eb"
-                label
-              />
-
-
+              <Pie data={pieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={100} fill="#2563eb" label />
               <Tooltip />
             </PieChart>
           </ResponsiveContainer>
         </div>
       </div>
 
-      {/* 🔴 RADAR CHART (NEW) */}
       <div className="bg-white p-6 mt-6 rounded border border-slate-300">
-        <h2 className="text-lg font-extrabold text-blue-900 mb-4">
-          Parameter-wise Alert Analysis (Radar)
-        </h2>
-
+        <h2 className="text-lg font-extrabold text-blue-900 mb-4">Parameter-wise Alert Analysis (Radar)</h2>
         <ResponsiveContainer width="100%" height={350}>
-            <RadarChart data={radarData}>
+          <RadarChart data={radarData}>
             <PolarGrid stroke="#334155" />
-            <PolarAngleAxis
-              dataKey="parameter"
-              tick={{ fill: "#0f172a", fontWeight: 600 }}
-            />
-            <PolarRadiusAxis
-              allowDecimals={false}
-              tick={{ fill: "#0f172a", fontWeight: 600 }}
-            />
-            <Radar
-              name="Alert Count"
-              dataKey="alerts"
-              stroke="#5b21b6"
-              fill="#5b21b6"
-              fillOpacity={0.8}
-            />
+            <PolarAngleAxis dataKey="parameter" tick={{ fill: "#0f172a", fontWeight: 600 }} />
+            <PolarRadiusAxis allowDecimals={false} tick={{ fill: "#0f172a", fontWeight: 600 }} />
+            <Radar name="Alert Count" dataKey="alerts" stroke="#5b21b6" fill="#5b21b6" fillOpacity={0.8} />
             <Tooltip />
             <Legend />
           </RadarChart>
-
         </ResponsiveContainer>
       </div>
     </>
