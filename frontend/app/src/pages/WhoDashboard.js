@@ -30,15 +30,16 @@ export default function WhoDashboard() {
   }, []);
 
   return (
-    <div className="p-6">
-      <h2 className="text-white text-2xl mb-1 text-center">
-        WHO Dashboard for Indicator: {indicator}
+    <div className="p-6 bg-[#1e242d] rounded-xl shadow-lg text-white min-h-[80vh]">
+      {/* Page Title */}
+      <h2 className="text-2xl font-semibold mb-2 text-center text-blue-400">
+        WHO Dashboard: {indicator}
       </h2>
-
       <p className="text-gray-400 text-sm text-center mb-6">
-        Value represents % basic drinking water access (WHO)
+        Value represents % of population with basic drinking water access (WHO)
       </p>
 
+      {/* Controls */}
       <div className="flex items-center justify-center gap-3 mb-6">
         <label className="text-white text-sm">Limit:</label>
         <input
@@ -47,16 +48,17 @@ export default function WhoDashboard() {
           max="200"
           value={limit}
           onChange={(e) => setLimit(Number(e.target.value))}
-          className="w-24 px-2 py-1 rounded bg-gray-800 text-white border border-gray-600"
+          className="w-24 px-3 py-1.5 rounded bg-gray-700 text-white border border-gray-600 focus:ring-2 focus:ring-blue-500 outline-none"
         />
         <button
           onClick={fetchData}
-          className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded"
+          className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded transition"
         >
           Apply
         </button>
       </div>
 
+      {/* Status */}
       {loading ? (
         <p className="text-gray-400 text-center">Loading WHO data...</p>
       ) : error ? (
@@ -64,36 +66,24 @@ export default function WhoDashboard() {
       ) : records.length === 0 ? (
         <p className="text-gray-400 text-center">No data available</p>
       ) : (
-        <div className="max-h-[600px] overflow-y-auto border border-gray-700 rounded-lg">
+        <div className="max-h-[600px] overflow-y-auto border border-gray-700 rounded-lg scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800">
           <table className="w-full text-white text-sm border-collapse">
             <thead className="sticky top-0 bg-gray-700 z-10">
               <tr>
-                <th className="px-4 py-3 border border-gray-700 text-left">
-                  Year
-                </th>
-                <th className="px-4 py-3 border border-gray-700 text-left">
-                  Value (%)
-                </th>
-                <th className="px-4 py-3 border border-gray-700 text-left">
-                  Region
-                </th>
+                <th className="px-4 py-3 border border-gray-700 text-left">Year</th>
+                <th className="px-4 py-3 border border-gray-700 text-left">Value (%)</th>
+                <th className="px-4 py-3 border border-gray-700 text-left">Region</th>
               </tr>
             </thead>
             <tbody>
               {records.map((r, idx) => (
                 <tr
                   key={idx}
-                  className={idx % 2 === 0 ? "bg-gray-800" : "bg-gray-900"}
+                  className="odd:bg-gray-800 even:bg-gray-900 hover:bg-blue-900/30 transition"
                 >
-                  <td className="px-4 py-2 border border-gray-700">
-                    {r.year}
-                  </td>
-                  <td className="px-4 py-2 border border-gray-700">
-                    {r.value}
-                  </td>
-                  <td className="px-4 py-2 border border-gray-700">
-                    {r.region}
-                  </td>
+                  <td className="px-4 py-2 border border-gray-700">{r.year}</td>
+                  <td className="px-4 py-2 border border-gray-700">{r.value}</td>
+                  <td className="px-4 py-2 border border-gray-700">{r.region}</td>
                 </tr>
               ))}
             </tbody>

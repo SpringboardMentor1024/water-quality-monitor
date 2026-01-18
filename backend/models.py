@@ -70,7 +70,7 @@ class WaterStation(Base):
     longitude = Column(Numeric)
     managed_by = Column(String(255))
     created_at = Column(TIMESTAMP, default=datetime.utcnow)
-
+    project_id = Column("project_id", Integer)
 
 # ------------------------
 # BE1 ENTITIES (Your Task)
@@ -93,6 +93,7 @@ class Reports(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("Users.id"))
+    station_id = Column(Integer, ForeignKey("WaterStation.id"))
     photo_url = Column(String(255))
     location = Column(String(255))
     description = Column(Text)
