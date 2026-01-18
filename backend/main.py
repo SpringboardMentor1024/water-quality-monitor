@@ -1,7 +1,9 @@
+from dependencies import get_db, get_current_user
 from fastapi import FastAPI, Depends, HTTPException, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+
+
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from typing import Optional
@@ -10,14 +12,20 @@ import jwt
 import os
 import shutil
 import smtplib
+from routes import ngo_projects
+
+
 from email.mime.text import MIMEText
 from dotenv import load_dotenv
 from database import engine, Base
 import models  # 🔴 THIS IS CRITICAL
+from routes import ngo
+from models import Users, NGOs, UserRole
+
 
 
 from database import SessionLocal
-from models import Users, UserRole
+from models import UserRole
 from utils import hash_password, verify_password
 from routes import stations, readings, reports, searches, cpcb, wqp, who, alerts
 
@@ -33,7 +41,7 @@ MAIL_PASSWORD = os.getenv("MAIL_PASSWORD")
 app = FastAPI(title="Team-C Water Quality Backend")
 Base.metadata.create_all(bind=engine)
 
-security = HTTPBearer()
+
 
 # -------------------- CORS --------------------
 app.add_middleware(
@@ -46,13 +54,7 @@ app.add_middleware(
 
 
 
-# -------------------- Database --------------------
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+
 
 
 
@@ -79,20 +81,7 @@ class ResetPasswordRequest(BaseModel):
     new_password: str
 
 # -------------------- Auth --------------------
-def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
-    db: Session = Depends(get_db)
-):
-    try:
-        payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
-        user = db.query(Users).filter(Users.id == payload["user_id"]).first()
-    except Exception:
-        raise HTTPException(status_code=401, detail="Invalid token")
 
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-
-    return user
 
 # -------------------- Root --------------------
 @app.get("/")
@@ -239,30 +228,39 @@ def reset_password(data: ResetPasswordRequest, db: Session = Depends(get_db)):
 # -------------------- Register --------------------
 @app.post("/register")
 def register_user(data: UserCreate, db: Session = Depends(get_db)):
-    # Check if user already exists
-    existing_user = db.query(Users).filter(Users.email == data.email).first()
-    if existing_user:
+
+    # 1️⃣ Check if email already exists
+    if db.query(Users).filter(Users.email == data.email).first():
         raise HTTPException(status_code=400, detail="Email already registered")
 
-    # Create new user
-    new_user = Users(
+    # 2️⃣ Create base user
+    user = Users(
         name=data.name,
         email=data.email,
         password=hash_password(data.password),
         role=data.role,
         location=data.location
     )
-
-    db.add(new_user)
+    db.add(user)
     db.commit()
-    db.refresh(new_user)
+    db.refresh(user)
+
+    # 3️⃣ Role-based table insertion
+    if data.role == UserRole.ngo:
+        ngo = NGOs(
+            user_id=user.id,
+            name=data.name,
+            location=data.location
+        )
+        db.add(ngo)
+        db.commit()
 
     return {
-        "message": "User registered successfully",
-        "user_id": new_user.id,
-        "email": new_user.email,
-        "role": new_user.role.value
+        "message": "Registration successful",
+        "user_id": user.id,
+        "role": user.role.value
     }
+
 
 
 # -------------------- Routers --------------------
@@ -274,6 +272,8 @@ app.include_router(cpcb.router)
 app.include_router(wqp.router)
 app.include_router(who.router)
 app.include_router(alerts.router)
+app.include_router(ngo.router)
+app.include_router(ngo_projects.router)
 
 # -------------------- Static Files --------------------
 if not os.path.exists("avatars"):

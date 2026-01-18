@@ -140,3 +140,80 @@ class Alerts(Base):
         default=AlertStatusEnum.active,
         nullable=False
     )
+# ------------------------
+# NGOs Table
+# ------------------------
+class NGOs(Base):
+    __tablename__ = "ngos"
+
+    id = Column(Integer, primary_key=True, index=True)
+
+    # Link NGO to Users table (one-to-one)
+    user_id = Column(
+        Integer,
+        ForeignKey("Users.id", ondelete="CASCADE"),
+        nullable=False,
+        unique=True
+    )
+
+    name = Column(String(255), nullable=False)
+    location = Column(String(255))
+    created_at = Column(TIMESTAMP, default=datetime.utcnow)
+
+# ------------------------
+# Projects Table
+# ------------------------
+class Projects(Base):
+    __tablename__ = "projects"
+
+    id = Column(Integer, primary_key=True, index=True)
+
+    ngo_id = Column(
+        Integer,
+        ForeignKey("ngos.id", ondelete="CASCADE"),
+        nullable=False
+    )
+
+    name = Column(String(255), nullable=False)
+    description = Column(Text)
+    start_date = Column(TIMESTAMP)
+    end_date = Column(TIMESTAMP)
+    created_at = Column(TIMESTAMP, default=datetime.utcnow)
+# ------------------------
+# Collaborations Table
+# ------------------------
+class CollaborationStatusEnum(enum.Enum):
+    active = "active"
+    completed = "completed"
+
+
+class Collaborations(Base):
+    __tablename__ = "collaborations"
+
+    id = Column(Integer, primary_key=True, index=True)
+
+    project_id = Column(
+        Integer,
+        ForeignKey("projects.id", ondelete="CASCADE"),
+        nullable=False
+    )
+
+    ngo_id = Column(
+        Integer,
+        ForeignKey("ngos.id", ondelete="CASCADE"),
+        nullable=False
+    )
+
+    partner_ngo_id = Column(
+        Integer,
+        ForeignKey("ngos.id", ondelete="CASCADE"),
+        nullable=False
+    )
+
+    status = Column(
+        Enum(CollaborationStatusEnum),
+        default=CollaborationStatusEnum.active,
+        nullable=False
+    )
+
+    created_at = Column(TIMESTAMP, default=datetime.utcnow)
