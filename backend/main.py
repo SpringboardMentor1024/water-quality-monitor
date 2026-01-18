@@ -278,15 +278,9 @@ app.include_router(predictive_router)
 # -------------------- Static Files --------------------
 if not os.path.exists("avatars"):
     os.makedirs("avatars")
-
 app.mount("/avatars", StaticFiles(directory="avatars"), name="avatars")
 print("STEP 1: main.py loaded")
-
-
 print("STEP 2: database imported")
-
-
 print("STEP 3: models imported")
-
 Base.metadata.create_all(bind=engine)
 print("STEP 4: tables created")

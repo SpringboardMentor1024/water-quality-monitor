@@ -41,12 +41,26 @@ export default function Alerts() {
         parameter: p.station_name,
         message: `Risk Level: ${p.risk_level}`,
         severity: p.risk_level,
-        window: `Probability: ${p.probability}% | Avg pH: ${p.avg_ph}, DO: ${p.avg_do}, Turbidity: ${p.avg_turbidity}`,
+
+        window: `
+          Probability: ${p.probability}% |
+          pH: ${p.avg_ph} |
+          DO: ${p.avg_do} |
+          Turbidity: ${p.avg_turbidity} |
+          Iron: ${p.avg_iron} |
+          Arsenic: ${p.avg_arsenic} |
+          Lead: ${p.avg_lead}
+        `,
+
         predicted_on: p.predicted_on,
-        station_name: p.station_name,
+
         avg_ph: p.avg_ph,
         avg_do: p.avg_do,
         avg_turbidity: p.avg_turbidity,
+        avg_iron: p.avg_iron,
+        avg_arsenic: p.avg_arsenic,
+        avg_lead: p.avg_lead,
+
         probability: p.probability,
         risk_level: p.risk_level
       }));
@@ -310,6 +324,7 @@ function TriggersInfo() {
         <li>Dissolved Oxygen &lt; 5 mg/L → Contamination Alert</li>
         <li>Arsenic &gt; 0.01 mg/L → Contamination Alert</li>
         <li>Iron &gt; 0.3 mg/L → Contamination Alert</li>
+        <li>Lead &gt; 0.01 mg/L → Contamination Alert</li>
         <li>E. coli detected → Boil Water Notice</li>
       </ul>
     </div>
@@ -414,15 +429,19 @@ function mapAlert(a) {
     time: new Date(a.issued_at).toLocaleString()
   };
 }
-
 function extractParameter(msg) {
   const m = msg.toLowerCase();
+
   if (m.includes("ph")) return "pH";
   if (m.includes("turbidity")) return "Turbidity";
-  if (m.includes("oxygen")) return "Dissolved Oxygen";
-  if (m.includes("arsenic")) return "Arsenic";
+  if (m.includes("oxygen") || m.includes("do")) return "Dissolved Oxygen";
+
   if (m.includes("iron")) return "Iron";
-  if (m.includes("e. coli")) return "E. coli";
+  if (m.includes("arsenic")) return "Arsenic";
+  if (m.includes("lead")) return "Lead";
+
+  if (m.includes("e. coli") || m.includes("ecoli")) return "E. coli";
+
   return "Water Quality";
 }
 
