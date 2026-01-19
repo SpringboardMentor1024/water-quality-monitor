@@ -311,11 +311,11 @@ def get_all_stations(skip: int = 0, limit: int = 100, db: Session = Depends(get_
 def get_station_by_id(station_id: str, db: Session = Depends(get_db)):
     """Get station by NGO ID or numeric ID"""
     try:
-        # Use raw SQL to find station by custom_id or id
+        # Use raw SQL to find station by id only (compatible with all databases)
         result = db.execute(text("""
-            SELECT id, custom_id, name, location, latitude, longitude, managed_by, status, created_at
+            SELECT id, name, location, latitude, longitude, managed_by, created_at
             FROM water_stations 
-            WHERE custom_id = :station_id OR id = :station_id
+            WHERE id = :station_id
         """), {"station_id": station_id})
         
         station_row = result.fetchone()
@@ -325,7 +325,7 @@ def get_station_by_id(station_id: str, db: Session = Depends(get_db)):
             numeric_id = station_id.replace('STN-', '')
             if numeric_id.isdigit():
                 result = db.execute(text("""
-                    SELECT id, custom_id, name, location, latitude, longitude, managed_by, status, created_at
+                    SELECT id, name, location, latitude, longitude, managed_by, created_at
                     FROM water_stations 
                     WHERE id = :id
                 """), {"id": int(numeric_id)})
@@ -336,13 +336,12 @@ def get_station_by_id(station_id: str, db: Session = Depends(get_db)):
         
         # Extract station data from the row
         station_id_db = station_row[0]
-        station_name = station_row[2]
-        station_location = station_row[3]
-        station_latitude = station_row[4]
-        station_longitude = station_row[5]
-        station_managed_by = station_row[6]
-        station_status = station_row[7]
-        station_created_at = station_row[8]
+        station_name = station_row[1]
+        station_location = station_row[2]
+        station_latitude = station_row[3]
+        station_longitude = station_row[4]
+        station_managed_by = station_row[5]
+        station_created_at = station_row[6]
         
         # Get latest readings
         latest_readings = db.query(models.StationReading).filter(
@@ -363,17 +362,11 @@ def get_station_by_id(station_id: str, db: Session = Depends(get_db)):
             elif param == 'temperature':
                 current_reading['temperature'] = value
         
-        # Use custom_id if available, otherwise format as STN-XXX
-        station_id_response = station_row[1] or f'STN-{station_id_db:03d}'
+        # Use station ID as response ID
+        station_id_response = f'STN-{station_id_db:03d}'
         
-        # Determine status
-        status = station_status or 'active'
-        if status == 'alert':
-            status = 'warning'
-        elif status == 'critical':
-            status = 'critical'
-        else:
-            status = 'active'
+        # Determine status (default to active)
+        status = 'active'
         
         return {
             'id': station_id_response,
@@ -383,7 +376,7 @@ def get_station_by_id(station_id: str, db: Session = Depends(get_db)):
             'longitude': float(station_longitude),
             'managed_by': station_managed_by,
             'status': status,
-            'created_at': station_created_at.isoformat() if station_created_at else datetime.utcnow().isoformat(),
+            'created_at': str(station_created_at) if station_created_at else datetime.utcnow().isoformat(),
             'currentReading': current_reading
         }
         
@@ -442,16 +435,11 @@ def get_all_readings(station_id: int = None, skip: int = 0, limit: int = 100, db
 def get_station_readings(station_id: str, skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     """Get readings for a station by NGO ID or numeric ID"""
     try:
-        # Find station by custom_id or numeric id
+        # Find station by numeric id only
         station = None
         
-        # First try custom_id (NGO format)
-        station = db.query(models.WaterStation).filter(
-            getattr(models.WaterStation, 'custom_id', None) == station_id
-        ).first()
-        
-        # If not found and station_id is numeric, try by ID
-        if not station and station_id.isdigit():
+        # If station_id is numeric, try by ID
+        if station_id.isdigit():
             station = db.query(models.WaterStation).filter(
                 models.WaterStation.id == int(station_id)
             ).first()

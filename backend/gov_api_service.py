@@ -74,20 +74,10 @@ class GovernmentAPIService:
     
     def get_cpcb_water_data(self, state: str = None) -> List[Dict]:
         """
-        CPCB India APIs are not available - use US EPA data only
+        CPCB India APIs are not available - return empty list
         """
-        try:
-            # Use US EPA data as the primary source
-            us_data = self.get_epa_water_data()
-            if us_data:
-                return us_data[:3]  # Limit to 3 records
-            
-            # If EPA fails, return empty list (no mock data)
-            return []
-            
-        except Exception as e:
-            logger.error(f"Error fetching water data: {e}")
-            return []
+        logger.info("CPCB APIs not available")
+        return []
     
     def _format_epa_data(self, raw_data: List[Dict]) -> List[Dict]:
         """Format EPA data to our standard format"""
