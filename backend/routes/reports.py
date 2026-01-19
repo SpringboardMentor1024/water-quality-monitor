@@ -89,13 +89,15 @@ def create_report(
     report: ReportCreate,
     db: Session = Depends(get_db)
 ):
-    new_report = Report(
+    new_report = models.Reports(
         station_id=report.station_id,
-        issue_type=report.issue_type,
-        status="pending"
+        description=report.issue_type,  # map properly
+        status=models.ReportStatusEnum.pending
     )
+
     db.add(new_report)
     db.commit()
     db.refresh(new_report)
 
     return new_report
+
