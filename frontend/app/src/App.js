@@ -93,9 +93,10 @@ function App() {
             NGO ROUTES FOR MILESTONE 4
         ===================== */}
         <Route
-          path="/ngo-dashboard"
-          element={isAuthenticated() ? <NGODashboard /> : <Navigate to="/login" replace />}
-        />
+  path="/ngo/dashboard"
+  element={isAuthenticated() ? <NGODashboard /> : <Navigate to="/login" replace />}
+/>
+
         
         <Route
           path="/ngo/station/:stationId"

@@ -278,3 +278,63 @@ class AlertOut(AlertCreate):
 
     class Config:
         orm_mode = True
+# -------------------------
+# NGOs
+# -------------------------
+
+class NGOCreate(BaseModel):
+    user_id: int
+    name: str
+    location: str
+
+
+class NGOOut(NGOCreate):
+    id: int
+    created_at: datetime
+
+    class Config:
+        orm_mode = True
+
+
+# -------------------------
+# PROJECTS
+# -------------------------
+
+class ProjectCreate(BaseModel):
+    ngo_id: int
+    name: str
+    description: str | None = None
+    start_date: datetime | None = None
+    end_date: datetime | None = None
+
+
+class ProjectOut(ProjectCreate):
+    id: int
+    created_at: datetime
+
+    class Config:
+        orm_mode = True
+
+
+# -------------------------
+# COLLABORATIONS
+# -------------------------
+
+class CollaborationStatusEnum(str, Enum):
+    active = "active"
+    completed = "completed"
+
+
+class CollaborationCreate(BaseModel):
+    project_id: int
+    ngo_id: int
+    partner_ngo_id: int
+
+
+class CollaborationOut(CollaborationCreate):
+    id: int
+    status: CollaborationStatusEnum
+    created_at: datetime
+
+    class Config:
+        orm_mode = True

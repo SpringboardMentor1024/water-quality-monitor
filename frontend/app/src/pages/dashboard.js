@@ -1,23 +1,18 @@
-// pages/dashboard.js
 // frontend/app/src/pages/dashboard.js
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   FaBars,
   FaUserCircle,
-  FaTimes,
   FaWater,
   FaExclamationTriangle,
   FaClipboardList,
   FaFlask,
   FaChartLine,
   FaMapMarkerAlt,
-  FaSignOutAlt,
-  FaUser,
-  FaKey,
   FaGlobe,
   FaHandsHelping
 } from "react-icons/fa";
-import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -37,17 +32,25 @@ import WhoDashboard from "./WhoDashboard";
    Sidebar
 ========================= */
 const Sidebar = ({ isOpen, toggle, setActiveSection, activeSection }) => {
+  const navigate = useNavigate();
+
   const menuItems = [
-    { name: "Map", icon: <FaMapMarkerAlt /> },
-    { name: "Reports", icon: <FaClipboardList /> },
-    { name: "Alerts", icon: <FaExclamationTriangle /> },
-    { name: "Details", icon: <FaWater /> },
-    { name: "Analytics", icon: <FaChartLine /> },
-    { name: "Stations", icon: <FaFlask /> },
-    { name: "CPCB", icon: <FaClipboardList /> },
-    { name: "WQP", icon: <FaFlask /> },
-    { name: "WHO", icon: <FaGlobe /> },
-    { name: "NGO Dashboard", icon: <FaHandsHelping /> },
+    { name: "Map", icon: <FaMapMarkerAlt />, action: () => setActiveSection("Map") },
+    { name: "Reports", icon: <FaClipboardList />, action: () => setActiveSection("Reports") },
+    { name: "Alerts", icon: <FaExclamationTriangle />, action: () => setActiveSection("Alerts") },
+    { name: "Details", icon: <FaWater />, action: () => setActiveSection("Details") },
+    { name: "Analytics", icon: <FaChartLine />, action: () => setActiveSection("Analytics") },
+    { name: "Stations", icon: <FaFlask />, action: () => setActiveSection("Stations") },
+    { name: "CPCB", icon: <FaClipboardList />, action: () => setActiveSection("CPCB") },
+    { name: "WQP", icon: <FaFlask />, action: () => setActiveSection("WQP") },
+    { name: "WHO", icon: <FaGlobe />, action: () => setActiveSection("WHO") },
+
+    // ✅ NGO DASHBOARD (ROUTE)
+    {
+      name: "NGO Dashboard",
+      icon: <FaHandsHelping />,
+      action: () => navigate("/ngo/dashboard")
+    }
   ];
 
   return (
@@ -59,37 +62,33 @@ const Sidebar = ({ isOpen, toggle, setActiveSection, activeSection }) => {
         />
       )}
 
+      {/* ✅ FIX: overflow-y-auto ADDED */}
       <div
-        className={`bg-gradient-to-b from-gray-900 to-gray-950 text-white p-6 h-screen fixed md:static z-50 flex flex-col w-64 ${
+        className={`bg-gradient-to-b from-gray-900 to-gray-950 text-white
+        p-6 h-screen fixed md:static z-50 flex flex-col w-64 overflow-y-auto ${
           isOpen ? "left-0" : "-left-full"
         }`}
       >
-        <div>
-          <h2 className="text-2xl font-bold mb-6">WaterWatch</h2>
+        <h2 className="text-2xl font-bold mb-6">WaterWatch</h2>
 
-          <div className="space-y-2">
-            {menuItems.map((item) => (
-              <button
-                key={item.name}
-                className={`w-full flex items-center gap-3 p-3 rounded-lg ${
-                  activeSection === item.name
-                    ? "bg-gray-800"
-                    : "hover:bg-gray-800/50"
-                }`}
-                onClick={() => {
-                  if (item.name === "NGO Dashboard") {
-                    window.location.href = "/ngo-dashboard";
-                  } else {
-                    setActiveSection(item.name);
-                    toggle();
-                  }
-                }}
-              >
-                {item.icon}
-                <span>{item.name}</span>
-              </button>
-            ))}
-          </div>
+        <div className="space-y-2">
+          {menuItems.map((item) => (
+            <button
+              key={item.name}
+              className={`w-full flex items-center gap-3 p-3 rounded-lg ${
+                activeSection === item.name
+                  ? "bg-gray-800"
+                  : "hover:bg-gray-800/50"
+              }`}
+              onClick={() => {
+                item.action();
+                toggle();
+              }}
+            >
+              {item.icon}
+              <span>{item.name}</span>
+            </button>
+          ))}
         </div>
       </div>
     </>
@@ -158,7 +157,6 @@ const Dashboard = () => {
   const userName = localStorage.getItem("user_name") || "User";
 
   return (
-    /* 🔒 PAGE SCROLL LOCKED */
     <div className="flex h-screen overflow-hidden bg-gradient-to-br from-gray-900 via-gray-900 to-gray-950 text-white">
 
       <ToastContainer theme="dark" />
@@ -178,10 +176,9 @@ const Dashboard = () => {
         <FaBars />
       </button>
 
-      {/* MAIN AREA */}
+      {/* MAIN */}
       <div className="flex-1 flex flex-col overflow-hidden p-3">
 
-        {/* HEADER (FIXED) */}
         <div className="flex justify-between items-center mb-2">
           <h1 className="text-lg font-bold">Water Quality Dashboard</h1>
 
@@ -216,7 +213,6 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* 🔽 ONLY THIS SCROLLS */}
         <div className="flex-1 overflow-y-auto">
           {renderSection()}
         </div>

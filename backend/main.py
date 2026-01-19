@@ -1,4 +1,5 @@
 from dependencies import get_db, get_current_user
+from routes import collaborations
 from fastapi import FastAPI, Depends, HTTPException, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -275,6 +276,7 @@ app.include_router(alerts.router)
 app.include_router(ngo.router)
 app.include_router(ngo_projects.router)
 app.include_router(predictive_router)
+app.include_router(collaborations.router)
 app.include_router(reports.router, prefix="/api")
 
 # -------------------- Static Files --------------------

@@ -100,7 +100,7 @@ const StationDetailsNGO = () => {
 
         {/* Back Button */}
         <button
-          onClick={() => navigate("/ngo-dashboard")}
+          onClick={() => navigate("/ngo/dashboard")}
           className="bg-white text-blue-700 px-4 py-2 rounded-lg font-semibold hover:bg-blue-100 transition"
         >
           ← Back to NGO Dashboard
