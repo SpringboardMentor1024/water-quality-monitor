@@ -252,31 +252,15 @@ def create_station(station: schemas.WaterStationCreate, db: Session = Depends(ge
 @app.get("/api/stations")
 def get_all_stations(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     try:
-        # Use raw SQL to get stations with custom_id
-        result = db.execute(text("""
-            SELECT id, custom_id, name, location, latitude, longitude, managed_by, status, created_at
-            FROM water_stations 
-            ORDER BY id
-            LIMIT :limit OFFSET :skip
-        """), {"limit": limit, "skip": skip})
+        # Get stations directly from ORM
+        stations = db.query(models.WaterStation).offset(skip).limit(limit).all()
         
-        stations = result.fetchall()
-        
-        # NGO-compatible station response with REAL readings from database
         simple_stations = []
         for station in stations:
-            station_id = station[1] or f'STN-{station[0]:03d}'  # Use custom_id or fallback
-            
-            # Fetch the latest readings for this station from the database
-            readings_result = db.execute(text("""
-                SELECT parameter, value, recorded_at
-                FROM station_readings 
-                WHERE station_id = :station_id
-                ORDER BY recorded_at DESC
-                LIMIT 10
-            """), {"station_id": station[0]})
-            
-            latest_readings = readings_result.fetchall()
+            # Get latest readings for this station
+            latest_readings = db.query(models.StationReading).filter(
+                models.StationReading.station_id == station.id
+            ).order_by(models.StationReading.recorded_at.desc()).limit(10).all()
             
             # Build current reading from real data
             current_reading = {
@@ -287,12 +271,10 @@ def get_all_stations(skip: int = 0, limit: int = 100, db: Session = Depends(get_
                 'do': None
             }
             
-            last_update = station[8]  # created_at
-            
             # Map actual readings from database
             for reading in latest_readings:
-                param = reading[0]
-                value = float(reading[1])
+                param = reading.parameter.value if hasattr(reading.parameter, 'value') else str(reading.parameter)
+                value = float(reading.value)
                 
                 if param == 'pH':
                     current_reading['ph'] = value
@@ -303,44 +285,19 @@ def get_all_stations(skip: int = 0, limit: int = 100, db: Session = Depends(get_
                     current_reading['do'] = value
                 elif param == 'temperature':
                     current_reading['temperature'] = value
-                
-                # Update last updated time
-                if reading[2]:
-                    last_update = reading[2]
-            
-            # Count reports for this station
-            reports_result = db.execute(text("""
-                SELECT COUNT(*) FROM reports WHERE location LIKE :location
-            """), {"location": f"%{station[2]}%"})
-            reports_count = reports_result.fetchone()[0]
-            
-            # Count alerts for this station
-            alerts_result = db.execute(text("""
-                SELECT COUNT(*) FROM alerts WHERE location = :location
-            """), {"location": station[2]})
-            alerts_count = alerts_result.fetchone()[0]
-            
-            # Determine status
-            status = station[7] or 'active'
-            if status == 'alert':
-                status = 'warning'
-            elif status == 'critical':
-                status = 'critical'
-            else:
-                status = 'active'
             
             simple_station = {
-                'id': station_id,  # Use NGO ID format
-                'name': station[2],
-                'latitude': float(station[4]),
-                'longitude': float(station[5]),
-                'location': station[3],
-                'managed_by': station[6],
-                'status': status,
+                'id': f'STN-{station.id:03d}',
+                'name': station.name,
+                'latitude': float(station.latitude),
+                'longitude': float(station.longitude),
+                'location': station.location,
+                'managed_by': station.managed_by,
+                'status': 'active',
                 'currentReading': current_reading,
-                'lastUpdated': last_update,
-                'reportsCount': reports_count,
-                'alertsCount': alerts_count
+                'lastUpdated': station.created_at.isoformat() if station.created_at else datetime.utcnow().isoformat(),
+                'reportsCount': 0,
+                'alertsCount': 0
             }
             simple_stations.append(simple_station)
         
