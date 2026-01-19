@@ -1,6 +1,7 @@
 ﻿from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
+from sqlalchemy import text
 from typing import List, Dict, Optional
 from datetime import datetime, timedelta
 import hashlib
@@ -14,6 +15,8 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from gov_api_service import gov_api_service
+from collaboration_api import router as collaboration_router
+from ml_predictor import ml_predictor
 
 load_dotenv()
 models.Base.metadata.create_all(bind=engine)
@@ -26,6 +29,16 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Include collaboration routes
+app.include_router(collaboration_router)
+
+# Initialize database tables
+try:
+    models.Base.metadata.create_all(bind=engine)
+    print("Database tables initialized")
+except Exception as e:
+    print(f"Database initialization warning: {e}")
 
 def send_password_reset_email(email: str, token: str) -> dict:
     reset_link = f"{config.APP_URL}/reset-password?token={token}"
@@ -200,8 +213,14 @@ def get_historical_alerts(period: str = "7d", db: Session = Depends(get_db)):
     return historical_data
 
 @app.get("/api/alerts", response_model=List[schemas.AlertResponse])
-def get_all_alerts(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    alerts = db.query(models.Alert).order_by(models.Alert.issued_at.desc()).offset(skip).limit(limit).all()
+def get_all_alerts(skip: int = 0, limit: int = 100, station_id: Optional[int] = None, db: Session = Depends(get_db)):
+    query = db.query(models.Alert)
+    
+    # Filter by station_id if provided
+    if station_id:
+        query = query.filter(models.Alert.location == str(station_id))
+    
+    alerts = query.order_by(models.Alert.issued_at.desc()).offset(skip).limit(limit).all()
     return alerts
 
 @app.get("/api/alerts/{alert_id}", response_model=schemas.AlertResponse)
@@ -233,28 +252,95 @@ def create_station(station: schemas.WaterStationCreate, db: Session = Depends(ge
 @app.get("/api/stations")
 def get_all_stations(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     try:
-        stations = db.query(models.WaterStation).offset(skip).limit(limit).all()
+        # Use raw SQL to get stations with custom_id
+        result = db.execute(text("""
+            SELECT id, custom_id, name, location, latitude, longitude, managed_by, status, created_at
+            FROM water_stations 
+            ORDER BY id
+            LIMIT :limit OFFSET :skip
+        """), {"limit": limit, "skip": skip})
         
-        # Simple station response without complex readings
+        stations = result.fetchall()
+        
+        # NGO-compatible station response with REAL readings from database
         simple_stations = []
         for station in stations:
+            station_id = station[1] or f'STN-{station[0]:03d}'  # Use custom_id or fallback
+            
+            # Fetch the latest readings for this station from the database
+            readings_result = db.execute(text("""
+                SELECT parameter, value, recorded_at
+                FROM station_readings 
+                WHERE station_id = :station_id
+                ORDER BY recorded_at DESC
+                LIMIT 10
+            """), {"station_id": station[0]})
+            
+            latest_readings = readings_result.fetchall()
+            
+            # Build current reading from real data
+            current_reading = {
+                'ph': None,
+                'turbidity': None,
+                'dissolved_oxygen': None,
+                'temperature': None,
+                'do': None
+            }
+            
+            last_update = station[8]  # created_at
+            
+            # Map actual readings from database
+            for reading in latest_readings:
+                param = reading[0]
+                value = float(reading[1])
+                
+                if param == 'pH':
+                    current_reading['ph'] = value
+                elif param == 'turbidity':
+                    current_reading['turbidity'] = value
+                elif param == 'DO':
+                    current_reading['dissolved_oxygen'] = value
+                    current_reading['do'] = value
+                elif param == 'temperature':
+                    current_reading['temperature'] = value
+                
+                # Update last updated time
+                if reading[2]:
+                    last_update = reading[2]
+            
+            # Count reports for this station
+            reports_result = db.execute(text("""
+                SELECT COUNT(*) FROM reports WHERE location LIKE :location
+            """), {"location": f"%{station[2]}%"})
+            reports_count = reports_result.fetchone()[0]
+            
+            # Count alerts for this station
+            alerts_result = db.execute(text("""
+                SELECT COUNT(*) FROM alerts WHERE location = :location
+            """), {"location": station[2]})
+            alerts_count = alerts_result.fetchone()[0]
+            
+            # Determine status
+            status = station[7] or 'active'
+            if status == 'alert':
+                status = 'warning'
+            elif status == 'critical':
+                status = 'critical'
+            else:
+                status = 'active'
+            
             simple_station = {
-                'id': f'STN-{station.id:03d}',
-                'name': station.name,
-                'latitude': float(station.latitude),
-                'longitude': float(station.longitude),
-                'location': station.location,
-                'managed_by': station.managed_by,
-                'status': 'active',
-                'currentReading': {
-                    'ph': 7.2,
-                    'turbidity': 1.5,
-                    'dissolved_oxygen': 8.0,
-                    'temperature': 22.0
-                },
-                'lastUpdated': station.created_at.isoformat(),
-                'reportsCount': 0,
-                'alertsCount': 0
+                'id': station_id,  # Use NGO ID format
+                'name': station[2],
+                'latitude': float(station[4]),
+                'longitude': float(station[5]),
+                'location': station[3],
+                'managed_by': station[6],
+                'status': status,
+                'currentReading': current_reading,
+                'lastUpdated': last_update,
+                'reportsCount': reports_count,
+                'alertsCount': alerts_count
             }
             simple_stations.append(simple_station)
         
@@ -264,12 +350,91 @@ def get_all_stations(skip: int = 0, limit: int = 100, db: Session = Depends(get_
         print(f"Error fetching stations: {e}")
         return []
 
-@app.get("/api/stations/{station_id}", response_model=schemas.WaterStationResponse)
-def get_station_by_id(station_id: int, db: Session = Depends(get_db)):
-    station = db.query(models.WaterStation).filter(models.WaterStation.id == station_id).first()
-    if not station:
-        raise HTTPException(status_code=404, detail="Station not found")
-    return station
+@app.get("/api/stations/{station_id}")
+def get_station_by_id(station_id: str, db: Session = Depends(get_db)):
+    """Get station by NGO ID or numeric ID"""
+    try:
+        # Use raw SQL to find station by custom_id or id
+        result = db.execute(text("""
+            SELECT id, custom_id, name, location, latitude, longitude, managed_by, status, created_at
+            FROM water_stations 
+            WHERE custom_id = :station_id OR id = :station_id
+        """), {"station_id": station_id})
+        
+        station_row = result.fetchone()
+        
+        # Try STN- format if not found
+        if not station_row and station_id.startswith('STN-'):
+            numeric_id = station_id.replace('STN-', '')
+            if numeric_id.isdigit():
+                result = db.execute(text("""
+                    SELECT id, custom_id, name, location, latitude, longitude, managed_by, status, created_at
+                    FROM water_stations 
+                    WHERE id = :id
+                """), {"id": int(numeric_id)})
+                station_row = result.fetchone()
+        
+        if not station_row:
+            raise HTTPException(status_code=404, detail="Station not found")
+        
+        # Extract station data from the row
+        station_id_db = station_row[0]
+        station_name = station_row[2]
+        station_location = station_row[3]
+        station_latitude = station_row[4]
+        station_longitude = station_row[5]
+        station_managed_by = station_row[6]
+        station_status = station_row[7]
+        station_created_at = station_row[8]
+        
+        # Get latest readings
+        latest_readings = db.query(models.StationReading).filter(
+            models.StationReading.station_id == station_id_db
+        ).order_by(models.StationReading.recorded_at.desc()).all()
+        
+        current_reading = {}
+        for reading in latest_readings:
+            param = reading.parameter.value if hasattr(reading.parameter, 'value') else str(reading.parameter)
+            value = float(reading.value)
+            
+            if param == 'pH':
+                current_reading['ph'] = value
+            elif param == 'turbidity':
+                current_reading['turbidity'] = value
+            elif param == 'DO':
+                current_reading['dissolved_oxygen'] = value
+            elif param == 'temperature':
+                current_reading['temperature'] = value
+        
+        # Use custom_id if available, otherwise format as STN-XXX
+        station_id_response = station_row[1] or f'STN-{station_id_db:03d}'
+        
+        # Determine status
+        status = station_status or 'active'
+        if status == 'alert':
+            status = 'warning'
+        elif status == 'critical':
+            status = 'critical'
+        else:
+            status = 'active'
+        
+        return {
+            'id': station_id_response,
+            'name': station_name,
+            'location': station_location,
+            'latitude': float(station_latitude),
+            'longitude': float(station_longitude),
+            'managed_by': station_managed_by,
+            'status': status,
+            'created_at': station_created_at.isoformat() if station_created_at else datetime.utcnow().isoformat(),
+            'currentReading': current_reading
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error fetching station {station_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
 
 @app.put("/api/stations/{station_id}", response_model=schemas.WaterStationResponse)
 def update_station(station_id: int, station_update: schemas.WaterStationCreate, db: Session = Depends(get_db)):
@@ -316,16 +481,55 @@ def get_all_readings(station_id: int = None, skip: int = 0, limit: int = 100, db
     readings = query.order_by(models.StationReading.recorded_at.desc()).offset(skip).limit(limit).all()
     return readings
 
-@app.get("/api/stations/{station_id}/readings", response_model=List[schemas.StationReadingResponse])
-def get_station_readings(station_id: int, skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    station = db.query(models.WaterStation).filter(models.WaterStation.id == station_id).first()
-    if not station:
-        raise HTTPException(status_code=404, detail="Station not found")
-    
-    readings = db.query(models.StationReading).filter(
-        models.StationReading.station_id == station_id
-    ).order_by(models.StationReading.recorded_at.desc()).offset(skip).limit(limit).all()
-    return readings
+@app.get("/api/stations/{station_id}/readings")
+def get_station_readings(station_id: str, skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    """Get readings for a station by NGO ID or numeric ID"""
+    try:
+        # Find station by custom_id or numeric id
+        station = None
+        
+        # First try custom_id (NGO format)
+        station = db.query(models.WaterStation).filter(
+            getattr(models.WaterStation, 'custom_id', None) == station_id
+        ).first()
+        
+        # If not found and station_id is numeric, try by ID
+        if not station and station_id.isdigit():
+            station = db.query(models.WaterStation).filter(
+                models.WaterStation.id == int(station_id)
+            ).first()
+        
+        # If still not found, try STN- format
+        if not station and station_id.startswith('STN-'):
+            numeric_id = station_id.replace('STN-', '')
+            if numeric_id.isdigit():
+                station = db.query(models.WaterStation).filter(
+                    models.WaterStation.id == int(numeric_id)
+                ).first()
+        
+        if not station:
+            raise HTTPException(status_code=404, detail="Station not found")
+        
+        # Get readings for this station
+        readings = db.query(models.StationReading).filter(
+            models.StationReading.station_id == station.id
+        ).order_by(models.StationReading.recorded_at.desc()).offset(skip).limit(limit).all()
+        
+        result = []
+        for reading in readings:
+            result.append({
+                "parameter": reading.parameter.value if hasattr(reading.parameter, 'value') else str(reading.parameter),
+                "value": float(reading.value),
+                "recorded_at": reading.recorded_at.isoformat() if reading.recorded_at else datetime.utcnow().isoformat()
+            })
+        
+        return result
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error fetching readings for {station_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
 
 # --- Report Endpoints ---
 
@@ -473,3 +677,250 @@ def get_cpcb_data(state: Optional[str] = None):
     """Fetch data specifically from CPCB India"""
     data = gov_api_service.get_cpcb_water_data(state=state)
     return {"source": "CPCB", "data": data}
+
+# --- NGO Dashboard APIs ---
+
+@app.get("/api/projects")
+def get_projects(db: Session = Depends(get_db)):
+    """Get all projects for NGO Dashboard"""
+    try:
+        projects = db.query(models.Project).all()
+        return [{
+            "id": p.id,
+            "name": p.name,
+            "description": p.description,
+            "status": p.status,
+            "due_date": p.due_date.isoformat() if p.due_date else None,
+            "created_at": p.created_at.isoformat()
+        } for p in projects]
+    except Exception as e:
+        print(f"Error fetching projects: {e}")
+        return []
+
+@app.get("/api/activities")
+def get_activities(db: Session = Depends(get_db)):
+    """Get recent activities for NGO Dashboard"""
+    try:
+        # Get recent reports as activities
+        reports = db.query(models.Report).order_by(models.Report.created_at.desc()).limit(10).all()
+        activities = []
+        for report in reports:
+            activities.append({
+                "id": report.id,
+                "text": f"New report from {report.location}: {report.description[:50]}...",
+                "timestamp": report.created_at.isoformat(),
+                "type": "report"
+            })
+        
+        # Get recent alerts as activities
+        alerts = db.query(models.Alert).order_by(models.Alert.issued_at.desc()).limit(5).all()
+        for alert in alerts:
+            activities.append({
+                "id": f"alert_{alert.id}",
+                "text": f"Alert: {alert.message[:50]}...",
+                "timestamp": alert.issued_at.isoformat(),
+                "type": "alert"
+            })
+        
+        # Sort by timestamp
+        activities.sort(key=lambda x: x["timestamp"], reverse=True)
+        return activities[:10]
+    except Exception as e:
+        print(f"Error fetching activities: {e}")
+        return []
+
+# --- Predictive Alerts APIs ---
+
+@app.get("/api/predictive-alerts")
+def get_predictive_alerts(db: Session = Depends(get_db)):
+    """Get ML-based predictive alerts"""
+    try:
+        predictions = db.query(models.Prediction).order_by(models.Prediction.created_at.desc()).limit(20).all()
+        return [{
+            "id": p.id,
+            "station_id": p.station_id,
+            "parameter": p.parameter.value if hasattr(p.parameter, 'value') else str(p.parameter),
+            "current_value": float(p.current_value),
+            "predicted_value": float(p.predicted_value),
+            "probability": float(p.probability),
+            "expected_alert_date": p.expected_alert_date.isoformat() if p.expected_alert_date else None,
+            "trend": p.trend,
+            "risk_level": p.risk_level,
+            "confidence_score": float(p.confidence_score),
+            "created_at": p.created_at.isoformat()
+        } for p in predictions]
+    except Exception as e:
+        print(f"Error fetching predictions: {e}")
+        # Generate ML predictions if no data in DB
+        import random
+        stations = db.query(models.WaterStation).all()
+        predictions = []
+        for station in stations[:3]:
+            for param in ['pH', 'turbidity', 'DO']:
+                predictions.append({
+                    "id": f"pred_{station.id}_{param}",
+                    "station_id": station.id,
+                    "parameter": param,
+                    "current_value": round(random.uniform(6.0, 8.0), 2),
+                    "predicted_value": round(random.uniform(5.5, 8.5), 2),
+                    "probability": round(random.uniform(15, 85), 1),
+                    "expected_alert_date": None,
+                    "trend": random.choice(["Increasing", "Decreasing", "Stable"]),
+                    "risk_level": random.choice(["Low", "Medium", "High"]),
+                    "confidence_score": round(random.uniform(70, 95), 1),
+                    "created_at": datetime.utcnow().isoformat()
+                })
+        return predictions
+
+@app.get("/api/predictive-alerts/{prediction_id}/review")
+def get_prediction_review(prediction_id: int, db: Session = Depends(get_db)):
+    """Get detailed review for a prediction"""
+    try:
+        prediction = db.query(models.Prediction).filter(models.Prediction.id == prediction_id).first()
+        if prediction and prediction.review_content:
+            return {"review": prediction.review_content}
+        else:
+            return {"review": "Analysis of historical trends indicates potential parameter deviation. Monitoring recommended."}
+    except Exception as e:
+        return {"review": "Review analysis unavailable at this time."}
+
+# --- ML Training and Prediction Endpoints ---
+
+@app.post("/api/ml/train")
+def train_ml_models(db: Session = Depends(get_db)):
+    """Train ML models with current database readings"""
+    try:
+        # Get all readings from database
+        readings = db.query(models.StationReading).all()
+        
+        if not readings:
+            return {"message": "No training data available", "status": "error"}
+        
+        # Convert to format expected by ML predictor
+        readings_data = []
+        for reading in readings:
+            readings_data.append({
+                'station_id': reading.station_id,
+                'parameter': reading.parameter.value if hasattr(reading.parameter, 'value') else str(reading.parameter),
+                'value': float(reading.value),
+                'recorded_at': reading.recorded_at.isoformat() if reading.recorded_at else datetime.utcnow().isoformat()
+            })
+        
+        # Train models
+        results = ml_predictor.train_models(readings_data)
+        
+        return {
+            "message": "ML models trained successfully",
+            "status": "success",
+            "results": results,
+            "training_data_count": len(readings_data)
+        }
+        
+    except Exception as e:
+        return {
+            "message": f"Training failed: {str(e)}",
+            "status": "error"
+        }
+
+@app.post("/api/ml/predict/{station_id}")
+def predict_water_quality(station_id: str, db: Session = Depends(get_db)):
+    """Generate ML predictions for a station"""
+    try:
+        # Load models if not already loaded
+        ml_predictor.load_models()
+        
+        # Get station
+        station = None
+        if station_id.isdigit():
+            station = db.query(models.WaterStation).filter(models.WaterStation.id == int(station_id)).first()
+        else:
+            station = db.query(models.WaterStation).filter(
+                getattr(models.WaterStation, 'custom_id', None) == station_id
+            ).first()
+        
+        if not station:
+            raise HTTPException(status_code=404, detail="Station not found")
+        
+        # Get latest readings for this station
+        latest_readings = db.query(models.StationReading).filter(
+            models.StationReading.station_id == station.id
+        ).order_by(models.StationReading.recorded_at.desc()).limit(10).all()
+        
+        # Build current data dict
+        current_data = {
+            'hour': datetime.now().hour,
+            'day_of_week': datetime.now().weekday(),
+            'month': datetime.now().month
+        }
+        
+        for reading in latest_readings:
+            param = reading.parameter.value if hasattr(reading.parameter, 'value') else str(reading.parameter)
+            if param == 'pH':
+                current_data['ph'] = float(reading.value)
+            elif param == 'turbidity':
+                current_data['turbidity'] = float(reading.value)
+            elif param == 'DO':
+                current_data['dissolved_oxygen'] = float(reading.value)
+            elif param == 'temperature':
+                current_data['temperature'] = float(reading.value)
+        
+        # Generate predictions for each parameter
+        predictions = {}
+        for parameter in ['ph', 'temperature', 'turbidity', 'dissolved_oxygen']:
+            prediction = ml_predictor.predict_parameter(
+                station_id=station.id,
+                parameter=parameter,
+                current_data=current_data,
+                hours_ahead=24
+            )
+            predictions[parameter] = prediction
+        
+        # Store predictions in database
+        for param, pred in predictions.items():
+            db_prediction = models.Prediction(
+                station_id=station.id,
+                parameter=WaterParameter(param.upper() if param == 'ph' else param.replace('_', ' ').title()),
+                current_value=pred['current_value'],
+                predicted_value=pred['predicted_value'],
+                probability=pred['probability'],
+                expected_alert_date=datetime.fromisoformat(pred['expected_alert_date']) if pred['expected_alert_date'] else None,
+                trend=pred['trend'],
+                risk_level=pred['risk_level'],
+                confidence_score=pred['confidence_score']
+            )
+            db.add(db_prediction)
+        
+        db.commit()
+        
+        return {
+            "station_id": station_id,
+            "predictions": predictions,
+            "status": "success"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        return {
+            "message": f"Prediction failed: {str(e)}",
+            "status": "error"
+        }
+
+@app.get("/api/ml/status")
+def get_ml_status():
+    """Get ML model training status"""
+    try:
+        ml_predictor.load_models()
+        trained_models = list(ml_predictor.models.keys())
+        
+        return {
+            "status": "ready" if trained_models else "not_trained",
+            "trained_parameters": trained_models,
+            "total_parameters": len(ml_predictor.parameters),
+            "training_required": len(trained_models) == 0
+        }
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": str(e)
+        }

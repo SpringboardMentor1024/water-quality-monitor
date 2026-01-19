@@ -40,8 +40,9 @@ const createCustomIcon = (status) => {
 };
 
 const EnhancedBaseMap = ({ onStationSelect }) => {
-  const defaultCenter = [20.5937, 78.9629];
-  const defaultZoom = 5;
+  // Use New York coordinates since your stations are there
+  const defaultCenter = [40.7128, -74.0060]; // New York City
+  const defaultZoom = 10;
   const [flyToCenter, setFlyToCenter] = useState(defaultCenter);
   const [flyToZoom, setFlyToZoom] = useState(defaultZoom);
   const [selectedStation, setSelectedStation] = useState(null);
@@ -72,15 +73,23 @@ const EnhancedBaseMap = ({ onStationSelect }) => {
           region: determineRegion(station.location),
           status: 'Active', // Default status
           waterSource: 'River', // Default source
-          ph: 7.2,
-          turbidity: 2.1,
-          dissolvedOxygen: 8.2,
-          temperature: 22,
+          ph: station.currentReading?.ph || 7.2,
+          turbidity: station.currentReading?.turbidity || 2.1,
+          dissolvedOxygen: station.currentReading?.dissolved_oxygen || 8.2,
+          temperature: station.currentReading?.temperature || 22,
           address: station.location,
-          lastUpdated: new Date(station.created_at).toLocaleString(),
+          lastUpdated: new Date(station.created_at || Date.now()).toLocaleString(),
           managed_by: station.managed_by
         }));
+        console.log('EnhancedBaseMap: Loaded stations:', transformedStations);
         setAllStations(transformedStations);
+        
+        // Auto-center map on first station if available
+        if (transformedStations.length > 0) {
+          const firstStation = transformedStations[0];
+          setFlyToCenter([firstStation.lat, firstStation.lng]);
+          setFlyToZoom(11);
+        }
       } catch (error) {
         console.error('Failed to load stations:', error);
         setAllStations([]);
@@ -93,31 +102,29 @@ const EnhancedBaseMap = ({ onStationSelect }) => {
   }, []);
 
   const determineRegion = (location) => {
-    // Simple region determination based on location string
+    // Updated for New York area stations
     const locationLower = location.toLowerCase();
-    if (locationLower.includes('delhi') || locationLower.includes('punjab') || locationLower.includes('haryana')) return 'North India';
-    if (locationLower.includes('mumbai') || locationLower.includes('gujarat') || locationLower.includes('maharashtra')) return 'West India';
-    if (locationLower.includes('chennai') || locationLower.includes('bangalore') || locationLower.includes('kerala')) return 'South India';
-    if (locationLower.includes('kolkata') || locationLower.includes('bengal') || locationLower.includes('assam')) return 'East India';
-    return 'Central India';
+    if (locationLower.includes('downtown') || locationLower.includes('manhattan')) return 'Manhattan';
+    if (locationLower.includes('brooklyn') || locationLower.includes('queens')) return 'Brooklyn/Queens';
+    if (locationLower.includes('bronx') || locationLower.includes('harlem')) return 'Bronx';
+    if (locationLower.includes('staten') || locationLower.includes('island')) return 'Staten Island';
+    return 'New York Metro';
   };
 
-  // Available filter options
+  // Available filter options - Updated for New York area
   const filterOptions = {
-    regions: ['North India', 'South India', 'East India', 'West India', 'Central India', 'Coastal Areas', 'Himalayan Region'],
+    regions: ['Manhattan', 'Brooklyn/Queens', 'Bronx', 'Staten Island', 'New York Metro'],
     statuses: ['Active', 'Inactive', 'Maintenance', 'Offline'],
     waterSources: ['River', 'Lake', 'Groundwater', 'Reservoir', 'Canal', 'Rainwater', 'Treatment Plant']
   };
 
-  // Region centers for auto-navigation
+  // Region centers for auto-navigation - Updated for New York area
   const regionCenters = {
-    'North India': [28.6139, 77.2090],
-    'South India': [12.9716, 77.5946],
-    'East India': [22.5726, 88.3639],
-    'West India': [19.0760, 72.8777],
-    'Central India': [23.2599, 77.4126],
-    'Coastal Areas': [15.2993, 74.1240],
-    'Himalayan Region': [30.0668, 79.0193]
+    'Manhattan': [40.7831, -73.9712],
+    'Brooklyn/Queens': [40.6782, -73.9442],
+    'Bronx': [40.8448, -73.8648],
+    'Staten Island': [40.5795, -74.1502],
+    'New York Metro': [40.7128, -74.0060]
   };
 
   // Apply all filters

@@ -161,3 +161,121 @@ class Search(Base):
     
     # Relationship
     user = relationship("User")
+
+# ============= NGO COLLABORATION ENTITIES =============
+
+class NGO(Base):
+    __tablename__ = "ngos"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, unique=True, nullable=False)
+    description = Column(Text, nullable=True)
+    location = Column(String, nullable=False)
+    contact_email = Column(String, nullable=False)
+    contact_phone = Column(String, nullable=True)
+    created_at = Column(
+        TIMESTAMP(timezone=True),
+        nullable=False,
+        server_default=text("CURRENT_TIMESTAMP")
+    )
+    
+    # Relationships
+    projects = relationship("Project", secondary="project_ngos", back_populates="ngos")
+    stations = relationship("NGOStation", back_populates="ngo")
+    collaborations = relationship("Collaboration", back_populates="ngo")
+
+
+class Project(Base):
+    __tablename__ = "projects"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False)
+    description = Column(Text, nullable=True)
+    status = Column(String, default="Active", nullable=False)  # Active, Completed, Paused
+    due_date = Column(DateTime, nullable=True)
+    created_at = Column(
+        TIMESTAMP(timezone=True),
+        nullable=False,
+        server_default=text("CURRENT_TIMESTAMP")
+    )
+    
+    # Relationships
+    ngos = relationship("NGO", secondary="project_ngos", back_populates="projects")
+    stations = relationship("NGOStation", back_populates="project")
+
+
+class ProjectNGO(Base):
+    """Junction table for many-to-many relationship between Project and NGO"""
+    __tablename__ = "project_ngos"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    project_id = Column(Integer, ForeignKey("projects.id"), nullable=False)
+    ngo_id = Column(Integer, ForeignKey("ngos.id"), nullable=False)
+    created_at = Column(
+        TIMESTAMP(timezone=True),
+        nullable=False,
+        server_default=text("CURRENT_TIMESTAMP")
+    )
+
+
+class Collaboration(Base):
+    __tablename__ = "collaborations"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    project_id = Column(Integer, ForeignKey("projects.id"), nullable=False)
+    ngo_id = Column(Integer, ForeignKey("ngos.id"), nullable=False)
+    start_date = Column(DateTime, nullable=False)
+    end_date = Column(DateTime, nullable=True)
+    contract_details = Column(Text, nullable=True)
+    status = Column(String, default="Active", nullable=False)  # Active, Completed, Terminated
+    created_at = Column(
+        TIMESTAMP(timezone=True),
+        nullable=False,
+        server_default=text("CURRENT_TIMESTAMP")
+    )
+    
+    # Relationships
+    ngo = relationship("NGO", back_populates="collaborations")
+    project = relationship("Project")
+
+
+class NGOStation(Base):
+    """Tracks which water stations are assigned to NGOs for specific projects"""
+    __tablename__ = "ngo_stations"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    ngo_id = Column(Integer, ForeignKey("ngos.id"), nullable=False)
+    project_id = Column(Integer, ForeignKey("projects.id"), nullable=False)
+    station_id = Column(Integer, ForeignKey("water_stations.id"), nullable=False)
+    assigned_date = Column(DateTime, nullable=False, default=datetime.utcnow)
+    unassigned_date = Column(DateTime, nullable=True)
+    
+    # Relationships
+    ngo = relationship("NGO", back_populates="stations")
+    project = relationship("Project", back_populates="stations")
+    station = relationship("WaterStation")
+
+
+class Prediction(Base):
+    """ML-based predictive alerts"""
+    __tablename__ = "predictions"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    station_id = Column(Integer, ForeignKey("water_stations.id"), nullable=False)
+    parameter = Column(Enum(WaterParameter), nullable=False)
+    current_value = Column(Numeric(10, 4), nullable=False)
+    predicted_value = Column(Numeric(10, 4), nullable=False)
+    probability = Column(Numeric(5, 2), nullable=False)  # 0-100
+    expected_alert_date = Column(DateTime, nullable=True)
+    trend = Column(String, nullable=False)  # Increasing, Decreasing, Stable
+    risk_level = Column(String, nullable=False)  # High, Medium, Low
+    review_content = Column(Text, nullable=True)
+    confidence_score = Column(Numeric(5, 2), nullable=False)  # 0-100
+    created_at = Column(
+        TIMESTAMP(timezone=True),
+        nullable=False,
+        server_default=text("CURRENT_TIMESTAMP")
+    )
+    
+    # Relationship
+    station = relationship("WaterStation")

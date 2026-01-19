@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Map Dots Verification Test</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <style>
+        body { margin: 0; padding: 20px; font-family: Arial, sans-serif; }
+        #map { height: 500px; width: 100%; border: 2px solid #333; margin: 20px 0; }
+        .status { padding: 15px; margin: 10px 0; border-radius: 8px; }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        .loading { background: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; background: #007bff; color: white; border: none; border-radius: 5px; }
+        button:hover { background: #0056b3; }
+        .station-info { background: #f8f9fa; padding: 10px; margin: 5px 0; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <h1>🗺️ Water Quality Monitor - Map Dots Verification</h1>
+    
+    <div class="info">
+        <strong>Purpose:</strong> This test verifies that your map shows water station dots correctly with real backend data.
+    </div>
+    
+    <button onclick="testMapDots()">🔍 Test Map Dots</button>
+    <button onclick="clearResults()">🧹 Clear Results</button>
+    
+    <div id="status" class="status loading">Click "Test Map Dots" to begin verification...</div>
+    <div id="map"></div>
+    <div id="results"></div>
+
+    <script>
+        let map = null;
+        let markers = [];
+
+        function showStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('status');
+            statusDiv.className = `status ${type}`;
+            statusDiv.innerHTML = message;
+        }
+
+        function addResult(title, message, type = 'info') {
+            const resultsDiv = document.getElementById('results');
+            const div = document.createElement('div');
+            div.className = `status ${type}`;
+            div.innerHTML = `<strong>${title}:</strong> ${message}`;
+            resultsDiv.appendChild(div);
+        }
+
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+            if (map) {
+                markers.forEach(marker => map.removeLayer(marker));
+                markers = [];
+            }
+        }
+
+        async function testMapDots() {
+            clearResults();
+            showStatus('🔄 Testing map dots functionality...', 'loading');
+
+            try {
+                // Step 1: Test Backend Connection
+                showStatus('📡 Step 1: Testing backend connection...', 'loading');
+                const response = await fetch('http://localhost:8000/api/stations');
+                
+                if (!response.ok) {
+                    throw new Error(`Backend API returned ${response.status}: ${response.statusText}`);
+                }
+
+                const stations = await response.json();
+                addResult('Backend Connection', `✅ SUCCESS - Found ${stations.length} stations`, 'success');
+
+                // Step 2: Validate Station Data
+                showStatus('🔍 Step 2: Validating station data...', 'loading');
+                
+                if (stations.length === 0) {
+                    addResult('Station Data', '⚠️ No stations found in database', 'error');
+                    return;
+                }
+
+                let validStations = 0;
+                stations.forEach((station, index) => {
+                    const hasValidCoords = station.latitude && station.longitude && 
+                                         !isNaN(parseFloat(station.latitude)) && 
+                                         !isNaN(parseFloat(station.longitude));
+                    
+                    if (hasValidCoords) {
+                        validStations++;
+                        addResult(`Station ${index + 1}`, 
+                                `✅ ${station.name} at (${station.latitude}, ${station.longitude})`, 'success');
+                    } else {
+                        addResult(`Station ${index + 1}`, 
+                                `❌ ${station.name} - Invalid coordinates`, 'error');
+                    }
+                });
+
+                if (validStations === 0) {
+                    addResult('Coordinate Validation', '❌ No stations have valid coordinates', 'error');
+                    return;
+                }
+
+                // Step 3: Initialize Map
+                showStatus('🗺️ Step 3: Creating map with station dots...', 'loading');
+                
+                if (map) {
+                    map.remove();
+                }
+
+                // Use coordinates of first valid station as center
+                const firstStation = stations.find(s => s.latitude && s.longitude);
+                const centerLat = parseFloat(firstStation.latitude);
+                const centerLng = parseFloat(firstStation.longitude);
+
+                map = L.map('map').setView([centerLat, centerLng], 11);
+
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '© OpenStreetMap contributors'
+                }).addTo(map);
+
+                // Step 4: Add Station Markers
+                showStatus('📍 Step 4: Adding station markers...', 'loading');
+                
+                let markersAdded = 0;
+                stations.forEach(station => {
+                    const lat = parseFloat(station.latitude);
+                    const lng = parseFloat(station.longitude);
+                    
+                    if (!isNaN(lat) && !isNaN(lng)) {
+                        // Create custom colored marker
+                        const customIcon = L.divIcon({
+                            html: `<div style="background-color: #10b981; width: 20px; height: 20px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.5);"></div>`,
+                            iconSize: [24, 24],
+                            className: 'custom-marker'
+                        });
+
+                        const marker = L.marker([lat, lng], { icon: customIcon }).addTo(map);
+                        
+                        marker.bindPopup(`
+                            <div style="padding: 10px; min-width: 200px;">
+                                <h3 style="margin: 0 0 10px 0; color: #333;">${station.name}</h3>
+                                <p><strong>ID:</strong> ${station.id}</p>
+                                <p><strong>Location:</strong> ${station.location || 'Not specified'}</p>
+                                <p><strong>Coordinates:</strong> ${lat.toFixed(4)}, ${lng.toFixed(4)}</p>
+                                <p><strong>Managed by:</strong> ${station.managed_by || 'Water Authority'}</p>
+                                <div style="margin-top: 10px; padding: 8px; background: #e8f5e9; border-radius: 4px;">
+                                    <strong>✅ Marker Successfully Rendered!</strong>
+                                </div>
+                            </div>
+                        `);
+                        
+                        markers.push(marker);
+                        markersAdded++;
+                    }
+                });
+
+                // Step 5: Final Results
+                if (markersAdded > 0) {
+                    showStatus(`🎉 SUCCESS! Map shows ${markersAdded} station dots`, 'success');
+                    addResult('Map Rendering', `✅ ${markersAdded} markers successfully added to map`, 'success');
+                    addResult('Dots Visibility', '✅ Green dots should be visible on the map above', 'success');
+                    addResult('Interactivity', '✅ Click any dot to see station details', 'success');
+                    
+                    // Fit map to show all markers
+                    if (markers.length > 1) {
+                        const group = new L.featureGroup(markers);
+                        map.fitBounds(group.getBounds().pad(0.1));
+                    }
+                } else {
+                    showStatus('❌ FAILED - No markers could be added', 'error');
+                    addResult('Map Rendering', '❌ Failed to add any markers to map', 'error');
+                }
+
+            } catch (error) {
+                showStatus(`❌ ERROR: ${error.message}`, 'error');
+                addResult('Test Failed', error.message, 'error');
+                
+                if (error.message.includes('Failed to fetch')) {
+                    addResult('Solution', '🔧 Make sure backend server is running on port 8000', 'info');
+                }
+            }
+        }
+
+        // Initialize empty map on page load
+        window.onload = function() {
+            map = L.map('map').setView([40.7128, -74.0060], 10);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+        };
+    </script>
+</body>
+</html>

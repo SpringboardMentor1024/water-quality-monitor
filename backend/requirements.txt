@@ -8,3 +8,7 @@ python-jose[cryptography]
 python-multipart
 passlib[bcrypt]
 requests
+scikit-learn
+numpy
+pandas
+joblib

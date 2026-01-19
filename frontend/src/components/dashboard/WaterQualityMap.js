@@ -7,9 +7,9 @@ import { stationsAPI } from '../../services/api';
 // Fix for default markers in react-leaflet
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
-  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+  iconRetinaUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png',
+  iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
 });
 
 // Custom marker icons based on water quality status
@@ -36,27 +36,37 @@ const WaterQualityMap = ({ data, onLocationSelect, selectedLocation, showRealTim
   useEffect(() => {
     const loadStations = async () => {
       try {
+        console.log('WaterQualityMap: Loading stations...', { data, showRealTimeData });
+        
         if (data && data.length > 0) {
+          console.log('WaterQualityMap: Using provided data:', data);
           setStations(data);
         } else {
+          console.log('WaterQualityMap: Fetching from API...');
           const realStations = await stationsAPI.getAllStations();
-          const processedStations = realStations.map(station => ({
-            id: station.id,
-            name: station.name,
-            lat: parseFloat(station.latitude),
-            lng: parseFloat(station.longitude),
-            status: station.status || 'good',
-            ph: station.currentReading?.ph || 7.0,
-            turbidity: station.currentReading?.turbidity || 1.0,
-            dissolved_oxygen: station.currentReading?.dissolved_oxygen || 8.0,
-            temperature: station.currentReading?.temperature || 20.0,
-            lastUpdate: station.lastUpdated || new Date().toISOString(),
-            managed_by: station.managed_by || 'Water Authority'
-          }));
+          console.log('WaterQualityMap: API response:', realStations);
+          
+          const processedStations = realStations.map(station => {
+            const processed = {
+              id: station.id,
+              name: station.name,
+              lat: parseFloat(station.latitude),
+              lng: parseFloat(station.longitude),
+              status: station.status || 'good',
+              ph: station.currentReading?.ph || 7.0,
+              turbidity: station.currentReading?.turbidity || 1.0,
+              dissolved_oxygen: station.currentReading?.dissolved_oxygen || 8.0,
+              temperature: station.currentReading?.temperature || 20.0,
+              lastUpdate: station.lastUpdated || new Date().toISOString(),
+              managed_by: station.managed_by || 'Water Authority'
+            };
+            console.log('WaterQualityMap: Processed station:', processed);
+            return processed;
+          });
           setStations(processedStations);
         }
       } catch (error) {
-        console.error('Failed to load stations:', error);
+        console.error('WaterQualityMap: Failed to load stations:', error);
         setStations([]);
       } finally {
         setLoading(false);
@@ -86,6 +96,8 @@ const WaterQualityMap = ({ data, onLocationSelect, selectedLocation, showRealTim
     return texts[status] || 'Unknown';
   };
 
+  console.log('WaterQualityMap: Rendering with stations:', stations);
+
   if (loading) {
     return (
       <div className="h-64 sm:h-80 lg:h-96 w-full rounded-lg overflow-hidden flex items-center justify-center bg-gray-100">
@@ -100,12 +112,12 @@ const WaterQualityMap = ({ data, onLocationSelect, selectedLocation, showRealTim
   return (
     <div className="h-64 sm:h-80 lg:h-96 w-full rounded-lg overflow-hidden relative">
       <MapContainer
-        key="water-quality-map"
+        key={`water-quality-map-${stations.length}`}
         center={stations.length > 0 ? [stations[0].lat, stations[0].lng] : [40.7128, -74.0060]}
         zoom={11}
         style={{ height: '100%', width: '100%' }}
         whenCreated={(mapInstance) => {
-          // Map is ready
+          console.log('WaterQualityMap: Map created with', stations.length, 'stations');
         }}
       >
         <TileLayer
@@ -113,15 +125,20 @@ const WaterQualityMap = ({ data, onLocationSelect, selectedLocation, showRealTim
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         />
         
-        {stations.map((location) => (
-          <Marker
-            key={location.id}
-            position={[location.lat, location.lng]}
-            icon={createCustomIcon(location.status)}
-            eventHandlers={{
-              click: () => onLocationSelect && onLocationSelect(location)
-            }}
-          >
+        {stations.map((location) => {
+          console.log('WaterQualityMap: Rendering marker for:', location.name, 'at', location.lat, location.lng);
+          return (
+            <Marker
+              key={location.id}
+              position={[location.lat, location.lng]}
+              icon={createCustomIcon(location.status)}
+              eventHandlers={{
+                click: () => {
+                  console.log('WaterQualityMap: Marker clicked:', location.name);
+                  onLocationSelect && onLocationSelect(location);
+                }
+              }}
+            >
             <Popup>
               <div className="p-3 min-w-64">
                 <div className="flex items-center justify-between mb-3">
@@ -176,7 +193,8 @@ const WaterQualityMap = ({ data, onLocationSelect, selectedLocation, showRealTim
               </div>
             </Popup>
           </Marker>
-        ))}
+          );
+        })}
       </MapContainer>
       
       {stations.length === 0 && !loading && (

@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Navigation from './components/layout/Navigation';
 import LoginPage from './pages/auth/LoginPage';
@@ -18,6 +18,7 @@ import UserReportsPage from './pages/UserReportsPage';
 import ReportDetailsPage from './pages/ReportDetailsPage';
 import SettingsPage from './pages/SettingsPage';
 import EnhancedBaseMap from './components/maps/EnhancedBaseMap';
+import TestMapPage from './pages/TestMapPage';
 
 // Main Layout Component with Navigation Sidebar
 const MainLayout = ({ children }) => {
@@ -47,6 +48,12 @@ function App() {
         <Route path="/dashboard" element={
           <MainLayout>
             <Dashboard />
+          </MainLayout>
+        } />
+
+        <Route path="/test-map" element={
+          <MainLayout>
+            <TestMapPage />
           </MainLayout>
         } />
 

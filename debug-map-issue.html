@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Map Issue - Water Quality Monitor</title>
+    <style>
+        body { margin: 0; padding: 20px; font-family: Arial, sans-serif; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .status { padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .info { background: #d1ecf1; color: #0c5460; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 3px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Water Quality Monitor - Map Debug Test</h1>
+        
+        <div class="test-section">
+            <h2>1. Backend API Test</h2>
+            <div id="api-status" class="status info">Testing API connection...</div>
+            <pre id="api-response"></pre>
+        </div>
+        
+        <div class="test-section">
+            <h2>2. Frontend Application Test</h2>
+            <div id="frontend-status" class="status info">Testing frontend...</div>
+            <p>Expected behavior:</p>
+            <ul>
+                <li>Dashboard should load at <a href="http://localhost:3000" target="_blank">http://localhost:3000</a></li>
+                <li>Map should show 3 water station dots</li>
+                <li>Dots should be clickable with popups</li>
+                <li>Real data should be displayed</li>
+            </ul>
+        </div>
+        
+        <div class="test-section">
+            <h2>3. Map Component Analysis</h2>
+            <div id="map-analysis" class="status info">Analyzing map components...</div>
+            <div id="map-details"></div>
+        </div>
+        
+        <div class="test-section">
+            <h2>4. Troubleshooting Steps</h2>
+            <div id="troubleshooting"></div>
+        </div>
+    </div>
+
+    <script>
+        async function runDiagnostics() {
+            // Test 1: Backend API
+            try {
+                const response = await fetch('http://localhost:8000/api/stations');
+                const stations = await response.json();
+                
+                document.getElementById('api-status').innerHTML = `✅ SUCCESS: Found ${stations.length} stations`;
+                document.getElementById('api-status').className = 'status success';
+                document.getElementById('api-response').textContent = JSON.stringify(stations, null, 2);
+                
+                // Test 2: Frontend Analysis
+                analyzeFrontend(stations);
+                
+            } catch (error) {
+                document.getElementById('api-status').innerHTML = `❌ ERROR: ${error.message}`;
+                document.getElementById('api-status').className = 'status error';
+                document.getElementById('api-response').textContent = error.toString();
+            }
+        }
+        
+        function analyzeFrontend(stations) {
+            const frontendStatus = document.getElementById('frontend-status');
+            const mapAnalysis = document.getElementById('map-analysis');
+            const mapDetails = document.getElementById('map-details');
+            const troubleshooting = document.getElementById('troubleshooting');
+            
+            // Check if frontend is accessible
+            fetch('http://localhost:3000')
+                .then(response => {
+                    if (response.ok) {
+                        frontendStatus.innerHTML = '✅ Frontend is running on port 3000';
+                        frontendStatus.className = 'status success';
+                    } else {
+                        frontendStatus.innerHTML = '⚠️ Frontend may have issues';
+                        frontendStatus.className = 'status error';
+                    }
+                })
+                .catch(error => {
+                    frontendStatus.innerHTML = '❌ Frontend not accessible';
+                    frontendStatus.className = 'status error';
+                });
+            
+            // Map analysis
+            mapAnalysis.innerHTML = '✅ Map should display these stations:';
+            mapAnalysis.className = 'status success';
+            
+            let mapDetailsHTML = '<ul>';
+            stations.forEach(station => {
+                mapDetailsHTML += `
+                    <li>
+                        <strong>${station.name}</strong><br>
+                        Coordinates: (${station.latitude}, ${station.longitude})<br>
+                        Location: ${station.location}<br>
+                        ID: ${station.id}
+                    </li>
+                `;
+            });
+            mapDetailsHTML += '</ul>';
+            mapDetails.innerHTML = mapDetailsHTML;
+            
+            // Troubleshooting
+            troubleshooting.innerHTML = `
+                <h3>If map dots are not showing:</h3>
+                <ol>
+                    <li><strong>Check Browser Console:</strong> Open DevTools (F12) and look for JavaScript errors</li>
+                    <li><strong>Check Network Tab:</strong> Verify API calls are successful</li>
+                    <li><strong>Verify Leaflet CSS:</strong> Map tiles should load properly</li>
+                    <li><strong>Check React Components:</strong> WaterQualityMap component should render markers</li>
+                    <li><strong>Verify Data Flow:</strong> Dashboard → API → WaterQualityMap → Leaflet Markers</li>
+                </ol>
+                
+                <h3>Common Issues:</h3>
+                <ul>
+                    <li><strong>CORS Issues:</strong> Backend should allow frontend origin</li>
+                    <li><strong>Leaflet Icon Issues:</strong> Custom icons might not render</li>
+                    <li><strong>Coordinate Issues:</strong> Invalid lat/lng values</li>
+                    <li><strong>React State Issues:</strong> Component not re-rendering with new data</li>
+                </ul>
+                
+                <h3>Quick Fixes:</h3>
+                <ul>
+                    <li>Hard refresh the browser (Ctrl+F5)</li>
+                    <li>Clear browser cache</li>
+                    <li>Check if both backend (port 8000) and frontend (port 3000) are running</li>
+                    <li>Verify the WaterQualityMap component is receiving data</li>
+                </ul>
+            `;
+        }
+        
+        // Run diagnostics when page loads
+        runDiagnostics();
+    </script>
+</body>
+</html>

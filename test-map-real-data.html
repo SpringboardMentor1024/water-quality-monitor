@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Map Test - Water Quality Monitor</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <style>
+        body { margin: 0; padding: 20px; font-family: Arial, sans-serif; }
+        #map { height: 500px; width: 100%; border: 1px solid #ccc; }
+        .info { margin-bottom: 20px; padding: 10px; background: #f0f0f0; border-radius: 5px; }
+        .status { margin-top: 10px; padding: 10px; border-radius: 5px; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+    </style>
+</head>
+<body>
+    <h1>Water Quality Monitor - Map Test</h1>
+    <div class="info">
+        <strong>Testing:</strong> Real data from backend API at http://localhost:8000/api/stations
+    </div>
+    <div id="status" class="status">Loading...</div>
+    <div id="map"></div>
+
+    <script>
+        async function testMapWithRealData() {
+            const statusDiv = document.getElementById('status');
+            
+            try {
+                // Test API connection
+                statusDiv.innerHTML = 'Fetching stations from backend...';
+                const response = await fetch('http://localhost:8000/api/stations');
+                
+                if (!response.ok) {
+                    throw new Error(`API Error: ${response.status}`);
+                }
+                
+                const stations = await response.json();
+                statusDiv.innerHTML = `✅ Success! Found ${stations.length} stations`;
+                statusDiv.className = 'status success';
+                
+                // Initialize map
+                const map = L.map('map').setView([40.7128, -74.0060], 11);
+                
+                // Add tile layer
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '© OpenStreetMap contributors'
+                }).addTo(map);
+                
+                // Add markers for each station
+                stations.forEach(station => {
+                    const lat = parseFloat(station.latitude);
+                    const lng = parseFloat(station.longitude);
+                    
+                    console.log(`Adding marker for ${station.name} at (${lat}, ${lng})`);
+                    
+                    // Create custom icon
+                    const customIcon = L.divIcon({
+                        className: 'custom-marker',
+                        html: `<div style="background-color: #10b981; width: 20px; height: 20px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>`,
+                        iconSize: [20, 20],
+                        iconAnchor: [10, 10]
+                    });
+                    
+                    const marker = L.marker([lat, lng], { icon: customIcon }).addTo(map);
+                    
+                    marker.bindPopup(`
+                        <div style="padding: 10px;">
+                            <h3>${station.name}</h3>
+                            <p><strong>ID:</strong> ${station.id}</p>
+                            <p><strong>Location:</strong> ${station.location}</p>
+                            <p><strong>Coordinates:</strong> ${lat}, ${lng}</p>
+                            <p><strong>Managed by:</strong> ${station.managed_by || 'Water Authority'}</p>
+                        </div>
+                    `);
+                });
+                
+                // Fit map to show all markers
+                if (stations.length > 0) {
+                    const group = new L.featureGroup(map._layers);
+                    map.fitBounds(group.getBounds().pad(0.1));
+                }
+                
+            } catch (error) {
+                console.error('Error:', error);
+                statusDiv.innerHTML = `❌ Error: ${error.message}`;
+                statusDiv.className = 'status error';
+                
+                // Still show map even if API fails
+                const map = L.map('map').setView([40.7128, -74.0060], 11);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '© OpenStreetMap contributors'
+                }).addTo(map);
+            }
+        }
+        
+        // Run test when page loads
+        testMapWithRealData();
+    </script>
+</body>
+</html>

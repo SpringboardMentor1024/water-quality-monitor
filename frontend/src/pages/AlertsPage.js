@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import HistoricalDataGraphs from '../components/alerts/HistoricalDataGraphs';
 import { alertsAPI } from '../services/api';
 import { getPredictiveAlerts } from "../components/alerts/PredictiveAlerts";
