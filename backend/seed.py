@@ -1,22 +1,90 @@
 from sqlalchemy.orm import Session
 from database import SessionLocal
 import models
+from datetime import datetime, timedelta
 
 db: Session = SessionLocal()
 
 # =====================================================
-# CLEAR OLD DATA
+# CLEAR OLD DATA (ORDER MATTERS)
 # =====================================================
 db.query(models.Alert).delete()
 db.query(models.WaterReading).delete()
+db.query(models.StationAssignment).delete()
+db.query(models.Collaboration).delete()
 db.query(models.Station).delete()
 db.commit()
 
 print("🧹 Old data cleared")
 
 # =====================================================
-# STATIONS (EXPLICIT, FIXED VALUES)
+# NGOs (MULTI NGO)
 # =====================================================
+ngos_data = [
+    {
+        "name": "Clean Water NGO",
+        "email": "ngo@example.com",
+        "region": "India",
+        "description": "Primary NGO for global monitoring"
+    },
+    {
+        "name": "Global Rivers Org",
+        "email": "ngo2@example.com",
+        "region": "Global",
+        "description": "Secondary NGO for demo separation"
+    }
+]
+
+ngos = {}
+for n in ngos_data:
+    ngo = db.query(models.NGO).filter_by(email=n["email"]).first()
+    if not ngo:
+        ngo = models.NGO(**n)
+        db.add(ngo)
+        db.commit()
+        db.refresh(ngo)
+    ngos[n["email"]] = ngo
+
+print("✅ NGOs ready")
+
+# =====================================================
+# PROJECT
+# =====================================================
+project = db.query(models.Project).filter_by(
+    name="Global River Monitoring"
+).first()
+
+if not project:
+    project = models.Project(
+        name="Global River Monitoring",
+        description="Seeded project for demo & analytics",
+        due_date="2026-12-31"
+    )
+    db.add(project)
+    db.commit()
+    db.refresh(project)
+
+print("✅ Project ready")
+
+# =====================================================
+# COLLABORATIONS
+# =====================================================
+for ngo in ngos.values():
+    exists = db.query(models.Collaboration).filter_by(
+        ngo_id=ngo.id,
+        project_id=project.id
+    ).first()
+
+    if not exists:
+        db.add(
+            models.Collaboration(
+                ngo_id=ngo.id,
+                project_id=project.id
+            )
+        )
+
+db.commit()
+print("✅ NGO–Project collaborations ready")
 stations = [
     # ---------- GANGA ----------
     {"name":"Ganga - Haridwar","lat":29.94,"lon":78.16,"ph":7.4,"turbidity":2.1,"temp":24,"arsenic":0.01,"do":7.2,"nitrate":4,"fluoride":0.6,"status":"Safe"},
@@ -222,46 +290,68 @@ stations = [
 {"name":"Chao Phraya - Bangkok","lat":13.75,"lon":100.50,"ph":8.3,"turbidity":12.7,"temp":31,"arsenic":0.06,"do":3.8,"nitrate":15,"fluoride":1.4,"status":"Unsafe"},
 
 ]
-# =====================================================
+#======================================
 # INSERT STATIONS
 # =====================================================
-station_map = {}  # keep reference if needed later
 
+# =====================================================
+# INSERT STATIONS (BULK)
+# =====================================================
+station_objs = []
 for s in stations:
-    station = models.Station(
-        name=s["name"],
-        latitude=s["lat"],
-        longitude=s["lon"],
-        ph=s["ph"],
-        turbidity=s["turbidity"],
-        temperature=s["temp"],
-        arsenic=s["arsenic"],
-        dissolved_oxygen=s["do"],
-        nitrate=s["nitrate"],
-        fluoride=s["fluoride"],
-        status=s["status"],
-        source="seed"
+    station_objs.append(
+        models.Station(
+            name=s["name"],
+            latitude=s["lat"],
+            longitude=s["lon"],
+            ph=s["ph"],
+            turbidity=s["turbidity"],
+            temperature=s["temp"],
+            arsenic=s["arsenic"],
+            dissolved_oxygen=s["do"],
+            nitrate=s["nitrate"],
+            fluoride=s["fluoride"],
+            status=s["status"],
+            source="seed"
+        )
     )
-    db.add(station)
-    station_map[s["name"]] = s  # map name → base data
 
+db.bulk_save_objects(station_objs)
 db.commit()
-print("✅ Stations inserted")
 
-from datetime import datetime, timedelta
+stations_db = db.query(models.Station).all()
+print(f"✅ {len(stations_db)} stations inserted")
 
+# =====================================================
+# STATION ASSIGNMENTS (SPLIT BETWEEN NGOs)
+# =====================================================
+assignments = []
+for i, st in enumerate(stations_db):
+    ngo = ngos["ngo@example.com"] if i % 2 == 0 else ngos["ngo2@example.com"]
+
+    assignments.append(
+        models.StationAssignment(
+            ngo_id=ngo.id,
+            station_id=st.id,
+            project_id=project.id,
+            is_active=True
+        )
+    )
+
+db.bulk_save_objects(assignments)
+db.commit()
+print("✅ Stations assigned to NGOs")
+
+# =====================================================
+# HISTORY (30 DAYS – OPTIMIZED)
+# =====================================================
 START_DATE = datetime.now() - timedelta(days=30)
+history = []
 
 def station_factor(name: str, scale: float):
-    """
-    Deterministic per-station factor (NO RANDOM)
-    Same station → same curve every time
-    """
     return (abs(hash(name)) % 9 + 1) * scale
 
-
 for s in stations:
-    # unique deterministic factors per station
     ph_step = station_factor(s["name"], 0.002)
     turb_step = station_factor(s["name"], 0.07)
     nitrate_step = station_factor(s["name"], 0.12)
@@ -269,28 +359,22 @@ for s in stations:
     do_step = station_factor(s["name"], 0.03)
 
     for day in range(30):
-        report = models.WaterReading(
-            station_name=s["name"],
-
-            # 🔹 UNIQUE CURVES PER RIVER
-            ph=round(s["ph"] + day * ph_step, 2),
-            turbidity=round(s["turbidity"] + day * turb_step, 2),
-            temperature=round(
-                s["temp"] + ((day + len(s["name"])) % 6) * 0.4, 2
-            ),
-
-            arsenic=round(s["arsenic"] + day * 0.0004, 4),
-            dissolved_oxygen=round(
-                max(2.0, s["do"] - day * do_step), 2
-            ),
-
-            nitrate=round(s["nitrate"] + day * nitrate_step, 2),
-            fluoride=round(s["fluoride"] + day * fluoride_step, 2),
-
-            status=s["status"],
-            source="seed",
-            recorded_at=START_DATE + timedelta(days=day),
+        history.append(
+            models.WaterReading(
+                station_name=s["name"],
+                ph=round(s["ph"] + day * ph_step, 2),
+                turbidity=round(s["turbidity"] + day * turb_step, 2),
+                temperature=round(s["temp"] + ((day + len(s["name"])) % 6) * 0.4, 2),
+                arsenic=round(s["arsenic"] + day * 0.0004, 4),
+                dissolved_oxygen=round(max(2.0, s["do"] - day * do_step), 2),
+                nitrate=round(s["nitrate"] + day * nitrate_step, 2),
+                fluoride=round(s["fluoride"] + day * fluoride_step, 2),
+                status=s["status"],
+                source="seed",
+                recorded_at=START_DATE + timedelta(days=day)
+            )
         )
-        db.add(report)
 
+db.bulk_save_objects(history)
 db.commit()
+print("✅ Historical data seeded")

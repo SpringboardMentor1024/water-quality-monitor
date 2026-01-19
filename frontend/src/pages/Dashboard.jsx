@@ -1,15 +1,13 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import DashboardMap from "../components/DashboardMap";
-import { getAlerts, getReports, getStations } from "../services/api";
+import { getAlerts, getStations } from "../services/api";
 
-import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
-import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import "../utils/fixLeafletIcons";
+
 export default function Dashboard() {
   const [alerts, setAlerts] = useState([]);
-  const [reports, setReports] = useState([]);
   const [stations, setStations] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -17,13 +15,11 @@ export default function Dashboard() {
   useEffect(() => {
     Promise.all([
       getAlerts(),
-      getReports(),
       getStations(),
     ])
-      .then(([alertsRes, reportsRes, stationsRes]) => {
-        setAlerts(alertsRes.data || []);
-        setReports(reportsRes.data || []);
-        setStations(stationsRes.data || []);
+      .then(([alertsRes, stationsRes]) => {
+        setAlerts(alertsRes.data?.alerts || alertsRes.data || []);
+        setStations(stationsRes.data?.stations || stationsRes.data || []);
         setLoading(false);
       })
       .catch((err) => {
@@ -44,9 +40,8 @@ export default function Dashboard() {
       </h2>
 
       {/* STATS CARDS */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         <StatCard title="Active Alerts" value={alerts.length} color="#8DBCC7" />
-        <StatCard title="Recent Reports" value={reports.length} color="#A4CCD9" />
         <StatCard title="Stations Online" value={stations.length} color="#C4E1E6" />
         <StatCard title="Water Quality Index" value="Moderate" color="#8DBCC7" />
       </div>
@@ -67,56 +62,28 @@ export default function Dashboard() {
         </Link>
       </div>
 
-      {/* ALERTS + REPORTS */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* RECENT ALERTS */}
-        <div className="bg-white p-5 rounded-xl shadow border border-[#A4CCD9]">
-          <h2 className="text-xl font-semibold mb-4">Recent Alerts</h2>
+      {/* RECENT ALERTS */}
+      <div className="bg-white p-5 rounded-xl shadow border border-[#A4CCD9]">
+        <h2 className="text-xl font-semibold mb-4">Recent Alerts</h2>
 
-          {alerts.slice(0, 3).map((alert) => (
-            <AlertItem
-              key={alert.id}
-              location={alert.station}
-              status={alert.details.Status}
-            />
-          ))}
+        {alerts.slice(0, 3).map((alert) => (
+          <AlertItem
+            key={alert.id}
+            location={alert.station}
+            status={alert.status || alert.details?.Status}
+          />
+        ))}
 
-          {alerts.length === 0 && (
-            <p className="text-gray-500">No alerts available</p>
-          )}
+        {alerts.length === 0 && (
+          <p className="text-gray-500">No alerts available</p>
+        )}
 
-          <Link
-            to="/alerts"
-            className="text-blue-600 font-semibold mt-3 inline-block"
-          >
-            View All Alerts →
-          </Link>
-        </div>
-
-        {/* RECENT REPORTS */}
-        <div className="bg-white p-5 rounded-xl shadow border border-[#A4CCD9]">
-          <h2 className="text-xl font-semibold mb-4">Recent Reports</h2>
-
-          {reports.slice(0, 3).map((report) => (
-            <ReportItem
-              key={report.id}
-              location={report.station_name}
-              ph={report.ph}
-              status={report.status}
-            />
-          ))}
-
-          {reports.length === 0 && (
-            <p className="text-gray-500">No reports available</p>
-          )}
-
-          <Link
-            to="/reports"
-            className="text-blue-600 font-semibold mt-3 inline-block"
-          >
-            View All Reports →
-          </Link>
-        </div>
+        <Link
+          to="/alerts"
+          className="text-blue-600 font-semibold mt-3 inline-block"
+        >
+          View All Alerts →
+        </Link>
       </div>
     </div>
   );
@@ -151,30 +118,6 @@ function AlertItem({ location, status }) {
       <div>
         <p className="font-semibold">{location}</p>
         <p className="text-sm text-gray-500">Status: {status}</p>
-      </div>
-
-      <span
-        className={`px-4 py-1 rounded-full text-white text-sm font-medium ${color}`}
-      >
-        {status}
-      </span>
-    </div>
-  );
-}
-
-function ReportItem({ location, ph, status }) {
-  const color =
-    status === "Safe"
-      ? "bg-green-500"
-      : status === "Warning"
-      ? "bg-yellow-500"
-      : "bg-red-500";
-
-  return (
-    <div className="p-3 rounded-lg mb-3 border border-gray-200 flex justify-between items-center">
-      <div>
-        <p className="font-semibold">{location}</p>
-        <p className="text-sm text-gray-500">pH: {ph}</p>
       </div>
 
       <span

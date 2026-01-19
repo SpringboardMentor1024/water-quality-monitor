@@ -1,13 +1,12 @@
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, EmailStr
 from typing import Optional
 from decimal import Decimal
 from datetime import datetime
+from enum import Enum
 
-print("🔥 LOADED SCHEMAS FILE:", __file__)
-
-# -----------------------------
+# =====================================================
 # STATIONS
-# -----------------------------
+# =====================================================
 class StationCreate(BaseModel):
     name: str
     latitude: Optional[float] = None
@@ -32,36 +31,29 @@ class StationResponse(StationCreate):
 
     model_config = ConfigDict(from_attributes=True)
 
-
-# -----------------------------
-# REPORTS
-# -----------------------------
+# =====================================================
+# SENSOR / SYSTEM REPORTS
+# =====================================================
 class ReportCreate(BaseModel):
-    station_name: str
-
-    ph: Decimal
-    turbidity: Decimal
-    temperature: Decimal
-
-    arsenic: Optional[Decimal] = None
-    dissolved_oxygen: Optional[Decimal] = None
-    nitrate: Optional[Decimal] = None
-    fluoride: Optional[Decimal] = None
-
-    status: str
-    source: Optional[str] = "manual"
+    location: str
+    description: str
+    water_source: str
+    photo_url: Optional[str] = None
 
 
-class ReportResponse(ReportCreate):
+class ReportResponse(BaseModel):
     id: int
-    recorded_at: datetime
+    location: str
+    description: str
+    water_source: str
+    status: str
+    created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
 
-
-# -----------------------------
+# =====================================================
 # ALERTS
-# -----------------------------
+# =====================================================
 class AlertResponse(BaseModel):
     id: int
     station_name: str
@@ -71,12 +63,11 @@ class AlertResponse(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
-
-# -----------------------------
+# =====================================================
 # AUTH
-# -----------------------------
+# =====================================================
 class LoginRequest(BaseModel):
-    email: str
+    email: EmailStr
     password: str
 
 
@@ -93,3 +84,60 @@ class RegisterRequest(BaseModel):
 
 class RegisterResponse(BaseModel):
     message: str
+
+# =====================================================
+# NGO
+# =====================================================
+class NGOProfileResponse(BaseModel):
+    name: str
+    email: str
+    region: str
+    description: Optional[str] = None
+
+
+class NGOProjectResponse(BaseModel):
+    id: int
+    name: str
+    description: str
+    due_date: str
+
+
+class NGOStationResponse(BaseModel):
+    id: int
+    name: str
+    latitude: float
+    longitude: float
+
+# =====================================================
+# USER REPORTING (CITIZEN REPORTS)
+# =====================================================
+class UserReportCreate(BaseModel):
+    location: str
+    description: str
+    water_source: str
+    photo_url: Optional[str] = None
+
+
+class ReportStatusEnum(str, Enum):
+    pending = "pending"
+    verified = "verified"
+    rejected = "rejected"
+
+
+class UserReportResponse(BaseModel):
+    id: int
+    user_id: int
+    photo_url: Optional[str]
+    location: str
+    description: str
+    water_source: str
+    status: ReportStatusEnum
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+# =====================================================
+# ✅ STEP 1 ADDITION — APPROVE / REJECT SCHEMA
+# =====================================================
+class ReportStatusUpdate(BaseModel):
+    status: ReportStatusEnum

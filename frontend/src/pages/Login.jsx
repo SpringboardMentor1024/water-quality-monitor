@@ -1,14 +1,8 @@
 import { useState } from "react";
-import { useNavigate, Link, Navigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 
 export default function Login() {
   const navigate = useNavigate();
-
-  // 🔐 CHECK IF ALREADY LOGGED IN
-  const isLoggedIn = localStorage.getItem("isLoggedIn");
-  if (isLoggedIn) {
-    return <Navigate to="/dashboard" replace />;
-  }
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -21,17 +15,19 @@ export default function Login() {
     setLoading(true);
 
     try {
+      // OAuth2 requires FORM DATA
+      const formData = new URLSearchParams();
+      formData.append("username", email);
+      formData.append("password", password);
+
       const response = await fetch(
         "http://127.0.0.1:8000/api/auth/login",
         {
           method: "POST",
           headers: {
-            "Content-Type": "application/json",
+            "Content-Type": "application/x-www-form-urlencoded",
           },
-          body: JSON.stringify({
-            email,
-            password,
-          }),
+          body: formData.toString(),
         }
       );
 
@@ -41,10 +37,16 @@ export default function Login() {
 
       const data = await response.json();
 
-      // ✅ STORE LOGIN STATE
-      localStorage.setItem("isLoggedIn", "true");
+      // ✅ STORE CORRECTLY
+      localStorage.setItem("access", data.access_token);
       localStorage.setItem("role", data.role);
-      localStorage.setItem("userId", data.user_id);
+      localStorage.setItem("isLoggedIn", "true");
+      console.log("LOGIN RESPONSE:", data);
+
+      localStorage.setItem("access", data.access_token);
+      localStorage.setItem("role", data.role);
+
+      console.log("AFTER SAVE access:", localStorage.getItem("access"));
 
       navigate("/dashboard", { replace: true });
     } catch (err) {
@@ -57,83 +59,54 @@ export default function Login() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#F4FBFD]">
       <div className="w-full max-w-md bg-white p-8 rounded-2xl shadow border border-[#C4E1E6]">
-
-        {/* TITLE */}
         <h2 className="text-2xl font-bold text-center text-gray-700 mb-2">
           Water Quality Monitor
         </h2>
-        
-        {/* ERROR MESSAGE */}
+
         {error && (
           <div className="mb-4 text-sm text-red-600 bg-red-50 p-2 rounded">
             {error}
           </div>
         )}
 
-        {/* LOGIN FORM */}
         <form onSubmit={handleSubmit} className="space-y-5">
-
-          {/* EMAIL */}
           <div>
-            <label className="text-sm font-medium text-gray-600">
-              Email
-            </label>
+            <label className="text-sm font-medium text-gray-600">Email</label>
             <input
               type="email"
-              className="w-full mt-1 p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#7FC8D6]"
-              placeholder="user@example.com"
+              className="w-full mt-1 p-2 border rounded-lg"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
             />
           </div>
 
-          {/* PASSWORD */}
           <div>
-            <label className="text-sm font-medium text-gray-600">
-              Password
-            </label>
+            <label className="text-sm font-medium text-gray-600">Password</label>
             <input
               type="password"
-              className="w-full mt-1 p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#7FC8D6]"
-              placeholder="••••••••"
+              className="w-full mt-1 p-2 border rounded-lg"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
             />
           </div>
 
-          {/* FORGOT PASSWORD */}
-          <div className="flex justify-end">
-            <Link
-              to="/forgot-password"
-              className="text-sm text-[#4FA3B5] hover:underline"
-            >
-              Forgot password?
-            </Link>
-          </div>
-
-          {/* LOGIN BUTTON */}
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-[#4FA3B5] text-white py-2 rounded-lg hover:bg-[#3D91A3] transition disabled:opacity-60"
+            className="w-full bg-[#4FA3B5] text-white py-2 rounded-lg hover:bg-[#3D91A3] disabled:opacity-60"
           >
             {loading ? "Logging in..." : "Login"}
           </button>
         </form>
 
-        {/* REGISTER LINK */}
-        <p className="text-center text-sm text-gray-600 mt-6">
+        <p className="text-center text-sm mt-6">
           Don’t have an account?{" "}
-          <Link
-            to="/register"
-            className="text-[#4FA3B5] font-medium hover:underline"
-          >
+          <Link to="/register" className="text-[#4FA3B5] hover:underline">
             Register
           </Link>
         </p>
-
       </div>
     </div>
   );

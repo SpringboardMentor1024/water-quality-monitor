@@ -3,47 +3,101 @@ import {
   MdDashboard,
   MdMap,
   MdAssessment,
-  MdWarning,
   MdSensors,
   MdAnalytics,
   MdSearch,
   MdPerson,
   MdSettings,
   MdLogout,
-  MdGroups, // ✅ add this import for Collaboration icon
+  MdGroups,
+  MdVerified,
+  MdWarning, // ✅ MISSING IMPORT FIXED
 } from "react-icons/md";
 
 export default function Sidebar() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // LOGOUT FUNCTION
+  // user | ngo | admin
+  const role = localStorage.getItem("role");
+
+  // ---------------- LOGOUT ----------------
   const handleLogout = () => {
     localStorage.removeItem("isLoggedIn");
     localStorage.removeItem("role");
+    localStorage.removeItem("access");
     navigate("/login", { replace: true });
   };
 
-  // MENU ITEMS
-  const menu = [
-    { name: "Dashboard", path: "/dashboard", icon: <MdDashboard size={22} /> },
-    { name: "Map", path: "/map", icon: <MdMap size={22} /> },
-    { name: "Reports", path: "/reports", icon: <MdAssessment size={22} /> },
-    { name: "Alerts", path: "/alerts", icon: <MdWarning size={22} /> },
-    { name: "Stations", path: "/stations", icon: <MdSensors size={22} /> },
-    { name: "Analytics", path: "/analytics", icon: <MdAnalytics size={22} /> },
-     { name: "Collaboration", path: "/collaboration", icon: <MdGroups size={22} /> },
-    { name: "Search", path: "/search", icon: <MdSearch size={22} /> },
-    { name: "Profile", path: "/profile", icon: <MdPerson size={22} /> },
-    { name: "Settings", path: "/settings", icon: <MdSettings size={22} /> },
+  // ---------------- MENUS ----------------
 
-    
-   
+  // COMMON (ALL ROLES)
+  const commonMenu = [
+    {
+      name: "Dashboard",
+      path: role === "ngo" || role === "admin" ? "/ngo/dashboard" : "/dashboard",
+      icon: <MdDashboard size={22} />,
+    },
+    { name: "Map", path: "/map", icon: <MdMap size={22} /> },
+    { name: "Stations", path: "/stations", icon: <MdSensors size={22} /> },
+    { name: "Search", path: "/search", icon: <MdSearch size={22} /> },
   ];
 
+  // USER ONLY
+  const userMenu = [
+    {
+      name: "My Reports",
+      path: "/reports",
+      icon: <MdAssessment size={22} />,
+    },
+    {
+      name: "Predictive Alerts",
+      path: "/predictive-alerts",
+      icon: <MdWarning size={22} />,
+    },
+  ];
+
+  // NGO / ADMIN ONLY
+  const adminMenu = [
+    {
+      name: "Verify Reports",
+      path: "/reports", // same page, role-based view
+      icon: <MdVerified size={22} />,
+    },
+    {
+      name: "Analytics",
+      path: "/analytics",
+      icon: <MdAnalytics size={22} />,
+    },
+    {
+      name: "Predictive Alerts",
+      path: "/predictive-alerts",
+      icon: <MdWarning size={22} />,
+    },
+    {
+      name: "Collaboration",
+      path: "/collaboration",
+      icon: <MdGroups size={22} />,
+    },
+  ];
+
+  // PROFILE (ALL)
+  const profileMenu = [
+    { name: "Profile", path: "/profile", icon: <MdPerson size={22} /> },
+    { name: "Settings", path: "/settings", icon: <MdSettings size={22} /> },
+  ];
+
+  // FINAL MENU BUILD
+  const menu = [
+    ...commonMenu,
+    ...(role === "user" ? userMenu : []),
+    ...(role === "ngo" || role === "admin" ? adminMenu : []),
+    ...profileMenu,
+  ];
+
+  // ---------------- RENDER ----------------
   return (
     <aside className="w-64 min-h-screen bg-[#F5FAFC] border-r border-[#C4E1E6] p-4 flex flex-col justify-between">
-
       {/* TOP MENU */}
       <div>
         <h2 className="text-lg font-bold text-gray-700 mb-6">
@@ -52,7 +106,7 @@ export default function Sidebar() {
 
         {menu.map((item) => (
           <Link
-            key={item.path}
+            key={item.name}
             to={item.path}
             className={`flex items-center gap-3 p-3 rounded-lg mb-2 transition
               ${
@@ -67,7 +121,7 @@ export default function Sidebar() {
         ))}
       </div>
 
-      {/* LOGOUT BUTTON */}
+      {/* LOGOUT */}
       <button
         onClick={handleLogout}
         className="flex items-center gap-3 p-3 rounded-lg text-red-600 hover:bg-red-100 transition"
@@ -75,7 +129,6 @@ export default function Sidebar() {
         <MdLogout size={22} />
         Logout
       </button>
-
     </aside>
   );
 }

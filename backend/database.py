@@ -3,14 +3,25 @@ from sqlalchemy.orm import sessionmaker, declarative_base
 import os
 from dotenv import load_dotenv
 
-load_dotenv()
+# ---------------------------------
+# LOAD ENV
+# ---------------------------------
+from dotenv import load_dotenv
+from pathlib import Path
 
-# ---------------------------------
-# BASE DIRECTORY (IMPORTANT FIX)
-# ---------------------------------
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+BASE_DIR = Path(__file__).resolve().parent
+ENV_PATH = BASE_DIR / ".env"
+
+load_dotenv(dotenv_path=ENV_PATH)
+
 
 DATABASE_URL = os.getenv("DATABASE_URL")
+print("USING DATABASE_URL =", DATABASE_URL)
+
+# ---------------------------------
+# BASE DIRECTORY
+# ---------------------------------
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # ---------------------------------
 # DATABASE ENGINE

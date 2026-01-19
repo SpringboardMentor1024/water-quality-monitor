@@ -1,52 +1,44 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 
-import ForgotPassword from "./pages/ForgotPassword";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import ForgotPassword from "./pages/ForgotPassword";
+
 import Dashboard from "./pages/Dashboard";
 import Reports from "./pages/Reports";
 import MyReports from "./pages/MyReports";
 import Alerts from "./pages/AlertsPage";
 import AlertTrendsPage from "./pages/AlertTrendsPage";
 import Stations from "./pages/Stations";
+import StationDetails from "./pages/StationDetails";
 import Analytics from "./pages/Analytics";
 import NgoDashboard from "./pages/NgoDashboard";
 import AddProject from "./pages/AddProject";
-import StationDetails from "./pages/StationDetails";
 import MapView from "./pages/MapView";
 import Profile from "./pages/Profile";
 import Search from "./pages/Search";
 import Settings from "./pages/Settings";
-
+import Collaboration from "./pages/Collaboration";
+import ProjectDetails from "./pages/ProjectDetails"; // ✅ REQUIRED
+import PredictiveAlerts from "./pages/PredictiveAlerts";
 import MainLayout from "./layouts/MainLayout";
 import ProtectedRoute from "./components/ProtectedRoute";
+import NewReport from "./pages/NewReport";
 
 export default function App() {
-  const isLoggedIn = localStorage.getItem("isLoggedIn");
-
   return (
     <Router>
       <Routes>
 
-        {/* ROOT REDIRECT */}
-        <Route
-          path="/"
-          element={
-            isLoggedIn ? (
-              <Navigate to="/dashboard" replace />
-            ) : (
-              <Navigate to="/login" replace />
-            )
-          }
-        />
+        {/* DEFAULT */}
+        <Route path="/" element={<Navigate to="/login" replace />} />
 
-        {/* PUBLIC AUTH PAGES */}
+        {/* PUBLIC */}
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
 
-
-        {/* PROTECTED APP PAGES */}
+        {/* PROTECTED */}
         <Route
           element={
             <ProtectedRoute>
@@ -60,20 +52,25 @@ export default function App() {
           <Route path="/alerts" element={<Alerts />} />
           <Route path="/alert-trends" element={<AlertTrendsPage />} />
           <Route path="/stations" element={<Stations />} />
+          <Route path="/stations/:id" element={<StationDetails />} />
           <Route path="/analytics" element={<Analytics />} />
           <Route path="/ngo/dashboard" element={<NgoDashboard />} />
           <Route path="/add-project" element={<AddProject />} />
-          <Route path="/collaboration" element={<NgoDashboard />} />
-          <Route path="/stations/:id" element={<StationDetails />} />
-
-          <Route path="/profile" element={<Profile />} />
           <Route path="/map" element={<MapView />} />
           <Route path="/search" element={<Search />} />
+          <Route path="/profile" element={<Profile />} />
           <Route path="/settings" element={<Settings />} />
-          
+          <Route path="/project/:id" element={<ProjectDetails />} />
+          <Route path="/reports/new" element={<NewReport />} />
+          <Route path="/predictive-alerts" element={<PredictiveAlerts />} />
+          <Route path="/collaboration" element={<Collaboration />} />
 
+          {/* 🔥 THIS WAS MISSING / WRONG */}
+          <Route
+            path="/collaboration/project/:id"
+            element={<ProjectDetails />}
+          />
         </Route>
-
 
       </Routes>
     </Router>
