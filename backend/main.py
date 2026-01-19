@@ -275,6 +275,8 @@ app.include_router(alerts.router)
 app.include_router(ngo.router)
 app.include_router(ngo_projects.router)
 app.include_router(predictive_router)
+app.include_router(reports.router, prefix="/api")
+
 # -------------------- Static Files --------------------
 if not os.path.exists("avatars"):
     os.makedirs("avatars")

@@ -93,10 +93,11 @@ const [newProject, setNewProject] = useState({
 
     try {
       await ngoService.createReport({
-        stationId: newReport.stationId,
-        reportType: newReport.reportType,
-        status: 'Pending'
-      });
+  station_id: Number(newReport.stationId),
+  issue_type: newReport.reportType
+});
+
+    
 
       setShowReportModal(false);
       setNewReport({
@@ -442,83 +443,7 @@ const handleCreateProject = async () => {
             )}
           </div>
 
-          {/* REPORTS */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-
-            <div className="flex justify-between mb-4">
-              <h2 className="text-xl font-bold">Recent Reports</h2>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setShowReportModal(true)}
-                  className="bg-blue-600 text-white px-4 py-2 rounded"
-                >
-                  + New Report
-                </button>
-                <button
-                  onClick={() => setShowFilter(!showFilter)}
-                  className="border px-4 py-2 rounded"
-                >
-                  Filter
-                </button>
-              </div>
-            </div>
-
-            {showFilter && (
-              <div className="mb-4 p-4 border rounded bg-gray-50 grid grid-cols-3 gap-4">
-                <select
-                  className="border p-2 rounded"
-                  value={filters.stationId}
-                  onChange={e => setFilters({ ...filters, stationId: e.target.value })}
-                >
-                  <option value="">All Stations</option>
-                  {dashboardData.stations.map(s => (
-                    <option key={s.id} value={s.id}>{s.name}</option>
-                  ))}
-                </select>
-
-                <select
-                  className="border p-2 rounded"
-                  value={filters.status}
-                  onChange={e => setFilters({ ...filters, status: e.target.value })}
-                >
-                  <option value="">All Status</option>
-                  <option value="Pending">Pending</option>
-                  <option value="Reviewed">Reviewed</option>
-                </select>
-
-                <div className="flex gap-2">
-                  <button onClick={applyFilters} className="bg-blue-600 text-white px-4 py-2 rounded">
-                    Apply
-                  </button>
-                  <button onClick={resetFilters} className="border px-4 py-2 rounded">
-                    Reset
-                  </button>
-                </div>
-              </div>
-            )}
-
-            <table className="min-w-full text-sm">
-              <thead className="bg-gray-50 border-b border-gray-200">
-
-                <tr>
-                  <th className="px-4 py-2 text-left">ID</th>
-                  <th className="px-4 py-2 text-left">Station</th>
-                  <th className="px-4 py-2 text-left">Type</th>
-                  <th className="px-4 py-2 text-left">Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {dashboardData.recentReports.map(r => (
-                  <tr key={r.id} className="border-t">
-                    <td className="px-4 py-2">#{r.id}</td>
-                    <td className="px-4 py-2">{r.stationName}</td>
-                    <td className="px-4 py-2">{r.reportType}</td>
-                    <td className="px-4 py-2">{r.status}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          
         </>
       )}
 
@@ -534,19 +459,21 @@ const handleCreateProject = async () => {
       )}
 
       {/* ================= DEBUG ================= */}
-      <div className="mt-10 p-4 bg-gray-50 border border-gray-200 rounded text-xs text-gray-600">
+<div className="mt-10 p-4 bg-gray-50 border border-gray-200 rounded text-xs text-gray-600">
 
-        <p className="font-semibold mb-1">Debug Info</p>
-        <p>Projects: {dashboardData.projects.length}</p>
-        <p>Stations: {dashboardData.stations.length}</p>
-        <p>Active Tab: {activeTab}</p>
-        <button
-          onClick={fetchNGODashboardData}
-          className="mt-2 bg-gray-600 text-white px-3 py-1 rounded hover:bg-gray-700"
-        >
-          Refresh Data
-        </button>
-      </div>
+  <p className="font-semibold mb-1">Debug Info</p>
+  <p>Projects: {projects.length}</p>
+  <p>Stations: {dashboardData.stations.length}</p>
+  <p>Active Tab: {activeTab}</p>
+
+  <button
+    onClick={fetchNGODashboardData}
+    className="mt-2 bg-gray-600 text-white px-3 py-1 rounded hover:bg-gray-700"
+  >
+    Refresh Data
+  </button>
+</div>
+
 
       {/* ================= REPORT MODAL ================= */}
       {showReportModal && (

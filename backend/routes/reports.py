@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from sqlalchemy import func, extract
 from database import get_db
@@ -6,7 +7,9 @@ import models
 
 router = APIRouter(prefix="/readings", tags=["Station Readings"])
 
-
+class ReportCreate(BaseModel):
+    station_id: int
+    issue_type: str
 # ----------------------------
 # ADD NEW READING
 # ----------------------------
@@ -81,3 +84,18 @@ def get_station_readings(station_id: int, db: Session = Depends(get_db)):
         }
         for r in readings
     ]
+@router.post("/reports")
+def create_report(
+    report: ReportCreate,
+    db: Session = Depends(get_db)
+):
+    new_report = Report(
+        station_id=report.station_id,
+        issue_type=report.issue_type,
+        status="pending"
+    )
+    db.add(new_report)
+    db.commit()
+    db.refresh(new_report)
+
+    return new_report

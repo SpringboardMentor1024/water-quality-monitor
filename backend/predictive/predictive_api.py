@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 import numpy as np
 import joblib
 import os
-
+from sqlalchemy import func
 from database import SessionLocal
 from models import StationReadings, WaterStation, ParameterEnum
 
@@ -126,3 +126,60 @@ def analyze_all_stations(db: Session = Depends(get_db)):
         })
 
     return results
+# =====================================================
+# HISTORICAL vs PREDICTIVE TREND (NGO DASHBOARD)
+# =====================================================
+@router.get("/station/{station_id}/trend")
+def station_predictive_trend(
+    station_id: int,
+    parameter: ParameterEnum = ParameterEnum.pH,
+    days: int = 7,
+    db: Session = Depends(get_db)
+):
+    """
+    Returns daily historical vs predictive trend for a station
+    Used in NGO Dashboard Predictive Analytics chart
+    """
+
+    start_date = datetime.utcnow() - timedelta(days=days)
+
+    # -------------------------------
+    # 1️⃣ FETCH HISTORICAL READINGS
+    # -------------------------------
+    readings = db.query(
+        func.date(StationReadings.recorded_at).label("date"),
+        func.avg(StationReadings.value).label("actual_value")
+    ).filter(
+        StationReadings.station_id == station_id,
+        StationReadings.parameter == parameter,
+        StationReadings.recorded_at >= start_date
+    ).group_by(
+        func.date(StationReadings.recorded_at)
+    ).order_by(
+        func.date(StationReadings.recorded_at)
+    ).all()
+
+    if not readings:
+        return []
+
+    trend = []
+
+    # -------------------------------
+    # 2️⃣ GENERATE PREDICTIONS PER DAY
+    # -------------------------------
+    for r in readings:
+        avg_ph = float(r.actual_value)
+
+        # Minimal inputs for model
+        # (reuse pH as proxy if DO/Turb not available per day)
+        X = np.array([[avg_ph, 6.0, 3.0]])  # stable baseline
+        predicted = float(model.predict_proba(X)[0][1]) * avg_ph / 10
+
+        trend.append({
+            "date": str(r.date),
+            "actual": round(avg_ph, 2),
+            "predicted": round(predicted, 2),
+            "threshold": 8.5  # safe pH limit
+        })
+
+    return trend

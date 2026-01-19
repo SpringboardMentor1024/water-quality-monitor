@@ -42,6 +42,7 @@ model.fit(X, y)
 # -----------------------------
 # SAVE MODEL
 # -----------------------------
-joblib.dump(model, "backend/predictive/model.joblib")
+joblib.dump(model, "predictive/model.joblib")
+
 
 print("✅ Model trained and saved successfully")

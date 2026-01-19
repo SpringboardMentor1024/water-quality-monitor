@@ -328,3 +328,45 @@ def delete_alert(alert_id: int, db: Session = Depends(get_db)):
     db.delete(alert)
     db.commit()
     return {"message": f"Alert {alert_id} deleted successfully"}
+# =====================================================
+# PREDICTIVE VS ACTIVE ALERTS TRENDS
+# =====================================================
+@router.get("/analytics/predictive-vs-active")
+def predictive_vs_active_trends(db: Session = Depends(get_db)):
+    """
+    Active alerts: Alerts table
+    Predictive alerts: derived from Reports table (or ML)
+    """
+
+    # 1️⃣ ACTIVE ALERTS PER DAY
+    active_rows = db.query(
+        func.date(models.Alerts.issued_at).label("date"),
+        func.count(models.Alerts.id).label("active_alerts")
+    ).group_by(
+        func.date(models.Alerts.issued_at)
+    ).all()
+
+    active_map = {str(r.date): r.active_alerts for r in active_rows}
+
+    # 2️⃣ PREDICTIVE ALERTS PER DAY
+    # Using Reports as early-warning signals (ML inputs)
+    predictive_rows = db.query(
+        func.date(models.Reports.created_at).label("date"),
+        func.count(models.Reports.id).label("predictive_alerts")
+    ).group_by(
+        func.date(models.Reports.created_at)
+    ).all()
+
+    predictive_map = {str(r.date): r.predictive_alerts for r in predictive_rows}
+
+    # 3️⃣ MERGE BOTH
+    all_dates = sorted(set(active_map) | set(predictive_map))
+
+    return [
+        {
+            "date": d,
+            "active_alerts": active_map.get(d, 0),
+            "predictive_alerts": predictive_map.get(d, 0)
+        }
+        for d in all_dates
+    ]

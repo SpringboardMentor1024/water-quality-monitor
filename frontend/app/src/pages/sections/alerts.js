@@ -144,6 +144,12 @@ export default function Alerts() {
         <Tab label="Alert Trends & Historical Analysis" active={activeTab === "trends"} onClick={() => setActiveTab("trends")} />
         <Tab label="Alert Trigger Conditions" active={activeTab === "triggers"} onClick={() => setActiveTab("triggers")} />
         <Tab label="Predictive Alerts" active={activeTab === "predictive"} onClick={() => setActiveTab("predictive")} />
+        <Tab
+  label="Predictive vs Active Alerts Trends"
+  active={activeTab === "predictive-trend"}
+  onClick={() => setActiveTab("predictive-trend")}
+/>
+
       </div>
 
       {activeTab === "active" && (
@@ -155,7 +161,7 @@ export default function Alerts() {
       )}
 
       {activeTab === "trends" && <AlertTrends />}
-
+      {activeTab === "predictive-trend" && <PredictiveVsActiveTrends />}
       {activeTab === "triggers" && <TriggersInfo />}
 
       {activeTab === "predictive" && (
@@ -448,4 +454,88 @@ function extractParameter(msg) {
 function extractValue(msg) {
   const match = msg.match(/\(([^)]+)\)/);
   return match ? match[1] : "—";
+}
+function PredictiveVsActiveTrends() {
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+  axios
+    .get(`${ALERT_API}/analytics/predictive-vs-active`)
+    .then(res => {
+      console.log("BACKEND TREND DATA 👉", res.data);
+
+      // Map backend response safely (NO hardcoding)
+      const mappedData = res.data.map(item => ({
+        date: item.date || item.day || item.created_at,
+        active: Number(
+          item.active_alerts ??
+          item.actual_alerts ??
+          item.actual_count ??
+          item.active ??
+          0
+        ),
+        predictive: Number(
+          item.predictive_alerts ??
+          item.predicted_alerts ??
+          item.predicted_count ??
+          item.predictive ??
+          0
+        )
+      }));
+
+      setData(mappedData);
+    })
+    .catch(err => console.error("Trend API error", err))
+    .finally(() => setLoading(false));
+}, []);
+
+
+  if (loading) {
+    return (
+  <div className="bg-white p-6 border rounded">
+    <h2 className="font-bold mb-2">DEBUG: Predictive vs Active</h2>
+
+    <pre className="text-xs bg-gray-100 p-3 rounded overflow-auto">
+      {JSON.stringify(data, null, 2)}
+    </pre>
+  </div>
+);
+
+  }
+
+  return (
+    <div className="bg-white p-6 rounded border border-slate-300">
+      <h2 className="text-xl font-extrabold text-blue-900 mb-4">
+        Predictive vs Active Alerts Trends
+      </h2>
+
+      <ResponsiveContainer width="100%" height={350}>
+        <LineChart data={data}>
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis dataKey="date" />
+          <YAxis allowDecimals={false} />
+          <Tooltip />
+          <Legend />
+
+          <Line
+            type="monotone"
+            dataKey="active"
+            name="Active Alerts"
+            stroke="#dc2626"
+            strokeWidth={3}
+          />
+
+          <Line
+            type="monotone"
+            dataKey="predictive"
+            name="Predictive Alerts"
+            stroke="#2563eb"
+            strokeDasharray="4 4"
+            strokeWidth={3}
+          />
+        </LineChart>
+      </ResponsiveContainer>
+    </div>
+  );
 }
