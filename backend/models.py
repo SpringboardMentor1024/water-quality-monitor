@@ -36,7 +36,10 @@ class User(Base):
     password = Column(String, nullable=False)
     role = Column(String, nullable=False)   # admin / ngo / user
     ngo_id = Column(Integer, nullable=True)
-
+     # ✅ Add these new fields for profile features
+    name = Column(String, nullable=True)
+    phone = Column(String, nullable=True)
+    profile_pic = Column(String, nullable=True)
 
 # =====================================================
 # REPORTS (USER SUBMISSIONS)

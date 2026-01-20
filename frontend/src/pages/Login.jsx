@@ -3,56 +3,37 @@ import { useNavigate, Link } from "react-router-dom";
 
 export default function Login() {
   const navigate = useNavigate();
-
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
-    setLoading(true);
 
     try {
-      // OAuth2 requires FORM DATA
-      const formData = new URLSearchParams();
-      formData.append("username", email);
-      formData.append("password", password);
+      const res = await fetch("http://127.0.0.1:8000/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
 
-      const response = await fetch(
-        "http://127.0.0.1:8000/api/auth/login",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/x-www-form-urlencoded",
-          },
-          body: formData.toString(),
-        }
-      );
+      const data = await res.json();
 
-      if (!response.ok) {
-        throw new Error("Invalid credentials");
+      if (data.success) {
+        // ✅ Save token, role, and user info
+        localStorage.setItem("access_token", data.access_token);
+        localStorage.setItem("role", data.role);
+        localStorage.setItem("user", JSON.stringify(data.user));
+
+        // ✅ Redirect to dashboard
+        navigate("/dashboard", { replace: true });
+      } else {
+        setError(data.message || "Invalid credentials");
       }
-
-      const data = await response.json();
-
-      // ✅ STORE CORRECTLY
-      localStorage.setItem("access", data.access_token);
-      localStorage.setItem("role", data.role);
-      localStorage.setItem("isLoggedIn", "true");
-      console.log("LOGIN RESPONSE:", data);
-
-      localStorage.setItem("access", data.access_token);
-      localStorage.setItem("role", data.role);
-
-      console.log("AFTER SAVE access:", localStorage.getItem("access"));
-
-      navigate("/dashboard", { replace: true });
     } catch (err) {
-      setError("Invalid email or password");
-    } finally {
-      setLoading(false);
+      console.error(err);
+      setError("Server error, please try again later.");
     }
   };
 
@@ -64,40 +45,37 @@ export default function Login() {
         </h2>
 
         {error && (
-          <div className="mb-4 text-sm text-red-600 bg-red-50 p-2 rounded">
-            {error}
-          </div>
+          <div className="text-red-600 text-sm mb-3 text-center">{error}</div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-5">
-          <div>
-            <label className="text-sm font-medium text-gray-600">Email</label>
-            <input
-              type="email"
-              className="w-full mt-1 p-2 border rounded-lg"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-          </div>
-
-          <div>
-            <label className="text-sm font-medium text-gray-600">Password</label>
-            <input
-              type="password"
-              className="w-full mt-1 p-2 border rounded-lg"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-          </div>
-
+          <input
+            id="email"
+            name="email"
+            type="email"
+            placeholder="Email"
+            className="w-full p-2 border rounded-lg"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            autoComplete="username"
+            required
+          />
+          <input
+            id="password"
+            name="password"
+            type="password"
+            placeholder="Password"
+            className="w-full p-2 border rounded-lg"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            autoComplete="current-password"
+            required
+          />
           <button
             type="submit"
-            disabled={loading}
-            className="w-full bg-[#4FA3B5] text-white py-2 rounded-lg hover:bg-[#3D91A3] disabled:opacity-60"
+            className="w-full bg-[#4FA3B5] text-white py-2 rounded-lg"
           >
-            {loading ? "Logging in..." : "Login"}
+            Login
           </button>
         </form>
 

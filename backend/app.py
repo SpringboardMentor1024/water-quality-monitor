@@ -9,6 +9,24 @@ import models
 import schemas
 from database import engine, get_db
 
+# ---------------- APP INIT ----------------
+app = FastAPI(title="Water Quality Monitor API")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
+
+# ------------------- CORS -------------------
+origins = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,  # allow frontend origin
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 # ---------------- ROUTERS ----------------
 from auth import router as auth_router
 from alert import router as alert_router
@@ -20,22 +38,6 @@ from collaboration import router as collaboration_router  # if exists
 
 # ---------------- DB INIT ----------------
 models.Base.metadata.create_all(bind=engine)
-
-# ---------------- APP INIT ----------------
-app = FastAPI(title="Water Quality Monitor API")
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
-
-# ---------------- MIDDLEWARE ----------------
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-    ],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
 # ---------------- REGISTER ROUTERS ----------------
 app.include_router(auth_router)

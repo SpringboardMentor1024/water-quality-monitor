@@ -74,10 +74,13 @@ class LoginRequest(BaseModel):
 class LoginResponse(BaseModel):
     user_id: int
     role: str
+    access_token: str
+    token_type: str
+    message: str
 
 
 class RegisterRequest(BaseModel):
-    email: str
+    email: EmailStr
     password: str
     role: str
 
@@ -141,3 +144,18 @@ class UserReportResponse(BaseModel):
 # =====================================================
 class ReportStatusUpdate(BaseModel):
     status: ReportStatusEnum
+
+
+# =====================================================
+# ✅ NEW ADDITION — USER PROFILE RESPONSE
+# =====================================================
+class UserResponse(BaseModel):
+    id: int
+    email: str
+    role: str
+    name: Optional[str] = None
+    phone: Optional[str] = None
+    profile_pic: Optional[str] = None  # Add this field
+    
+
+    model_config = ConfigDict(from_attributes=True)
