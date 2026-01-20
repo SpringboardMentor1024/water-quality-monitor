@@ -13,7 +13,7 @@ const Navigation = () => {
     { path: '/analytics', icon: '📊', label: 'Analytics' },
     { path: '/collaborations', icon: '👥', label: 'Collaborations' },
     { path: '/settings', icon: '⚙️', label: 'Settings' },
-    { path: '/support', icon: '❓', label: 'Support' },
+    // Removed support option
   ];
 
   return (
