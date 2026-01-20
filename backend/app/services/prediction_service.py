@@ -2,7 +2,7 @@ from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
 import numpy as np 
 from app.models.readings import StationReading
-from app.models.alert import Alert, AlertType, AlertCategory
+from app.models.alert import Alert
 from app.models.station import WaterStation
 
 class PredictionService:

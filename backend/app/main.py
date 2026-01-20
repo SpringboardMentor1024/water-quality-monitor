@@ -3,66 +3,86 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
 from app.core.config import settings
-from app.core.database import engine, Base
+from app.core.database import Base, engine
 
-# 1. 🟢 IMPORT MODELS (Add 'alerts')
-# This ensures SQLAlchemy creates the 'alerts' table on startup
-from app.models import user, station, readings, reports, searches, alert
+# 🔹 IMPORT ALL MODELS (VERY IMPORTANT for SQLAlchemy relationships)
+from app.models.user import User
+from app.models.station import WaterStation
+from app.models.readings import StationReading
+from app.models.reports import Report
+from app.models.searches import Search
+from app.models.alert import Alert
+from app.models.ngo import NGO
+from app.models.project import Project
+from app.models.collaboration import Collaboration
 
-# 2. 🟢 IMPORT ROUTER (Add 'alerts')
-from app.routers import auth, stations, users, reports, gov, alerts
+# 🔹 IMPORT ALL ROUTERS
+from app.routers.auth import router as auth_router
+from app.routers.users import router as users_router
+from app.routers.stations import router as stations_router
+from app.routers.reports import router as reports_router
+from app.routers.gov import router as gov_router
+from app.routers.alerts import router as alerts_router
+from app.routers.ngos import router as ngos_router
+from app.routers.projects import router as projects_router
+from app.routers.collaborations import router as collaborations_router
 
-from app.core.scheduler import start_scheduler, fetch_initial_data
 
-# 🔹 Lifespan: create tables & start scheduler on startup
+# 🔹 APP LIFESPAN (startup / shutdown)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    print(f"🚀 {settings.PROJECT_NAME} is starting...")
-
-    # 1. Create Tables
-    # Since you added 'alerts' to the imports above, this line will now 
-    # automatically create the "alerts" table in your database.
+    print("🚀 Starting Water Quality Monitor Backend...")
     Base.metadata.create_all(bind=engine)
-    
-    # 2. FORCE IMMEDIATE SYNC
-    await fetch_initial_data()
-    
-    # 3. Start the Background Scheduler
-    start_scheduler()
-
     yield
-    print(f"🛑 {settings.PROJECT_NAME} is shutting down...")
+    print("🛑 Shutting down Water Quality Monitor Backend...")
 
 
-# 🔹 Create FastAPI app
+# 🔹 CREATE FASTAPI APP
 app = FastAPI(
-    title=settings.PROJECT_NAME,
-    version=settings.PROJECT_VERSION,
-    lifespan=lifespan
+    title="Water Quality Monitor",
+    version="1.0.0",
+    description="Backend API for Water Quality Monitoring System",
+    lifespan=lifespan,
+    docs_url="/docs",
+    redoc_url="/redoc",
+    openapi_url="/openapi.json"
 )
 
-# 🔹 CORS
+# =====================================================
+# 🔥 CORS FIX (THIS SOLVES YOUR ALERTS ERROR)
+# =====================================================
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# 🔹 Register Routers
-app.include_router(auth.router)
-app.include_router(users.router)
-app.include_router(stations.router)
-app.include_router(reports.router)
-app.include_router(gov.router)
-app.include_router(alerts.router)  # 3. 🟢 REGISTER ROUTER (Enable the API)
+# =====================================================
+# 🔹 REGISTER ROUTERS
+# =====================================================
+app.include_router(auth_router)
+app.include_router(users_router)
+app.include_router(stations_router)
+app.include_router(reports_router)
+app.include_router(gov_router)
+app.include_router(alerts_router)
+app.include_router(ngos_router)
+app.include_router(projects_router)
+app.include_router(collaborations_router)
 
-# 🔹 Root endpoint
+# =====================================================
+# 🔹 ROOT ENDPOINT
+# =====================================================
 @app.get("/")
-def read_root():
+def root():
     return {
-        "message": f"Welcome to {settings.PROJECT_NAME}",
-        "docs_url": "http://127.0.0.1:8000/docs",
-        "scheduler_status": "Running 24/7 in background"
+        "message": "Water Quality Monitor Backend is running ✅",
+        "swagger_ui": "http://127.0.0.1:8000/docs",
+        "redoc": "http://127.0.0.1:8000/redoc",
+        "openapi_json": "http://127.0.0.1:8000/openapi.json"
     }

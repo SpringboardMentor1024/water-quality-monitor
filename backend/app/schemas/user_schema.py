@@ -1,41 +1,40 @@
 from pydantic import BaseModel, EmailStr
-from typing import Optional
+from enum import Enum
 from datetime import datetime
-from app.models.user import UserRole
 
-# 1. Base Schema
-class UserBase(BaseModel):
+
+class UserRole(str, Enum):
+    citizen = "citizen"
+    ngo = "ngo"
+    authority = "authority"
+    admin = "admin"
+
+
+class UserCreate(BaseModel):
     name: str
     email: EmailStr
-    role: UserRole = UserRole.citizen
-    location: Optional[str] = None
-
-# 2. Registration Schema
-class UserCreate(UserBase):
     password: str
+    role: UserRole = UserRole.citizen
+    location: str | None = None
 
-# 3. Login Schema
+
 class UserLogin(BaseModel):
     email: EmailStr
     password: str
 
-# 4. User Response Schema
-class UserResponse(UserBase):
+
+class UserResponse(BaseModel):
     id: int
+    name: str
+    email: EmailStr
+    role: UserRole
+    location: str | None
     created_at: datetime
 
     class Config:
         from_attributes = True
 
-# 5. Token Schema
-class Token(BaseModel):
-    access_token: str
-    token_type: str
 
-class TokenData(BaseModel):
-    email: Optional[str] = None
-
-# 6. NEW: Login Response (Token + User Details) -- ADD THIS
 class LoginResponse(BaseModel):
     access_token: str
     token_type: str
