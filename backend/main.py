@@ -676,6 +676,37 @@ def get_activities(db: Session = Depends(get_db)):
 
 # --- Predictive Alerts APIs ---
 
+@app.get("/api/alerts/predictive")
+def get_alerts_predictive(db: Session = Depends(get_db)):
+    """Get predictive alerts - alerts that predict future issues"""
+    try:
+        # Get predictions that indicate potential alerts
+        predictions = db.query(models.Prediction).filter(
+            models.Prediction.risk_level.in_(['Medium', 'High']),
+            models.Prediction.probability > 50.0
+        ).order_by(models.Prediction.created_at.desc()).limit(10).all()
+        
+        alerts = []
+        for p in predictions:
+            alert_message = f"Predicted {p.parameter.value if hasattr(p.parameter, 'value') else str(p.parameter)} issue at station {p.station_id}"
+            alerts.append({
+                "id": f"pred_alert_{p.id}",
+                "message": alert_message,
+                "type": "predictive",
+                "severity": p.risk_level.lower(),
+                "station_id": p.station_id,
+                "parameter": p.parameter.value if hasattr(p.parameter, 'value') else str(p.parameter),
+                "probability": float(p.probability),
+                "expected_date": p.expected_alert_date.isoformat() if p.expected_alert_date else None,
+                "created_at": p.created_at.isoformat()
+            })
+        
+        return alerts
+        
+    except Exception as e:
+        print(f"Error fetching predictive alerts: {e}")
+        return []
+
 @app.get("/api/predictive-alerts")
 def get_predictive_alerts(db: Session = Depends(get_db)):
     """Get ML-based predictive alerts"""
