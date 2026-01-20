@@ -82,11 +82,21 @@ export default function NGOProfile() {
 
       const data = await res.json();
       if (data.success) {
-        setNgo(data.user || data.ngo || tempNgo);
-        setEditing(false);
-        localStorage.setItem("ngo", JSON.stringify(data.user || tempNgo));
-        alert("✅ Profile updated successfully!");
-      } else alert(data.message || "Update failed");
+  const updatedNgo = {
+    ...ngo,
+    name: tempNgo.name,
+    email: tempNgo.email,
+    region: tempNgo.region,
+    description: tempNgo.description,
+  };
+  setNgo(updatedNgo);
+  setEditing(false);
+  localStorage.setItem("ngo", JSON.stringify(updatedNgo));
+  alert("✅ Profile updated successfully!");
+} else {
+  alert(data.message || "Update failed");
+}
+
     } catch (err) {
       console.error(err);
       alert("Backend error during update.");
