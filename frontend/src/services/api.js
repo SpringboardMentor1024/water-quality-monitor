@@ -1,248 +1,260 @@
-// FIXED API - Better error handling
+// src/services/api.js - Combined API with all endpoints and improved error handling
 const API_BASE = 'http://localhost:8000';
 
+// Helper function for consistent error handling
+const handleResponse = async (response, defaultError) => {
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || errorData.message || defaultError);
+    }
+    return await response.json();
+};
+
+// Helper function for headers
+const getHeaders = (includeAuth = true, additionalHeaders = {}) => {
+    const headers = {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        ...additionalHeaders
+    };
+    
+    if (includeAuth) {
+        const token = localStorage.getItem('authToken');
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+    }
+    
+    return headers;
+};
+
+// ===== Auth API =====
 export const authAPI = {
     register: async (userData) => {
         const response = await fetch(`${API_BASE}/api/auth/register`, {
             method: 'POST',
-            headers: { 
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-            },
+            headers: getHeaders(false),
             body: JSON.stringify(userData)
         });
-        
-        if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            throw new Error(errorData.detail || errorData.message || 'Registration failed');
-        }
-        
-        return await response.json();
+        return handleResponse(response, 'Registration failed');
     },
-    
+
     login: async (email, password) => {
         const response = await fetch(`${API_BASE}/api/auth/login`, {
             method: 'POST',
-            headers: { 
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-            },
+            headers: getHeaders(false),
             body: JSON.stringify({ email, password })
         });
         
-        if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            throw new Error(errorData.detail || errorData.message || 'Login failed');
-        }
-        
-        const data = await response.json();
+        const data = await handleResponse(response, 'Login failed');
         localStorage.setItem('authToken', data.access_token);
         return data;
     },
-    
+
     getCurrentUser: async () => {
         const token = localStorage.getItem('authToken');
         if (!token) return null;
         
         const response = await fetch(`${API_BASE}/api/auth/me`, {
-            headers: { 'Authorization': `Bearer ${token}` }
+            headers: getHeaders(true)
         });
         
         return response.ok ? await response.json() : null;
     },
-    
+
     forgotPassword: async (email) => {
         const response = await fetch(`${API_BASE}/api/auth/forgot-password`, {
             method: 'POST',
-            headers: { 
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-            },
+            headers: getHeaders(false),
             body: JSON.stringify({ email })
         });
         
-        if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            throw new Error(errorData.detail || 'Failed to send reset email');
-        }
-        
-        return await response.json();
+        return handleResponse(response, 'Failed to send reset email');
     },
-    
+
     logout: () => {
         localStorage.removeItem('authToken');
         localStorage.removeItem('user');
     }
 };
 
-export const alertsAPI = {
-    getAllAlerts: async () => {
-        const response = await fetch(`${API_BASE}/api/alerts`, {
-            headers: { 
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-            }
+// ===== NGOs API =====
+export const ngosAPI = {
+    getAllNGOs: async () => {
+        const response = await fetch(`${API_BASE}/api/ngos`, {
+            headers: getHeaders(false)
         });
-        
-        return response.ok ? await response.json() : [];
+        return handleResponse(response, 'Failed to fetch NGOs');
     },
-    
-    getAlertById: async (alertId) => {
-        const response = await fetch(`${API_BASE}/api/alerts/${alertId}`, {
-            headers: { 
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-            }
+
+    getNGOById: async (ngoId) => {
+        const response = await fetch(`${API_BASE}/api/ngos/${ngoId}`, {
+            headers: getHeaders(false)
         });
-        
-        if (!response.ok) {
-            throw new Error('Alert not found');
-        }
-        
-        return await response.json();
-    },
-    
-    createAlert: async (alertData) => {
-        const token = localStorage.getItem('authToken');
-        const response = await fetch(`${API_BASE}/api/alerts`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify(alertData)
-        });
-        
-        if (!response.ok) {
-            throw new Error('Failed to create alert');
-        }
-        
-        return await response.json();
-    },
-    
-    getHistoricalData: async (period = '7d') => {
-        const token = localStorage.getItem('authToken');
-        const response = await fetch(`${API_BASE}/api/alerts/historical?period=${period}`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        
-        if (!response.ok) {
-            throw new Error('Failed to fetch historical data');
-        }
-        
-        return await response.json();
+        return handleResponse(response, 'NGO not found');
     }
 };
 
-// Water Stations API
+// ===== Projects API =====
+export const projectsAPI = {
+    getAllProjects: async () => {
+        const response = await fetch(`${API_BASE}/api/projects`, {
+            headers: getHeaders(false)
+        });
+        return handleResponse(response, 'Failed to fetch projects');
+    },
+
+    getProjectById: async (projectId) => {
+        const response = await fetch(`${API_BASE}/api/projects/${projectId}`, {
+            headers: getHeaders(false)
+        });
+        return handleResponse(response, 'Project not found');
+    },
+
+    getProjectsByNGO: async (ngoId) => {
+        const response = await fetch(`${API_BASE}/api/projects?ngo_id=${ngoId}`, {
+            headers: getHeaders(false)
+        });
+        return handleResponse(response, 'Failed to fetch NGO projects');
+    }
+};
+
+// ===== Water Stations API =====
 export const stationsAPI = {
     getAllStations: async () => {
         const response = await fetch(`${API_BASE}/api/stations`, {
-            headers: { 
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-            }
+            headers: getHeaders(false)
         });
-        
-        if (!response.ok) {
-            throw new Error('Failed to fetch stations');
-        }
-        
-        return await response.json();
+        return handleResponse(response, 'Failed to fetch stations');
     },
-    
+
     getStationById: async (stationId) => {
-        const token = localStorage.getItem('authToken');
         const response = await fetch(`${API_BASE}/api/stations/${stationId}`, {
-            headers: { 'Authorization': `Bearer ${token}` }
+            headers: getHeaders(true)
         });
-        
-        if (!response.ok) {
-            throw new Error('Station not found');
-        }
-        
-        return await response.json();
+        return handleResponse(response, 'Station not found');
     },
-    
+
     getStationReadings: async (stationId) => {
-        const token = localStorage.getItem('authToken');
         const response = await fetch(`${API_BASE}/api/stations/${stationId}/readings`, {
-            headers: { 'Authorization': `Bearer ${token}` }
+            headers: getHeaders(true)
         });
-        
-        if (!response.ok) {
-            throw new Error('Failed to fetch readings');
-        }
-        
-        return await response.json();
+        return handleResponse(response, 'Failed to fetch readings');
     }
 };
 
-// Reports API
+// ===== Reports API =====
 export const reportsAPI = {
     createReport: async (reportData) => {
-        const token = localStorage.getItem('authToken');
         const response = await fetch(`${API_BASE}/api/reports`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                ...(token && { 'Authorization': `Bearer ${token}` })
-            },
+            headers: getHeaders(true),
             body: JSON.stringify(reportData)
         });
-        
-        if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            throw new Error(errorData.detail || 'Failed to create report');
-        }
-        
-        return await response.json();
+        return handleResponse(response, 'Failed to create report');
     },
-    
-    getMyReports: async () => {
-        const token = localStorage.getItem('authToken');
-        const response = await fetch(`${API_BASE}/api/reports/my`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        
-        return response.ok ? await response.json() : [];
-    },
-    
+
     getAllReports: async () => {
         const response = await fetch(`${API_BASE}/api/reports`, {
-            headers: { 
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-            }
+            headers: getHeaders(false)
         });
-        
         return response.ok ? await response.json() : [];
+    },
+
+    getMyReports: async () => {
+        const response = await fetch(`${API_BASE}/api/reports/my`, {
+            headers: getHeaders(true)
+        });
+        return response.ok ? await response.json() : [];
+    },
+
+    getReportsByStation: async (stationId) => {
+        const response = await fetch(`${API_BASE}/api/stations/${stationId}/reports`, {
+            headers: getHeaders(false)
+        });
+        return handleResponse(response, 'Failed to fetch station reports');
     }
 };
 
-// Government Data API
+// ===== Alerts API =====
+export const alertsAPI = {
+    getAllAlerts: async () => {
+        const response = await fetch(`${API_BASE}/api/alerts`, {
+            headers: getHeaders(false)
+        });
+        return response.ok ? await response.json() : [];
+    },
+
+    getAlertById: async (alertId) => {
+        const response = await fetch(`${API_BASE}/api/alerts/${alertId}`, {
+            headers: getHeaders(false)
+        });
+        return handleResponse(response, 'Alert not found');
+    },
+
+    createAlert: async (alertData) => {
+        const response = await fetch(`${API_BASE}/api/alerts`, {
+            method: 'POST',
+            headers: getHeaders(true),
+            body: JSON.stringify(alertData)
+        });
+        return handleResponse(response, 'Failed to create alert');
+    },
+
+    getAlertsByStation: async (stationId) => {
+        const response = await fetch(`${API_BASE}/api/alerts?station_id=${stationId}`, {
+            headers: getHeaders(false)
+        });
+        return handleResponse(response, 'Failed to fetch station alerts');
+    },
+
+    getPredictiveAlerts: async (stationId) => {
+        const response = await fetch(`${API_BASE}/api/alerts/predictive?station_id=${stationId}`, {
+            headers: getHeaders(true)
+        });
+        return handleResponse(response, 'Failed to fetch predictive alerts');
+    },
+
+    getHistoricalData: async (period = '7d') => {
+        const response = await fetch(`${API_BASE}/api/alerts/historical?period=${period}`, {
+            headers: getHeaders(true)
+        });
+        return handleResponse(response, 'Failed to fetch historical data');
+    }
+};
+
+// ===== Government Data API =====
 export const govDataAPI = {
     getGovernmentData: async (country = 'USA', state = null) => {
-        const token = localStorage.getItem('authToken');
         let url = `${API_BASE}/api/government-data?country=${country}`;
         if (state) url += `&state=${state}`;
         
         const response = await fetch(url, {
-            headers: { 'Authorization': `Bearer ${token}` }
+            headers: getHeaders(true)
         });
         
-        if (!response.ok) {
-            throw new Error('Failed to fetch government data');
-        }
-        
-        return await response.json();
+        return handleResponse(response, 'Failed to fetch government data');
     }
 };
 
-// Water Quality API (alias for stations readings)
+// ===== Water Quality API =====
 export const waterQualityAPI = {
-    getReadings: async () => {
-        const response = await fetch(`${API_BASE}/api/stations/1/readings`);
+    getReadings: async (stationId = 1) => {
+        const response = await fetch(`${API_BASE}/api/stations/${stationId}/readings`, {
+            headers: getHeaders(false)
+        });
         return response.ok ? await response.json() : [];
     }
+};
+
+// Export a default object with all APIs for easier imports
+export default {
+    authAPI,
+    ngosAPI,
+    projectsAPI,
+    stationsAPI,
+    reportsAPI,
+    alertsAPI,
+    govDataAPI,
+    waterQualityAPI
 };
