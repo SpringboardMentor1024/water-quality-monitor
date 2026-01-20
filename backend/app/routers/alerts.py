@@ -1,17 +1,20 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from typing import List, Optional
+from typing import List
 
 from app.core.database import get_db
 from app.models.alert import Alert
 from app.schemas.alert_schema import AlertCreate, AlertResponse
 
-router = APIRouter(prefix="/alerts", tags=["Alerts & Notifications"])
+router = APIRouter(
+    prefix="/alerts",
+    tags=["Alerts & Notifications"]
+)
 
 # ======================================================
 # GET ALL ALERTS (Frontend depends on this)
 # ======================================================
-@router.get("/", response_model=list[AlertResponse])
+@router.get("/", response_model=List[AlertResponse])
 def read_alerts(db: Session = Depends(get_db)):
     try:
         alerts = (
@@ -24,6 +27,39 @@ def read_alerts(db: Session = Depends(get_db)):
         print("❌ ERROR in GET /alerts:", e)
         raise HTTPException(status_code=500, detail="Failed to fetch alerts")
 
+
+# ======================================================
+# ✅ GENERATE REAL ALERTS (MOVE THIS UP)
+# ======================================================
+@router.get("/generate-real-alerts")
+def generate_real_alerts(db: Session = Depends(get_db)):
+    """
+    Generate a sample real-time alert (used by frontend button)
+    """
+    sample_alert = Alert(
+        message="High turbidity detected in water source",
+        severity="CRITICAL",
+        type="sensor_anomaly",
+        category="current",
+        location="Chennai - T Nagar",
+        station_id=101,
+        station_name="Station 101",
+        latitude="13.0827",
+        longitude="80.2707",
+        action_taken="Auto-detected by AI system",
+        acknowledged=False
+    )
+
+    db.add(sample_alert)
+    db.commit()
+    db.refresh(sample_alert)
+
+    return {
+        "status": "success",
+        "message": "1 real alert generated successfully"
+    }
+
+
 # ======================================================
 # GET SINGLE ALERT (AlertDetails.jsx)
 # ======================================================
@@ -33,6 +69,7 @@ def get_alert(alert_id: int, db: Session = Depends(get_db)):
     if not alert:
         raise HTTPException(status_code=404, detail="Alert not found")
     return alert
+
 
 # ======================================================
 # CREATE ALERT (Manual creation)
@@ -60,6 +97,7 @@ def create_alert(alert: AlertCreate, db: Session = Depends(get_db)):
     db.refresh(new_alert)
     return new_alert
 
+
 # ======================================================
 # ACKNOWLEDGE ALERT (Frontend button)
 # ======================================================
@@ -75,6 +113,7 @@ def acknowledge_alert(alert_id: int, db: Session = Depends(get_db)):
     db.refresh(alert)
     return alert
 
+
 # ======================================================
 # DELETE ALERT
 # ======================================================
@@ -85,27 +124,3 @@ def delete_alert(alert_id: int, db: Session = Depends(get_db)):
         db.delete(alert)
         db.commit()
     return None
-
-# ======================================================
-# GENERATE REAL ALERTS (Button in frontend)
-# ======================================================
-@router.get("/generate-real-alerts")
-def generate_real_alerts(db: Session = Depends(get_db)):
-    sample_alert = Alert(
-        message="High turbidity detected in water source",
-        severity="CRITICAL",
-        type="sensor_anomaly",
-        category="current",
-        location="Chennai - T Nagar",
-        station_id=101,
-        station_name="Station 101",
-        latitude="13.0827",
-        longitude="80.2707",
-        action_taken="Auto-detected by AI system",
-        acknowledged=False
-    )
-
-    db.add(sample_alert)
-    db.commit()
-
-    return {"message": "1 real alert generated successfully"}
