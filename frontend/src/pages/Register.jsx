@@ -7,6 +7,7 @@ export default function Register() {
   const [formData, setFormData] = useState({ name: "", email: "", role: "citizen", location: "", password: "" });
   const [message, setMessage] = useState("");
   const [err, setErr] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -14,14 +15,22 @@ export default function Register() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
+    setErr("");
+    setMessage("");
+    
     try {
+      console.log("🔄 REGISTERING:", formData); // DEBUG
       const res = await registerUser(formData);
-      if (res) {
-        setMessage("Registration successful! Redirecting...");
-        setTimeout(() => navigate("/login"), 1500);
-      }
+      console.log("✅ REGISTER SUCCESS:", res); // DEBUG
+      
+      setMessage("Registration successful! Redirecting...");
+      setTimeout(() => navigate("/login"), 1500);
     } catch (error) {
-      setErr("Registration failed. Please try again.");
+      console.error("❌ REGISTER ERROR:", error.response?.data || error.message); // DEBUG
+      setErr(error.response?.data?.detail || error.response?.data?.message || "Registration failed. Please try again.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -35,13 +44,13 @@ export default function Register() {
         {err && <p className="text-red-500 text-sm mb-4 text-center bg-red-50 p-2 rounded">{err}</p>}
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <input name="name" placeholder="Full Name" className="w-full p-3 border border-blue-100 rounded-xl focus:ring-2 focus:ring-blue-500" onChange={handleChange} required />
-          <input name="email" type="email" placeholder="Email Address" className="w-full p-3 border border-blue-100 rounded-xl focus:ring-2 focus:ring-blue-500" onChange={handleChange} required />
-          <input name="location" placeholder="Assigned Region/Location" className="w-full p-3 border border-blue-100 rounded-xl focus:ring-2 focus:ring-blue-500" onChange={handleChange} required />
+          <input name="name" placeholder="Full Name" className="w-full p-3 border border-blue-100 rounded-xl focus:ring-2 focus:ring-blue-500" onChange={handleChange} required disabled={loading} />
+          <input name="email" type="email" placeholder="Email Address" className="w-full p-3 border border-blue-100 rounded-xl focus:ring-2 focus:ring-blue-500" onChange={handleChange} required disabled={loading} />
+          <input name="location" placeholder="Assigned Region/Location" className="w-full p-3 border border-blue-100 rounded-xl focus:ring-2 focus:ring-blue-500" onChange={handleChange} required disabled={loading} />
           
           <div className="space-y-1">
             <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">User Role</label>
-            <select name="role" className="w-full p-3 border border-blue-100 rounded-xl bg-white focus:ring-2 focus:ring-blue-500" onChange={handleChange}>
+            <select name="role" className="w-full p-3 border border-blue-100 rounded-xl bg-white focus:ring-2 focus:ring-blue-500" onChange={handleChange} disabled={loading}>
               <option value="citizen">Citizen</option>
               <option value="ngo">NGO Member</option>
               <option value="authority">Government Authority</option>
@@ -49,10 +58,18 @@ export default function Register() {
             </select>
           </div>
 
-          <input name="password" type="password" placeholder="Password" className="w-full p-3 border border-blue-100 rounded-xl focus:ring-2 focus:ring-blue-500" onChange={handleChange} required />
-
-          <button className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold p-3 rounded-xl shadow-lg mt-4 transition-all">
-            Register Account
+          <input name="password" type="password" placeholder="Password" className="w-full p-3 border border-blue-100 rounded-xl focus:ring-2 focus:ring-blue-500" onChange={handleChange} required disabled={loading} />
+          
+          <button 
+            type="submit" 
+            disabled={loading}
+            className={`w-full font-bold p-3 rounded-xl shadow-lg mt-4 transition-all ${
+              loading 
+                ? 'bg-blue-400 cursor-not-allowed text-white/70' 
+                : 'bg-blue-600 hover:bg-blue-700 text-white'
+            }`}
+          >
+            {loading ? "Creating Account..." : "Register Account"}
           </button>
         </form>
 

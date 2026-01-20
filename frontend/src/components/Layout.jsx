@@ -12,6 +12,7 @@ const Layout = () => {
     { name: "Dashboard", path: "/dashboard", icon: "📊" },
     { name: "Alerts", path: "/alerts", icon: "🔔" },
     { name: "Locations", path: "/locations", icon: "📍" },
+    { name: "NGOs", path: "/ngos", icon: "🏢"},
     { name: "Analytics", path: "/analytics", icon: '📈'},
     { name: "User Reports", path: "/userreports", icon: "📋" },
     { name: "Collaborations", path: "/collaborations", icon: "🤝" },
