@@ -54,12 +54,25 @@ def register(data: schemas.RegisterRequest, db: Session = Depends(get_db)):
     if existing:
         raise HTTPException(status_code=400, detail="User already exists")
 
+    # Create user
     user = models.User(email=data.email, password=data.password, role=data.role)
     db.add(user)
     db.commit()
     db.refresh(user)
 
+    # ✅ If NGO, create corresponding NGO record
+    if data.role == "ngo":
+        ngo = models.NGO(
+            name=f"NGO_{user.id}",
+            email=data.email,
+            region="Not specified",
+            description="No description yet."
+        )
+        db.add(ngo)
+        db.commit()
+
     return {"message": "Registration successful"}
+
 
 # ---------------- LOGIN ----------------
 @router.post("/login")
@@ -81,7 +94,23 @@ def login(data: schemas.LoginRequest, db: Session = Depends(get_db)):
 
 # ---------------- PROFILE ----------------
 @router.get("/profile", response_model=schemas.UserResponse)
-def get_user_profile(current_user: models.User = Depends(get_current_user)):
+def get_user_profile(current_user: models.User = Depends(get_current_user), db: Session = Depends(get_db)):
+    # If NGO, return NGO details
+    if current_user.role == "ngo":
+        ngo = db.query(models.NGO).filter(models.NGO.email == current_user.email).first()
+        if not ngo:
+            raise HTTPException(status_code=404, detail="NGO profile not found")
+        return {
+            "id": ngo.id,
+            "email": ngo.email,
+            "name": ngo.name,
+            "region": ngo.region,
+            "description": ngo.description,
+            "role": "ngo",
+            "profile_pic": getattr(current_user, "profile_pic", None)
+        }
+
+    # Default user profile
     return current_user
 
 # ---------------- PROFILE UPLOAD ----------------
@@ -105,15 +134,58 @@ def upload_profile_pic(
 
     return {"success": True, "message": "Profile picture uploaded successfully", "url": file_path}
 
-# ---------------- PROFILE UPDATE ----------------
+# ---------------- PROFILE UPDATE (Supports User & NGO) ----------------
 @router.put("/update")
 def update_profile(
     email: str = Form(None),
     name: str = Form(None),
     phone: str = Form(None),
+    region: str = Form(None),
+    description: str = Form(None),
     current_user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
+    # NGO update logic
+    if current_user.role == "ngo":
+        ngo = db.query(models.NGO).filter(models.NGO.email == current_user.email).first()
+        if not ngo:
+            raise HTTPException(status_code=404, detail="NGO not found")
+
+        if name:
+            ngo.name = name
+        if region:
+            ngo.region = region
+        if description:
+            ngo.description = description
+
+        # Keep email in sync between NGO and User tables
+        if email and email != ngo.email:
+            existing = db.query(models.User).filter(models.User.email == email).first()
+            if existing:
+                raise HTTPException(status_code=400, detail="Email already in use")
+
+            ngo.email = email
+            current_user.email = email
+
+        db.commit()
+        db.refresh(ngo)
+        db.refresh(current_user)
+
+        return {
+            "success": True,
+            "message": "NGO profile updated successfully",
+            "user": {
+                "id": ngo.id,
+                "name": ngo.name,
+                "email": ngo.email,
+                "region": ngo.region,
+                "description": ngo.description,
+                "role": "ngo"
+            }
+        }
+
+
+    # User update logic
     if email:
         current_user.email = email
     if name:
@@ -126,7 +198,7 @@ def update_profile(
 
     return {
         "success": True,
-        "message": "Profile updated successfully",
+        "message": "User profile updated successfully",
         "user": {
             "id": current_user.id,
             "email": current_user.email,
@@ -145,11 +217,9 @@ def change_password(
     current_user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    # Verify current password
     if current_user.password != current_password:
         return {"success": False, "message": "Current password is incorrect."}
 
-    # Update to new password
     current_user.password = new_password
     db.commit()
     db.refresh(current_user)
@@ -176,7 +246,6 @@ def update_email(
     db.refresh(current_user)
 
     return {"detail": "Email updated successfully"}
-
 
 # ---------------- UPDATE PASSWORD ----------------
 @router.put("/update-password")

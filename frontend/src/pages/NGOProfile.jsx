@@ -105,34 +105,38 @@ export default function NGOProfile() {
 
   // ---------------- CHANGE PASSWORD ----------------
   const handlePasswordSave = async () => {
-    if (!passwords.current || !passwords.new || !passwords.confirm)
-      return alert("All fields are required");
-    if (passwords.new !== passwords.confirm) return alert("Passwords do not match");
-    if (passwords.new.length < 8) return alert("Password must be at least 8 characters");
+  if (!passwords.current || !passwords.new || !passwords.confirm)
+    return alert("All fields are required");
+  if (passwords.new !== passwords.confirm)
+    return alert("Passwords do not match");
+  if (passwords.new.length < 8)
+    return alert("Password must be at least 8 characters");
 
-    try {
-      const res = await fetch(`${BACKEND_URL}/api/auth/change-password`, {
-        method: "POST",
-        headers: { 
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          currentPassword: passwords.current,
-          newPassword: passwords.new,
-        }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        alert("✅ Password changed successfully!");
-        setPasswords({ current: "", new: "", confirm: "" });
-        setShowPasswordModal(false);
-      } else alert(data.message || "Password change failed!");
-    } catch (err) {
-      console.error(err);
-      alert("Backend error during password change");
-    }
-  };
+  try {
+    const formData = new FormData();
+    formData.append("current_password", passwords.current);
+    formData.append("new_password", passwords.new);
+
+    const res = await fetch(`${BACKEND_URL}/api/auth/change-password`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`, // Don't include Content-Type
+      },
+      body: formData,
+    });
+
+    const data = await res.json();
+    if (data.success) {
+      alert("✅ Password changed successfully!");
+      setPasswords({ current: "", new: "", confirm: "" });
+      setShowPasswordModal(false);
+    } else alert(data.message || "Password change failed!");
+  } catch (err) {
+    console.error(err);
+    alert("Backend error during password change");
+  }
+};
+
 
   // ---------------- LOGOUT ----------------
   const handleLogout = () => {
