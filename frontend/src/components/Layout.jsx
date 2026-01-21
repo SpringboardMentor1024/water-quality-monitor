@@ -7,17 +7,14 @@ const Layout = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // ✅ UPDATED MENU ITEMS (NGO ADDED)
+  // ✅ FINAL MENU ITEMS (NO DUPLICATES, NGO INCLUDED)
   const menuItems = [
     { name: "Dashboard", path: "/dashboard", icon: "📊" },
     { name: "Alerts", path: "/alerts", icon: "🔔" },
     { name: "Locations", path: "/locations", icon: "📍" },
+    { name: "NGOs", path: "/ngos", icon: "🏢" },
     { name: "Analytics", path: "/analytics", icon: "📈" },
     { name: "User Reports", path: "/userreports", icon: "📋" },
-
-    // ✅ NEW NGO MENU
-    { name: "NGOs", path: "/ngos", icon: "🏢" },
-
     { name: "Collaborations", path: "/collaborations", icon: "🤝" },
     { name: "Profile", path: "/profile", icon: "👤" },
     { name: "Settings", path: "/settings", icon: "⚙️" },
@@ -36,13 +33,13 @@ const Layout = () => {
 
   return (
     <div className="flex h-screen bg-blue-50 font-sans">
-      {/* --- DESKTOP SIDEBAR --- */}
+      {/* DESKTOP SIDEBAR */}
       <aside className="hidden lg:flex flex-col w-64 bg-blue-800 text-white shadow-2xl z-20">
         <div className="p-6 text-2xl font-black border-b border-blue-700 tracking-tighter italic">
           WaterWatch
         </div>
 
-        <nav className="flex-1 p-4 space-y-2 mt-4 overflow-y-auto custom-scrollbar">
+        <nav className="flex-1 p-4 space-y-2 mt-4 overflow-y-auto">
           {menuItems.map((item) => (
             <Link
               key={item.path}
@@ -66,7 +63,7 @@ const Layout = () => {
         </div>
       </aside>
 
-      {/* --- MAIN CONTENT AREA --- */}
+      {/* MAIN CONTENT */}
       <div className="flex-1 flex flex-col overflow-hidden">
         <header className="bg-white shadow-sm h-16 flex items-center justify-between px-8 border-b border-blue-100 sticky top-0 z-50">
           <div className="flex items-center gap-4">
@@ -84,43 +81,26 @@ const Layout = () => {
           <div className="relative">
             <button
               onClick={() => setShowProfileDropdown(!showProfileDropdown)}
-              className="w-10 h-10 bg-blue-600 rounded-full border-2 border-white shadow-lg flex items-center justify-center font-black text-white hover:scale-105 transition-all"
+              className="w-10 h-10 bg-blue-600 rounded-full border-2 border-white shadow-lg flex items-center justify-center font-black text-white"
             >
               UP
             </button>
 
             {showProfileDropdown && (
-              <>
-                <div
-                  className="fixed inset-0 z-[-1]"
-                  onClick={() => setShowProfileDropdown(false)}
-                ></div>
-                <div className="absolute right-0 mt-3 w-56 bg-white rounded-3xl shadow-2xl border border-blue-50 py-3 overflow-hidden animate-fade-in">
-                  <div className="px-6 py-3 border-b border-blue-50 mb-2">
-                    <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest">
-                      Authorized User
-                    </p>
-                    <p className="text-[10px] font-bold text-blue-900 truncate italic">
-                      monitor@waterwatch.gov
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => {
-                      navigate("/profile");
-                      setShowProfileDropdown(false);
-                    }}
-                    className="w-full text-left px-6 py-3 text-[10px] font-black text-blue-900 uppercase tracking-widest hover:bg-blue-50 transition-colors flex items-center gap-3"
-                  >
-                    👤 View Profile
-                  </button>
-                  <button
-                    onClick={handleLogout}
-                    className="w-full text-left px-6 py-3 text-[10px] font-black text-red-500 uppercase tracking-widest hover:bg-red-50 transition-colors flex items-center gap-3"
-                  >
-                    🚪 Log Out
-                  </button>
-                </div>
-              </>
+              <div className="absolute right-0 mt-3 w-56 bg-white rounded-3xl shadow-2xl border py-3">
+                <button
+                  onClick={() => navigate("/profile")}
+                  className="w-full text-left px-6 py-3 text-xs font-black text-blue-900 uppercase hover:bg-blue-50"
+                >
+                  👤 View Profile
+                </button>
+                <button
+                  onClick={handleLogout}
+                  className="w-full text-left px-6 py-3 text-xs font-black text-red-500 uppercase hover:bg-red-50"
+                >
+                  🚪 Log Out
+                </button>
+              </div>
             )}
           </div>
         </header>
@@ -130,14 +110,14 @@ const Layout = () => {
         </main>
       </div>
 
-      {/* --- MOBILE SIDEBAR --- */}
+      {/* MOBILE SIDEBAR */}
       {isMobileOpen && (
         <div className="fixed inset-0 z-[9999] flex lg:hidden">
           <div
-            className="fixed inset-0 bg-blue-900/60 backdrop-blur-md"
+            className="fixed inset-0 bg-blue-900/60"
             onClick={() => setIsMobileOpen(false)}
           ></div>
-          <div className="relative w-72 bg-blue-800 text-white flex flex-col p-6 shadow-2xl h-full animate-slide-in">
+          <div className="relative w-72 bg-blue-800 text-white p-6 h-full">
             <button
               className="self-end text-3xl mb-8"
               onClick={() => setIsMobileOpen(false)}
@@ -151,14 +131,10 @@ const Layout = () => {
                   key={item.path}
                   to={item.path}
                   onClick={() => setIsMobileOpen(false)}
-                  className={`flex items-center p-4 rounded-2xl transition-all font-black ${
-                    location.pathname === item.path
-                      ? "bg-blue-900 border-l-4 border-blue-400 text-white"
-                      : "hover:bg-blue-700 text-blue-100"
-                  }`}
+                  className="flex items-center p-4 rounded-2xl font-black"
                 >
                   <span className="mr-4 text-2xl">{item.icon}</span>
-                  <span className="tracking-widest uppercase text-xs">
+                  <span className="uppercase text-xs tracking-widest">
                     {item.name}
                   </span>
                 </Link>

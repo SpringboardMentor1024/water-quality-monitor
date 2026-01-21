@@ -6,6 +6,7 @@ export default function Login() {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -13,13 +14,31 @@ export default function Login() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
+    setError("");
+    
     try {
-      // Using the mock login from our updated api.js
+      console.log("🔄 LOGGING IN:", formData); // DEBUG
       const res = await loginUser(formData.email, formData.password);
-      localStorage.setItem("authToken", res.access_token);
-      navigate("/dashboard");
+      console.log("✅ LOGIN SUCCESS:", res); // DEBUG
+      
+      // Store token properly
+      localStorage.setItem("authToken", res.access_token || res.token);
+      localStorage.setItem("userRole", res.role || "citizen");
+      
+      // Redirect based on role
+      setTimeout(() => {
+        const role = res.role || "citizen";
+        if (role === "ngo") navigate("/ngo");
+        else if (role === "admin") navigate("/admin");
+        else navigate("/dashboard");
+      }, 1000);
+      
     } catch (err) {
-      setError("Invalid email or password");
+      console.error("❌ LOGIN ERROR:", err.response?.data || err.message); // DEBUG
+      setError(err.response?.data?.detail || err.response?.data?.message || "Invalid email or password");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -41,6 +60,7 @@ export default function Login() {
               className="w-full p-3 border border-blue-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 bg-blue-50/30"
               onChange={handleChange}
               required
+              disabled={loading}
             />
           </div>
 
@@ -53,11 +73,20 @@ export default function Login() {
               className="w-full p-3 border border-blue-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 bg-blue-50/30"
               onChange={handleChange}
               required
+              disabled={loading}
             />
           </div>
 
-          <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold p-3 rounded-xl shadow-lg transition-all mt-4">
-            Sign In to Monitor
+          <button 
+            type="submit" 
+            disabled={loading}
+            className={`w-full font-bold p-3 rounded-xl shadow-lg transition-all mt-4 ${
+              loading 
+                ? 'bg-blue-400 cursor-not-allowed text-white/70' 
+                : 'bg-blue-600 hover:bg-blue-700 text-white'
+            }`}
+          >
+            {loading ? "Signing In..." : "Sign In to Monitor"}
           </button>
         </form>
 
@@ -65,7 +94,6 @@ export default function Login() {
           <p onClick={() => navigate("/register")} className="text-blue-600 text-center cursor-pointer hover:underline text-sm font-medium">
             New user? Create an account
           </p>
-          {/* Back Navigation to Profile */}
           <button onClick={() => navigate("/monitor-profile")} className="w-full text-gray-400 hover:text-blue-600 text-xs font-bold uppercase tracking-widest transition-colors">
             ← Back to Mission Details
           </button>
