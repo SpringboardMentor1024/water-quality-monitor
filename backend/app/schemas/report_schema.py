@@ -1,38 +1,31 @@
 from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime
-from enum import Enum
 
-# Define the Enum for status
-class ReportStatusEnum(str, Enum):
-    pending = "pending"
-    verified = "verified"
-    rejected = "rejected"
-
-# Base Schema (Fields shared by Input and Output)
-class ReportBase(BaseModel):
-    # 🟢 NEW: Added to match the "Subject/Title" input in your UI
-    title: Optional[str] = None 
+class ReportCreate(BaseModel):
+    title: str
     location: str
     description: Optional[str] = None
     water_source: Optional[str] = None
     photo_url: Optional[str] = None
 
-# Schema for CREATING a report (Input from Frontend)
-class ReportCreate(ReportBase):
-    pass
 
-# Schema for RETURNING a report (Output from API)
-class ReportResponse(ReportBase):
+class ReportUpdate(BaseModel):
+    status: str                  # "verified" or "rejected"
+    moderation_notes: Optional[str] = None
+
+
+class ReportResponse(BaseModel):
     id: int
-    user_id: int
-    status: ReportStatusEnum
-    
-    # 🟢 NEW: Added to match "Moderation Notes (Read-Only)" in your UI
-    # We add it here (not in Base) so users cannot *create* their own moderation notes.
-    moderation_notes: Optional[str] = None 
-    
+    title: str
+    location: str
+    description: Optional[str]
+    water_source: Optional[str]
+    photo_url: Optional[str]
+    status: str
+    user_id: Optional[int]
+    moderation_notes: Optional[str]
     created_at: datetime
 
     class Config:
-        from_attributes = True
+        orm_mode = True

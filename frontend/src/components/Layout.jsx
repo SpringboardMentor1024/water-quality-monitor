@@ -7,7 +7,6 @@ const Layout = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // ✅ FINAL MENU ITEMS (NO DUPLICATES, NGO INCLUDED)
   const menuItems = [
     { name: "Dashboard", path: "/dashboard", icon: "📊" },
     { name: "Alerts", path: "/alerts", icon: "🔔" },
@@ -22,10 +21,12 @@ const Layout = () => {
 
   const handleLogout = () => {
     const confirmLogout = window.confirm(
-      "Are you sure you want to log out of the Authority System?"
+      "Are you sure you want to log out?"
     );
     if (confirmLogout) {
-      localStorage.removeItem("token");
+      // ✅ FIXED: remove authToken (not token)
+      localStorage.removeItem("authToken");
+      localStorage.removeItem("userRole");
       navigate("/login");
     }
     setShowProfileDropdown(false);
@@ -34,20 +35,20 @@ const Layout = () => {
   return (
     <div className="flex h-screen bg-blue-50 font-sans">
       {/* DESKTOP SIDEBAR */}
-      <aside className="hidden lg:flex flex-col w-64 bg-blue-800 text-white shadow-2xl z-20">
-        <div className="p-6 text-2xl font-black border-b border-blue-700 tracking-tighter italic">
+      <aside className="hidden lg:flex flex-col w-64 bg-blue-800 text-white shadow-2xl">
+        <div className="p-6 text-2xl font-black border-b border-blue-700 italic">
           WaterWatch
         </div>
 
-        <nav className="flex-1 p-4 space-y-2 mt-4 overflow-y-auto">
+        <nav className="flex-1 p-4 space-y-2">
           {menuItems.map((item) => (
             <Link
               key={item.path}
               to={item.path}
-              className={`flex items-center p-3 rounded-xl transition-all font-black text-[10px] uppercase tracking-widest ${
+              className={`flex items-center p-3 rounded-xl font-black text-[10px] uppercase tracking-widest ${
                 location.pathname === item.path
-                  ? "bg-blue-900 shadow-inner text-white border-l-4 border-blue-400"
-                  : "hover:bg-blue-700 text-blue-200"
+                  ? "bg-blue-900 border-l-4 border-blue-400"
+                  : "hover:bg-blue-700"
               }`}
             >
               <span className="mr-3 text-lg">{item.icon}</span>
@@ -56,49 +57,46 @@ const Layout = () => {
           ))}
         </nav>
 
-        <div className="p-4 border-t border-blue-700 text-center">
-          <p className="text-[7px] font-black text-blue-400 uppercase tracking-widest opacity-60">
-            Authority v2.0
-          </p>
+        <div className="p-4 border-t border-blue-700 text-center text-[7px] uppercase tracking-widest opacity-60">
+          Authority v2.0
         </div>
       </aside>
 
       {/* MAIN CONTENT */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <header className="bg-white shadow-sm h-16 flex items-center justify-between px-8 border-b border-blue-100 sticky top-0 z-50">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => setIsMobileOpen(true)}
-              className="lg:hidden text-2xl text-blue-700"
-            >
-              ☰
-            </button>
-            <h2 className="text-xl font-black text-blue-900 tracking-tighter uppercase italic">
-              Water Quality Monitor
-            </h2>
-          </div>
+      <div className="flex-1 flex flex-col">
+        <header className="bg-white h-16 flex items-center justify-between px-8 border-b">
+          <button
+            onClick={() => setIsMobileOpen(true)}
+            className="lg:hidden text-2xl text-blue-700"
+          >
+            ☰
+          </button>
+
+          <h2 className="text-xl font-black uppercase italic">
+            Water Quality Monitor
+          </h2>
 
           <div className="relative">
             <button
               onClick={() => setShowProfileDropdown(!showProfileDropdown)}
-              className="w-10 h-10 bg-blue-600 rounded-full border-2 border-white shadow-lg flex items-center justify-center font-black text-white"
+              className="w-10 h-10 bg-blue-600 rounded-full text-white font-black"
             >
               UP
             </button>
 
             {showProfileDropdown && (
-              <div className="absolute right-0 mt-3 w-56 bg-white rounded-3xl shadow-2xl border py-3">
+              <div className="absolute right-0 mt-3 w-48 bg-white rounded-xl shadow-xl">
                 <button
                   onClick={() => navigate("/profile")}
-                  className="w-full text-left px-6 py-3 text-xs font-black text-blue-900 uppercase hover:bg-blue-50"
+                  className="w-full px-4 py-3 text-xs font-black uppercase hover:bg-blue-50"
                 >
-                  👤 View Profile
+                  👤 Profile
                 </button>
                 <button
                   onClick={handleLogout}
-                  className="w-full text-left px-6 py-3 text-xs font-black text-red-500 uppercase hover:bg-red-50"
+                  className="w-full px-4 py-3 text-xs font-black uppercase text-red-500 hover:bg-red-50"
                 >
-                  🚪 Log Out
+                  🚪 Logout
                 </button>
               </div>
             )}
@@ -109,40 +107,6 @@ const Layout = () => {
           <Outlet />
         </main>
       </div>
-
-      {/* MOBILE SIDEBAR */}
-      {isMobileOpen && (
-        <div className="fixed inset-0 z-[9999] flex lg:hidden">
-          <div
-            className="fixed inset-0 bg-blue-900/60"
-            onClick={() => setIsMobileOpen(false)}
-          ></div>
-          <div className="relative w-72 bg-blue-800 text-white p-6 h-full">
-            <button
-              className="self-end text-3xl mb-8"
-              onClick={() => setIsMobileOpen(false)}
-            >
-              ✕
-            </button>
-
-            <nav className="space-y-4">
-              {menuItems.map((item) => (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  onClick={() => setIsMobileOpen(false)}
-                  className="flex items-center p-4 rounded-2xl font-black"
-                >
-                  <span className="mr-4 text-2xl">{item.icon}</span>
-                  <span className="uppercase text-xs tracking-widest">
-                    {item.name}
-                  </span>
-                </Link>
-              ))}
-            </nav>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

@@ -1,70 +1,112 @@
-from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer
+from fastapi import APIRouter, Depends, HTTPException, status, Header
 from sqlalchemy.orm import Session
 from jose import JWTError, jwt
 
 from app.core.database import get_db
-from app.schemas.user_schema import UserCreate, UserLogin, LoginResponse, UserResponse
+from app.schemas.user_schema import (
+    UserCreate,
+    UserLogin,
+    LoginResponse,
+    UserResponse,
+)
 from app.services.user_service import UserService
 from app.utils.jwt_handler import create_access_token
 from app.models.user import User
-from app.core.config import settings # Ensure you have settings imported for SECRET_KEY
-
-# 🟢 1. Setup Security Scheme
-# This tells FastAPI that the client must send a Token to authenticate
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
+from app.core.config import settings
 
 router = APIRouter(
     prefix="/auth",
     tags=["Authentication"]
 )
 
-# 🟢 2. The Missing Dependency Function
-# This function takes the token, decodes it, and finds the user
-def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
+# =========================================================
+# 🔐 AUTH DEPENDENCY (FIXED)
+# =========================================================
+# We manually extract the JWT from Authorization header
+# because login is JSON-based (NOT OAuth2 form-based)
+
+def get_current_user(
+    authorization: str = Header(None),
+    db: Session = Depends(get_db)
+):
+    if authorization is None or not authorization.startswith("Bearer "):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials",
+        )
+
+    token = authorization.split(" ")[1]
+
     try:
-        # We need the same SECRET_KEY you used to sign the token
-        # If settings.SECRET_KEY gives an error, replace it with your actual secret string for now
-        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
-        email: str = payload.get("sub")
+        payload = jwt.decode(
+            token,
+            settings.SECRET_KEY,
+            algorithms=[settings.ALGORITHM],
+        )
+
+        email: str | None = payload.get("sub")
         if email is None:
-            raise credentials_exception
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Could not validate credentials",
+            )
+
     except JWTError:
-        raise credentials_exception
-    
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials",
+        )
+
     user = db.query(User).filter(User.email == email).first()
-    if user is None:
-        raise credentials_exception
+
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials",
+        )
+
     return user
 
 
-# REGISTER USER
+# =========================================================
+# 🧾 REGISTER USER
+# =========================================================
 @router.post("/register", response_model=UserResponse)
-def register_user(user: UserCreate, db: Session = Depends(get_db)):
+def register_user(
+    user: UserCreate,
+    db: Session = Depends(get_db)
+):
     new_user = UserService.create_user(db=db, user=user)
     return new_user
 
 
-# LOGIN USER
+# =========================================================
+# 🔑 LOGIN USER (JSON-BASED)
+# =========================================================
 @router.post("/login", response_model=LoginResponse)
-def login_user(user: UserLogin, db: Session = Depends(get_db)):
-    # 1. Authenticate
-    db_user = UserService.authenticate_user(db, email=user.email, password=user.password)
+def login_user(
+    user: UserLogin,
+    db: Session = Depends(get_db)
+):
+    # 1️⃣ Authenticate user
+    db_user = UserService.authenticate_user(
+        db,
+        email=user.email,
+        password=user.password
+    )
+
     if not db_user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid email or password"
         )
 
-    # 2. Create JWT Token
-    access_token = create_access_token(data={"sub": db_user.email})
+    # 2️⃣ Create JWT token (email stored in `sub`)
+    access_token = create_access_token(
+        data={"sub": db_user.email}
+    )
 
-    # 3. Return response
+    # 3️⃣ Return token + user
     return LoginResponse(
         access_token=access_token,
         token_type="bearer",
@@ -72,8 +114,12 @@ def login_user(user: UserLogin, db: Session = Depends(get_db)):
     )
 
 
-# ✅ GET ALL REGISTERED USERS (ADMIN PANEL)
+# =========================================================
+# 👥 GET ALL USERS (OPTIONAL – ADMIN USE)
+# =========================================================
 @router.get("/users", response_model=list[UserResponse])
-def get_all_users(db: Session = Depends(get_db)):
+def get_all_users(
+    db: Session = Depends(get_db)
+):
     users = db.query(User).all()
     return users

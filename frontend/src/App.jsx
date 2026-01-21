@@ -23,6 +23,7 @@ import Settings from "./pages/Settings";
 import Profile from "./pages/Profile";
 import AllUsers from "./pages/AllUsers";
 import UserReports from "./pages/UserReports";
+import NgoReports from "./pages/NgoReports";
 
 /* ================= NGO PAGES ================= */
 import NgoDashboard from "./pages/NgoDashboard";
@@ -81,6 +82,8 @@ export default function App() {
           <Route path="/users" element={<AllUsers />} />
           <Route path="/userreports" element={<UserReports />} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="/ngo/reports" element={<NgoReports />} />
+
           <Route path="/profile" element={<Profile />} />
         </Route>
 
