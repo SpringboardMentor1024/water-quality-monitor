@@ -1,7 +1,6 @@
 import axios from "axios";
 
 /* ================= AXIOS INSTANCE ================= */
-
 const api = axios.create({
   baseURL: "http://127.0.0.1:8000",
   headers: {
@@ -10,7 +9,6 @@ const api = axios.create({
 });
 
 /* ================= AUTH TOKEN INTERCEPTOR ================= */
-
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("authToken");
@@ -22,8 +20,16 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-/* ================= AUTH ================= */
+/* ================= RESPONSE ERROR HANDLER ================= */
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    console.error("API Error:", error.response?.status, error.response?.data);
+    return Promise.reject(error);
+  }
+);
 
+/* ================= AUTH ================= */
 export const loginUser = async (credentials) => {
   const res = await api.post("/auth/login", credentials);
   return res.data;
@@ -35,14 +41,12 @@ export const registerUser = async (data) => {
 };
 
 /* ================= USERS ================= */
-
 export const getAllUsers = async () => {
   const res = await api.get("/users");
   return res.data;
 };
 
 /* ================= STATIONS ================= */
-
 export const getStations = async () => {
   const res = await api.get("/stations");
   return res.data;
@@ -58,14 +62,24 @@ export const getStationSeries = async (id) => {
   return res.data;
 };
 
-/* ================= ALERT ANALYSIS ================= */
+/* ================= ALERTS ================= */
+export const getAlerts = async () => {
+  const res = await api.get("/alerts");
+  return res.data;
+};
 
+export const getAlertDetails = async (id) => {
+  const res = await api.get(`/alerts/${id}`);
+  return res.data;
+};
+
+/* ================= ALERT ANALYSIS ================= */
 export const analyzeStationAlerts = async (stationId) => {
   try {
     const res = await api.get(`/alerts/analyze/${stationId}`);
     return res.data;
   } catch {
-    // Demo-safe fallback
+    // ✅ Demo-safe fallback
     return {
       station_id: stationId,
       risk_level: "moderate",
@@ -78,8 +92,18 @@ export const analyzeStationAlerts = async (stationId) => {
   }
 };
 
-/* ================= AI PREDICTION ================= */
+/* ================= NGO ================= */
+export const getNgoStations = async () => {
+  const res = await api.get("/ngo/stations");
+  return res.data;
+};
 
+export const getNgoReports = async () => {
+  const res = await api.get("/ngo/reports");
+  return res.data;
+};
+
+/* ================= AI PREDICTION ================= */
 export const triggerAIAnalysis = async (stationId, parameter) => {
   try {
     const res = await api.post("/ai/predict", {
@@ -88,7 +112,7 @@ export const triggerAIAnalysis = async (stationId, parameter) => {
     });
     return res.data;
   } catch {
-    // Demo-safe mock prediction
+    // ✅ Demo-safe mock prediction
     return {
       station_id: stationId,
       parameter,
@@ -106,6 +130,11 @@ export const triggerAIAnalysis = async (stationId, parameter) => {
   }
 };
 
-/* ================= EXPORT DEFAULT ================= */
+/* ================= COLLABORATIONS ================= */
+export const getCollaborations = async () => {
+  const res = await api.get("/collaborations");
+  return res.data;
+};
 
+/* ================= EXPORT DEFAULT ================= */
 export default api;

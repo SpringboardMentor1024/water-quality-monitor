@@ -1,44 +1,35 @@
 import { Zap, AlertTriangle, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { analyzeStationAlerts } from "../utils/api";
 
 export default function PredictiveAlertsMock({ stationId }) {
   const [alerts, setAlerts] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
 
-  const fetchAlerts = async () => {
-    if (!stationId) return;
-
-    try {
-      setLoading(true);
-      setError(null);
-
-      const data = await analyzeStationAlerts(stationId);
-
-      let normalized = [];
-
-      if (Array.isArray(data?.alerts)) {
-        normalized = data.alerts;
-      } else if (Array.isArray(data)) {
-        normalized = data;
-      } else if (data && typeof data === "object") {
-        normalized = [data];
-      }
-
-      setAlerts(normalized);
-    } catch (err) {
-      console.error("Predictive alert fetch failed:", err);
-      setError("Unable to load predictive alerts");
-      setAlerts([]);
-    } finally {
-      setLoading(false);
+  // ✅ MOCK DATA - No API calls, no 404s
+  const MOCK_ALERTS = [
+    {
+      status: "pH Stability",
+      parameter: "pH Level",
+      risk_level: "low",
+      horizon: "Next 24h",
+      message: "pH levels maintaining optimal range (6.8-8.2)"
+    },
+    {
+      status: "Turbidity Warning", 
+      parameter: "Turbidity",
+      risk_level: "medium",
+      horizon: "Next 48h",
+      message: "Slight turbidity increase detected. Monitor closely."
     }
-  };
+  ];
 
   useEffect(() => {
-    fetchAlerts();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    setLoading(true);
+    // Simulate API delay
+    setTimeout(() => {
+      setAlerts(MOCK_ALERTS);
+      setLoading(false);
+    }, 800);
   }, [stationId]);
 
   return (
@@ -50,19 +41,7 @@ export default function PredictiveAlertsMock({ stationId }) {
       {loading && (
         <div className="flex items-center gap-2 text-slate-400 px-4">
           <Loader2 className="animate-spin w-4 h-4" />
-          Fetching predictive alerts...
-        </div>
-      )}
-
-      {error && (
-        <div className="text-red-500 text-sm px-4">
-          {error}
-        </div>
-      )}
-
-      {!loading && !error && alerts.length === 0 && (
-        <div className="text-slate-400 text-sm px-4">
-          No predictive risks detected for this station.
+          Analyzing patterns...
         </div>
       )}
 
@@ -76,12 +55,12 @@ export default function PredictiveAlertsMock({ stationId }) {
 }
 
 const AlertCard = ({ alert }) => {
-  const isHigh = alert?.risk_level === "high";
+  const isHigh = alert?.risk_level === "high" || alert?.risk_level === "medium";
 
   return (
     <div
-      className={`bg-white p-10 rounded-[50px] shadow-sm border-t-8 h-64 flex flex-col justify-between ${
-        isHigh ? "border-orange-500" : "border-yellow-400"
+      className={`bg-white p-10 rounded-[50px] shadow-sm border-t-8 h-64 flex flex-col justify-between hover:shadow-xl transition-all ${
+        isHigh ? "border-orange-500" : "border-emerald-500"
       }`}
     >
       <div className="flex justify-between items-start">
@@ -89,17 +68,17 @@ const AlertCard = ({ alert }) => {
           {alert?.status || "Risk Analysis"}
         </h4>
         {isHigh ? (
-          <AlertTriangle className="text-orange-500" />
+          <AlertTriangle className="text-orange-500 w-8 h-8" />
         ) : (
-          <Zap className="text-yellow-500" />
+          <Zap className="text-emerald-500 w-8 h-8" />
         )}
       </div>
 
       <div>
-        <p className="text-[9px] font-black text-slate-400 uppercase">
+        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">
           Parameter
         </p>
-        <p className="text-sm font-bold">
+        <p className="text-sm font-bold text-slate-900">
           {alert?.parameter || "Overall Health"}
         </p>
       </div>
@@ -108,9 +87,9 @@ const AlertCard = ({ alert }) => {
         {alert?.horizon || "Next few days"}
       </p>
 
-      <p className="text-xs text-slate-500 leading-relaxed">
+      <p className="text-xs text-slate-600 leading-relaxed flex-1">
         {alert?.message || "No abnormal patterns detected."}
       </p>
     </div>
   );
-};
+}

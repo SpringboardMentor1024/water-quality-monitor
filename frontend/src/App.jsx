@@ -23,7 +23,7 @@ import Settings from "./pages/Settings";
 import Profile from "./pages/Profile";
 import AllUsers from "./pages/AllUsers";
 import UserReports from "./pages/UserReports";
-import NgoReports from "./pages/NgoReports";
+import NgoReports from "./pages/NgoReports"; // ✅ Added
 
 /* ================= NGO PAGES ================= */
 import NgoDashboard from "./pages/NgoDashboard";
@@ -39,54 +39,45 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* PUBLIC ROUTES */}
+        {/* ================= PUBLIC ROUTES ================= */}
         <Route path="/" element={<MonitorProfile />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
 
-        {/* PROTECTED ROUTES */}
-        <Route
-          element={
-            <ProtectedRoute>
-              <Layout />
-            </ProtectedRoute>
-          }
-        >
-          {/* Main */}
+        {/* ================= PROTECTED ROUTES ================= */}
+        <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
+          {/* Main Dashboard Routes */}
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/locations" element={<Locations />} />
           <Route path="/search" element={<Search />} />
 
-          {/* Stations */}
-          <Route path="/station/:id" element={<StationReadings />} />
+          {/* Station Routes */}
           <Route path="/analysis/:stationId" element={<Analysis />} />
+          <Route path="/station/:id" element={<StationReadings />} />
 
-          {/* Alerts */}
+          {/* Alerts Routes */}
           <Route path="/alerts" element={<Alerts />} />
           <Route path="/alerts/:id" element={<AlertDetails />} />
 
-          {/* NGO (FIXED ✅) */}
+          {/* ✅ NGO ROUTES - COMPLETE & CONSISTENT */}
           <Route path="/ngo" element={<NgoDashboard />} />
-          <Route path="/ngos" element={<NgoDashboard />} />
+          <Route path="/ngos" element={<NgoDashboard />} /> {/* Legacy */}
           <Route path="/ngo/station/:id" element={<NGOStationDetails />} />
+          <Route path="/ngo/reports" element={<NgoReports />} /> {/* ✅ Added */}
 
           {/* Analytics & Predictions */}
           <Route path="/analytics/:id?" element={<Analytics />} />
-          <Route
-            path="/prediction-details/:id/:parameter"
-            element={<PredictionDetails />}
-          />
+          <Route path="/prediction-details/:id/:parameter" element={<PredictionDetails />} />
 
-          {/* Admin / User */}
+          {/* Admin & Settings */}
           <Route path="/collaborations" element={<Collaborations />} />
+          <Route path="/settings" element={<Settings />} />
+          <Route path="/profile" element={<Profile />} />
           <Route path="/users" element={<AllUsers />} />
           <Route path="/userreports" element={<UserReports />} />
-          <Route path="/settings" element={<Settings />} />
-          <Route path="/ngo/reports" element={<NgoReports />} />
-
-          <Route path="/profile" element={<Profile />} />
         </Route>
 
+        {/* ================= FALLBACK ================= */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
