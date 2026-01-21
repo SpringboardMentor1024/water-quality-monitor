@@ -13,10 +13,10 @@ const getAuthHeaders = () => ({
    COLLABORATIONS
 ================================ */
 
-// ▶ existing (KEEP)
+// ▶ existing (KEEP) — ✅ ONLY URL UPDATED
 export const getCollaborationsByNGO = (ngoId) => {
   return axios.get(
-    `${API_BASE}/collaborations/ngo/${ngoId}`,
+    `${API_BASE}/collaborations/ngo/${ngoId}/view`,
     getAuthHeaders()
   );
 };
@@ -51,6 +51,13 @@ export const fetchSharedReports = (ngoId) => {
 export const fetchPartnerActivity = (ngoId) => {
   return axios.get(
     `${API_BASE}/collaborations/ngo/${ngoId}/activity`,
+    getAuthHeaders()
+  );
+};
+// ▶ get project details + station names
+export const fetchProjectDetails = (projectId) => {
+  return axios.get(
+    `${API_BASE}/collaborations/project/${projectId}/view`,
     getAuthHeaders()
   );
 };

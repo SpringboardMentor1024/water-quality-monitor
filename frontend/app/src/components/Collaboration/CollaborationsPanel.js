@@ -1,199 +1,166 @@
-// src/components/Collaboration/CollaborationsPanel.js
 import React, { useEffect, useState } from 'react';
-import { fetchCollaborations, createCollaboration } from '../../services/collaborationService';
+import {
+  fetchCollaborations,
+  createCollaboration,
+  fetchSharedReports
+} from '../../services/collaborationService';
 
 const CollaborationsPanel = () => {
   const [activeCollaborations, setActiveCollaborations] = useState([]);
-  const [isCreating, setIsCreating] = useState(false);
+  const [selectedCollab, setSelectedCollab] = useState(null);
+  const [sharedReports, setSharedReports] = useState([]);
+
   const [formData, setFormData] = useState({
     project_id: '',
     partner_ngo_id: ''
   });
+
   const ngoId = localStorage.getItem("ngo_id");
 
   useEffect(() => {
     if (!ngoId) return;
     loadCollaborations();
+    loadSharedReports();
   }, [ngoId]);
 
+  // -------------------------------
+  // LOAD COLLABORATIONS
+  // -------------------------------
   const loadCollaborations = () => {
     fetchCollaborations(ngoId)
       .then(res => {
         const data = res.data.map(c => ({
           id: c.id,
-          partnerName: c.partner_ngo_name || `NGO ${c.partner_ngo_id}`,
-          contactPerson: "N/A",
-          lastActivity: "Recently updated",
-          activeStations: c.active_stations || 0,
-          status: c.status
+          projectDescription: c.project_description || "Project",
+          partnerName: c.partner_ngo_name || "NGO",
+          activeStations: c.active_stations ?? 0,
+          status: c.status || "active"
         }));
         setActiveCollaborations(data);
       })
       .catch(err => console.error(err));
   };
 
+  // -------------------------------
+  // LOAD SHARED REPORTS
+  // -------------------------------
+  const loadSharedReports = () => {
+    fetchSharedReports(ngoId)
+      .then(res => {
+        console.log("SHARED REPORTS 👉", res.data);
+        setSharedReports(res.data);
+      })
+      .catch(err => console.error("SHARED REPORT ERROR", err));
+  };
+
+  // -------------------------------
+  // CREATE COLLABORATION
+  // -------------------------------
   const handleCreateCollaboration = async (e) => {
     e.preventDefault();
     if (!formData.project_id || !formData.partner_ngo_id) {
-      alert('Please fill in all required fields');
+      alert('Please fill all fields');
       return;
     }
 
     try {
-      const collaborationData = {
-        project_id: parseInt(formData.project_id),
-        ngo_id: parseInt(ngoId),
-        partner_ngo_id: parseInt(formData.partner_ngo_id)
-      };
-
-      await createCollaboration(collaborationData);
-      setIsCreating(false);
+      await createCollaboration({
+        project_id: Number(formData.project_id),
+        ngo_id: Number(ngoId),
+        partner_ngo_id: Number(formData.partner_ngo_id)
+      });
       setFormData({ project_id: '', partner_ngo_id: '' });
-      loadCollaborations(); // Refresh the list
-      alert('Collaboration created successfully!');
-    } catch (error) {
-      console.error('Error creating collaboration:', error);
-      alert('Failed to create collaboration. Please check the IDs.');
+      loadCollaborations();
+      alert("Collaboration created");
+    } catch (err) {
+      alert("Failed to create collaboration");
     }
   };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
   return (
     <div className="bg-white rounded-lg shadow p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-bold">Active Collaborations</h2>
-        <button 
-          className="text-sm bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700"
-          onClick={() => setIsCreating(true)}
-        >
-          + New Collaboration
-        </button>
-      </div>
+      <h2 className="text-xl font-bold mb-6">Active Collaborations</h2>
 
-      {/* Create Collaboration Modal/Form */}
-      {isCreating && (
-        <div className="mb-6 p-4 border border-gray-200 rounded-lg bg-gray-50">
-          <h3 className="text-lg font-semibold mb-3">Create New Collaboration</h3>
-          <form onSubmit={handleCreateCollaboration}>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Project ID *
-                </label>
-                <input
-                  type="number"
-                  name="project_id"
-                  value={formData.project_id}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                  placeholder="Enter project ID"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Partner NGO ID *
-                </label>
-                <input
-                  type="number"
-                  name="partner_ngo_id"
-                  value={formData.partner_ngo_id}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                  placeholder="Enter partner NGO ID"
-                  required
-                />
-              </div>
-            </div>
-            <div className="flex justify-end space-x-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setIsCreating(false);
-                  setFormData({ project_id: '', partner_ngo_id: '' });
-                }}
-                className="px-4 py-2 text-sm border border-gray-300 rounded hover:bg-gray-50"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className="px-4 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
-              >
-                Create Collaboration
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
-
+      {/* ===================== TABLE ===================== */}
       <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead>
+        <table className="min-w-full border">
+          <thead className="bg-gray-100">
             <tr>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                Partner NGO
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                Contact Person
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                Last Activity
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                Stations
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                Status
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                Actions
-              </th>
+              <th className="px-4 py-2">Partner NGO</th>
+              <th className="px-4 py-2">Project</th>
+              <th className="px-4 py-2">Stations</th>
+              <th className="px-4 py-2">Status</th>
+              <th className="px-4 py-2">Action</th>
             </tr>
           </thead>
-
-          <tbody className="bg-white divide-y divide-gray-200">
+          <tbody>
             {activeCollaborations.map(collab => (
-              <tr key={collab.id} className="hover:bg-gray-50">
-                <td className="px-4 py-3">
-                  <div className="font-medium text-gray-900">{collab.partnerName}</div>
-                </td>
-                <td className="px-4 py-3 text-sm text-gray-600">
-                  {collab.contactPerson}
-                </td>
-                <td className="px-4 py-3 text-sm text-gray-600">
-                  {collab.lastActivity}
-                </td>
-                <td className="px-4 py-3 text-sm text-gray-600">
-                  {collab.activeStations} active
-                </td>
-                <td className="px-4 py-3">
-                  <span className={`px-2 py-1 text-xs rounded-full ${
-                    collab.status === 'active'
-                      ? 'bg-green-100 text-green-800'
-                      : 'bg-yellow-100 text-yellow-800'
-                  }`}>
-                    {collab.status}
-                  </span>
-                </td>
-                <td className="px-4 py-3 text-sm">
-                  <button className="text-blue-600 mr-3 hover:underline">Contact</button>
-                  <button className="text-green-600 hover:underline">Details</button>
+              <tr key={collab.id} className="border-t">
+                <td className="px-4 py-2">{collab.partnerName}</td>
+                <td className="px-4 py-2">{collab.projectDescription}</td>
+                <td className="px-4 py-2">{collab.activeStations}</td>
+                <td className="px-4 py-2">{collab.status}</td>
+                <td className="px-4 py-2">
+                  <button
+                    onClick={() => setSelectedCollab(collab)}
+                    className="text-blue-600 hover:underline"
+                  >
+                    Details
+                  </button>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
+
+      {/* ===================== DETAILS ===================== */}
+      {selectedCollab && (
+        <div className="mt-6 border rounded-lg p-4 bg-gray-50">
+          <h3 className="text-lg font-semibold mb-2">Collaboration Details</h3>
+
+          <p><b>Partner NGO:</b> {selectedCollab.partnerName}</p>
+          <p><b>Project:</b> {selectedCollab.projectDescription}</p>
+          <p><b>Active Stations:</b> {selectedCollab.activeStations}</p>
+          <p><b>Status:</b> {selectedCollab.status}</p>
+
+          <hr className="my-3" />
+
+          <h4 className="font-semibold mb-2">Shared Reports</h4>
+
+          {sharedReports.length === 0 ? (
+            <p className="text-sm text-gray-500">No shared reports available</p>
+          ) : (
+            <ul className="space-y-2">
+              {sharedReports.map(report => (
+                <li
+                  key={report.id}
+                  className="border p-2 rounded bg-white text-sm"
+                >
+                  <p><b>Description:</b> {report.description}</p>
+                  <p><b>Location:</b> {report.location}</p>
+                  <p><b>Status:</b> {report.status}</p>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          <button
+            onClick={() => setSelectedCollab(null)}
+            className="mt-4 text-sm text-red-600 hover:underline"
+          >
+            Close
+          </button>
+        </div>
+      )}
     </div>
   );
 };
 
 export default CollaborationsPanel;
+

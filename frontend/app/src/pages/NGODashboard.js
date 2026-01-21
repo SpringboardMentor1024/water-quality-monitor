@@ -5,7 +5,6 @@ import StatCard from '../components/StatCard';
 import PredictiveChart from '../components/PredictiveChart';
 import CollaborationsPanel from '../components/Collaboration/CollaborationsPanel';
 import SharedReports from '../components/Collaboration/SharedReports';
-import PartnerActivity from '../components/Collaboration/PartnerActivity';
 import ngoService from '../services/ngoService';
 
 const NGODashboard = () => {
@@ -454,7 +453,7 @@ const handleCreateProject = async () => {
             <CollaborationsPanel />
             <SharedReports />
           </div>
-          <PartnerActivity />
+          
         </>
       )}
 
