@@ -7,13 +7,17 @@ const Layout = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // FULL MENU ITEMS LIST (Map View Removed)
+  // ✅ UPDATED MENU ITEMS (NGO ADDED)
   const menuItems = [
     { name: "Dashboard", path: "/dashboard", icon: "📊" },
     { name: "Alerts", path: "/alerts", icon: "🔔" },
     { name: "Locations", path: "/locations", icon: "📍" },
-    { name: "Analytics", path: "/analytics", icon: '📈'},
+    { name: "Analytics", path: "/analytics", icon: "📈" },
     { name: "User Reports", path: "/userreports", icon: "📋" },
+
+    // ✅ NEW NGO MENU
+    { name: "NGOs", path: "/ngos", icon: "🏢" },
+
     { name: "Collaborations", path: "/collaborations", icon: "🤝" },
     { name: "Profile", path: "/profile", icon: "👤" },
     { name: "Settings", path: "/settings", icon: "⚙️" },
@@ -37,6 +41,7 @@ const Layout = () => {
         <div className="p-6 text-2xl font-black border-b border-blue-700 tracking-tighter italic">
           WaterWatch
         </div>
+
         <nav className="flex-1 p-4 space-y-2 mt-4 overflow-y-auto custom-scrollbar">
           {menuItems.map((item) => (
             <Link
@@ -48,10 +53,12 @@ const Layout = () => {
                   : "hover:bg-blue-700 text-blue-200"
               }`}
             >
-              <span className="mr-3 text-lg">{item.icon}</span> {item.name}
+              <span className="mr-3 text-lg">{item.icon}</span>
+              {item.name}
             </Link>
           ))}
         </nav>
+
         <div className="p-4 border-t border-blue-700 text-center">
           <p className="text-[7px] font-black text-blue-400 uppercase tracking-widest opacity-60">
             Authority v2.0
@@ -137,6 +144,7 @@ const Layout = () => {
             >
               ✕
             </button>
+
             <nav className="space-y-4">
               {menuItems.map((item) => (
                 <Link

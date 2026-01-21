@@ -23,14 +23,11 @@ import Analytics from "./pages/Analytics";
 import Collaborations from "./pages/Collaborations";
 import PredictionDetails from "./pages/PredictionDetails";
 
-// NEW: Milestone 4 NGO Page (Ensure you create this file)
+// NGO Pages
 import NGOStationDetails from "./pages/NGOStationDetails";
+import NGOList from "./pages/NGOList";
 
 /* ================= PROTECTED ROUTE ================= */
-/**
- * Guard component that checks for the 'authToken' in localStorage.
- * Redirects to login if the user is not authenticated.
- */
 const ProtectedRoute = ({ children }) => {
   const token = localStorage.getItem("authToken");
   return token ? children : <Navigate to="/login" replace />;
@@ -40,12 +37,12 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* ================= PUBLIC ROUTES ================= */}
+        {/* PUBLIC ROUTES */}
         <Route path="/" element={<MonitorProfile />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
 
-        {/* ================= PROTECTED (AUTH-REQUIRED) ROUTES ================= */}
+        {/* PROTECTED ROUTES */}
         <Route
           element={
             <ProtectedRoute>
@@ -53,36 +50,32 @@ export default function App() {
             </ProtectedRoute>
           }
         >
-          {/* 1. MONITORING & GENERAL DASHBOARD */}
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/locations" element={<Locations />} />
           <Route path="/search" element={<Search />} />
 
-          {/* 2. SPECIALIZED NGO STATION DETAILS (Milestone 4 Addition) */}
-          {/* This route serves the management-focused page with Report Mgmt and AI Forecasts */}
+          {/* ✅ NGO LIST */}
+          <Route path="/ngos" element={<NGOList />} />
+
+          {/* NGO DETAILS (already exists) */}
           <Route path="/ngo/station/:id" element={<NGOStationDetails />} />
 
-          {/* 3. ANALYTICS & AI PREDICTIONS */}
           <Route path="/analysis/:stationId" element={<Analysis />} />
           <Route path="/analytics/:id?" element={<Analytics />} />
           <Route path="/prediction-details/:id/:parameter" element={<PredictionDetails />} />
 
-          {/* 4. STANDARD STATION READINGS & ALERTS */}
           <Route path="/station/:id" element={<StationReadings />} />
           <Route path="/alerts" element={<Alerts />} />
           <Route path="/alerts/:id" element={<AlertDetails />} />
 
-          {/* 5. COLLABORATIONS & USER INTERACTION */}
           <Route path="/collaborations" element={<Collaborations />} />
           <Route path="/userreports" element={<UserReports />} />
 
-          {/* 6. USER ACCOUNT & SYSTEM CONFIG */}
           <Route path="/settings" element={<Settings />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/users" element={<AllUsers />} />
         </Route>
 
-        {/* ================= FALLBACK ================= */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
