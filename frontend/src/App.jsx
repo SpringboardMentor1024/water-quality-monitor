@@ -28,7 +28,6 @@ import UserReports from "./pages/UserReports";
 import NgoDashboard from "./pages/NgoDashboard";
 import NGOStationDetails from "./pages/NGOStationDetails";
 
-
 /* ================= PROTECTED ROUTE ================= */
 const ProtectedRoute = ({ children }) => {
   const token = localStorage.getItem("authToken");
@@ -65,9 +64,9 @@ export default function App() {
           <Route path="/alerts" element={<Alerts />} />
           <Route path="/alerts/:id" element={<AlertDetails />} />
 
-          {/* NGO */}
+          {/* NGO (FIXED ✅) */}
           <Route path="/ngo" element={<NgoDashboard />} />
-          <Route path="/ngos" element={<NGOList />} />
+          <Route path="/ngos" element={<NgoDashboard />} />
           <Route path="/ngo/station/:id" element={<NGOStationDetails />} />
 
           {/* Analytics & Predictions */}
