@@ -1,20 +1,41 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
 export default function MyReports() {
   const [reports, setReports] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchUserReports();
   }, []);
 
   const fetchUserReports = async () => {
+    const token = localStorage.getItem("access");
+
+    if (!token) {
+      alert("Session expired. Please login again.");
+      navigate("/login");
+      return;
+    }
+
     try {
-      // Replace with current logged-in user ID or email if available
-      const res = await axios.get("http://127.0.0.1:8000/api/reports");
-      setReports(res.data);
+      const res = await axios.get(
+        "http://127.0.0.1:8000/api/user-reports/my",
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      setReports(res.data || []);
     } catch (err) {
-      console.error("Error fetching user reports:", err);
+      console.error("Error fetching user reports:", err.response?.data || err);
+      alert("Failed to load reports");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -25,7 +46,9 @@ export default function MyReports() {
           My Submitted Reports
         </h2>
 
-        {reports.length === 0 ? (
+        {loading ? (
+          <p className="text-center text-gray-500">Loading reports...</p>
+        ) : reports.length === 0 ? (
           <p className="text-center text-gray-500">
             You haven’t submitted any reports yet.
           </p>
@@ -34,8 +57,8 @@ export default function MyReports() {
             <table className="w-full border border-[#C4E1E6] text-sm">
               <thead className="bg-[#E3F5F9] text-gray-700">
                 <tr>
-                  <th className="p-3 text-left">Title</th>
-                  <th className="p-3 text-left">Station</th>
+                  <th className="p-3 text-left">Water Source</th>
+                  <th className="p-3 text-left">Location</th>
                   <th className="p-3 text-left">Date</th>
                   <th className="p-3 text-left">Status</th>
                   <th className="p-3 text-left">Remarks</th>
@@ -43,16 +66,24 @@ export default function MyReports() {
               </thead>
               <tbody>
                 {reports.map((r) => (
-                  <tr key={r.id} className="border-t hover:bg-[#F4FBFD] transition">
+                  <tr
+                    key={r.id}
+                    className="border-t hover:bg-[#F4FBFD] transition"
+                  >
                     <td className="p-3 font-medium text-gray-700">
-                      {r.title || "Untitled"}
+                      {r.water_source || "—"}
                     </td>
-                    <td className="p-3">{r.station_name || "Unknown"}</td>
+
                     <td className="p-3">
-                      {r.recorded_at
-                        ? new Date(r.recorded_at).toLocaleDateString()
+                      {r.location || "—"}
+                    </td>
+
+                    <td className="p-3">
+                      {r.created_at
+                        ? new Date(r.created_at).toLocaleDateString()
                         : "N/A"}
                     </td>
+
                     <td
                       className={`p-3 font-semibold ${
                         r.status === "Verified"
@@ -64,8 +95,9 @@ export default function MyReports() {
                     >
                       {r.status || "Pending"}
                     </td>
+
                     <td className="p-3 text-gray-600">
-                      {r.notes || "—"}
+                      {r.remarks || "—"}
                     </td>
                   </tr>
                 ))}
@@ -74,7 +106,6 @@ export default function MyReports() {
           </div>
         )}
       </div>
-      
     </div>
   );
 }

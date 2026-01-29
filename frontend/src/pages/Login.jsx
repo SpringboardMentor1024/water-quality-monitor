@@ -14,23 +14,25 @@ export default function Login() {
     try {
       const res = await fetch("http://127.0.0.1:8000/api/auth/login", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({ email, password }),
       });
 
       const data = await res.json();
 
-      if (data.success) {
-        // ✅ Save token, role, and user info
-        localStorage.setItem("access_token", data.access_token);
-        localStorage.setItem("role", data.role);
-        localStorage.setItem("user", JSON.stringify(data.user));
-
-        // ✅ Redirect to dashboard
-        navigate("/dashboard", { replace: true });
-      } else {
+      if (!res.ok || !data.access_token) {
         setError(data.message || "Invalid credentials");
+        return;
       }
+
+      // ✅ STORE TOKEN CONSISTENTLY
+      localStorage.setItem("access", data.access_token);
+      localStorage.setItem("role", data.role);
+      localStorage.setItem("user", JSON.stringify(data.user));
+
+      navigate("/dashboard", { replace: true });
     } catch (err) {
       console.error(err);
       setError("Server error, please try again later.");
@@ -50,27 +52,23 @@ export default function Login() {
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <input
-            id="email"
-            name="email"
             type="email"
             placeholder="Email"
             className="w-full p-2 border rounded-lg"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            autoComplete="username"
             required
           />
+
           <input
-            id="password"
-            name="password"
             type="password"
             placeholder="Password"
             className="w-full p-2 border rounded-lg"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            autoComplete="current-password"
             required
           />
+
           <button
             type="submit"
             className="w-full bg-[#4FA3B5] text-white py-2 rounded-lg"

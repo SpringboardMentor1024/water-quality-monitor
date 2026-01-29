@@ -11,31 +11,41 @@ export default function NewReport() {
   const [description, setDescription] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const token = localStorage.getItem("access");
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+
+    // ✅ ALWAYS read token INSIDE submit (important)
+    const token = localStorage.getItem("access");
+
+    if (!token) {
+      alert("Session expired. Please login again.");
+      setLoading(false);
+      navigate("/login");
+      return;
+    }
 
     try {
       await axios.post(
         "http://127.0.0.1:8000/api/user-reports",
         {
-          // 🔴 BACKEND EXPECTS THIS EXACT STRUCTURE
+          // ✅ backend expected fields
           location: `${latitude}, ${longitude}`,
           water_source: waterSource,
           description: description,
         },
         {
           headers: {
+            "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
         }
       );
 
+      // ✅ success
       navigate("/reports");
     } catch (error) {
-      console.error(error.response?.data || error);
+      console.error("REPORT SUBMIT ERROR:", error.response?.data || error);
       alert("Failed to submit report");
     } finally {
       setLoading(false);
@@ -74,9 +84,7 @@ export default function NewReport() {
 
         {/* LATITUDE */}
         <div>
-          <label className="text-sm font-medium text-gray-600">
-            Latitude
-          </label>
+          <label className="text-sm font-medium text-gray-600">Latitude</label>
           <input
             type="number"
             step="any"
@@ -89,9 +97,7 @@ export default function NewReport() {
 
         {/* LONGITUDE */}
         <div>
-          <label className="text-sm font-medium text-gray-600">
-            Longitude
-          </label>
+          <label className="text-sm font-medium text-gray-600">Longitude</label>
           <input
             type="number"
             step="any"
