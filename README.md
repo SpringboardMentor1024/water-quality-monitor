@@ -163,6 +163,7 @@ Special thanks to **Infosys Springboard**, our mentor **Ritwik Abhijeet**, and t
 
 - 🐙 GitHub: [water-quality-monitor (team-e)](https://github.com/SpringboardMentor1024/water-quality-monitor/tree/team-e/)
 - 🏢 Internship: [Infosys Springboard](https://springboard.infosys.com/)
+- 🎥 Demo Video: [Watch on Google Drive](https://drive.google.com/file/d/1MR5udHvgeECP1yYE4tZB6mYoKRuAGnet/view?usp=drivesdk)
 
 ---
 
