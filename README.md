@@ -10,6 +10,8 @@ The **Water Quality Monitoring System** tracks water conditions from multiple mo
 
 This system helps improve awareness, safety, and response time by delivering accurate and structured data insights to communities and authorities.
 
+🎥 **Demo Video:** [Watch on Google Drive](https://drive.google.com/file/d/1MR5udHvgeECP1yYE4tZB6mYoKRuAGnet/view?usp=drivesdk)
+
 ---
 
 ## 🎯 Key Features
